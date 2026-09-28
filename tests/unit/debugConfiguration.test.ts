@@ -12,6 +12,10 @@ interface DebugConfiguration {
   }>;
 }
 
+interface ExtensionManifest {
+  readonly scripts?: Readonly<Record<string, string>>;
+}
+
 void describe("Extension debug configuration", () => {
   void it("launches the current VS Code executable without stopping on entry", () => {
     const launchPath = resolve(__dirname, "../../../.vscode/launch.json");
@@ -24,5 +28,17 @@ void describe("Extension debug configuration", () => {
     assert.equal(configuration?.request, "launch");
     assert.equal(configuration?.runtimeExecutable, "${execPath}");
     assert.equal(configuration?.stopOnEntry, false);
+  });
+
+  void it("provides a debugger-independent development host command", () => {
+    const manifestPath = resolve(__dirname, "../../../package.json");
+    const manifest = JSON.parse(
+      readFileSync(manifestPath, "utf8"),
+    ) as ExtensionManifest;
+
+    assert.equal(
+      manifest.scripts?.["dev:host"],
+      "npm run build && code --new-window --disable-extensions --extensionDevelopmentPath=.",
+    );
   });
 });
