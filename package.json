@@ -1,0 +1,54 @@
+{
+  "name": "devworkspace",
+  "displayName": "DevWorkspace",
+  "description": "A local-first developer command center inside VS Code.",
+  "version": "0.0.1",
+  "publisher": "devworkspace",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.95.0",
+    "node": ">=22.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "developer-tools",
+    "local-first",
+    "workspace"
+  ],
+  "activationEvents": [
+    "onCommand:devworkspace.open"
+  ],
+  "main": "./dist/src/extension/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "devworkspace.open",
+        "title": "Open DevWorkspace",
+        "category": "DevWorkspace"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "format": "prettier --write \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"docs/**/*.md\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "format:check": "prettier --check \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"docs/**/*.md\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
+    "package:vsix": "npm run build && vsce package --allow-missing-repository --skip-license --out devworkspace.vsix",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run package:vsix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.18.6",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.6.0",
+    "eslint": "^10.11.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.71.0"
+  }
+}
