@@ -4,6 +4,7 @@
 .prettierignore
 artifacts/**
 docs/**
+scripts/**
 src/**
 tests/**
 dist/tests/**
