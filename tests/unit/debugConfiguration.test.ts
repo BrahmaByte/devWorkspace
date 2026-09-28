@@ -38,7 +38,7 @@ void describe("Extension debug configuration", () => {
 
     assert.equal(
       manifest.scripts?.["dev:host"],
-      "npm run build && code --new-window --disable-extensions --extensionDevelopmentPath=.",
+      "npm run build && code --new-window --extensionDevelopmentPath=. .",
     );
   });
 });
