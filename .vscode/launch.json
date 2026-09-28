@@ -5,7 +5,10 @@
       "name": "Run DevWorkspace Extension",
       "type": "extensionHost",
       "request": "launch",
+      "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "stopOnEntry": false,
+      "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "preLaunchTask": "npm: build"
     }
