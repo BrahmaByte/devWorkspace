@@ -7,15 +7,21 @@ void describe("Webview shell", () => {
   void it("renders the DevWorkspace placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
-    assert.match(html, /<h1>DevWorkspace<\/h1>/);
-    assert.match(html, /local-first developer command center/);
+    assert.match(html, /class="brand">DevWorkspace<\/p>/);
+    assert.match(html, /<h1>Home<\/h1>/);
+    assert.match(html, /local-first developer command center/i);
+    for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
+      assert.match(html, new RegExp(`>${area}<`));
+    }
   });
 
-  void it("uses a restrictive content security policy and no scripts", () => {
+  void it("uses nonce-restricted scripts and styles", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /default-src 'none'/);
     assert.match(html, /style-src vscode-webview:\/\/test 'nonce-[^']+'/);
-    assert.doesNotMatch(html, /<script\b/i);
+    assert.match(html, /script-src 'nonce-[^']+'/);
+    assert.match(html, /<script nonce="[^"]+">/);
+    assert.doesNotMatch(html, /https?:\/\//);
   });
 });

@@ -173,11 +173,12 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestone 0 provides the npm/TypeScript toolchain, VS Code extension manifest,
-extension activation entry point, a static CSP-protected Webview placeholder,
-unit tests, packaging, and a Windows/macOS/Linux CI matrix. Interactive Webview
-messages, persistence, commands, Jira, Confluence, and AI are intentionally not
-implemented yet.
+Milestones 0 and 1 provide the npm/TypeScript toolchain, VS Code extension
+manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
+navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
+error boundary, platform abstraction, tests, packaging, and a
+Windows/macOS/Linux CI matrix. Persistence, commands, Jira, Confluence, and AI
+are intentionally not implemented yet.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 
