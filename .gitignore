@@ -13,3 +13,5 @@ artifacts/
 *.sqlite
 *.sqlite3
 .vscode-test/
+*.md
+!README.md
