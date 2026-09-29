@@ -10,7 +10,14 @@ void describe("Webview shell", () => {
     assert.match(html, /id="greeting" class="brand"><\/p>/);
     assert.match(html, /<header class="app-header">/);
     assert.match(html, /Sticky notes/);
-    for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
+    for (const area of [
+      "Home",
+      "Jira",
+      "Workspace",
+      "Notes",
+      "Knowledge",
+      "Settings",
+    ]) {
       assert.match(html, new RegExp(`>${area}<`));
     }
   });
@@ -29,18 +36,17 @@ void describe("Webview shell", () => {
     assert.match(html, /radial-gradient/);
   });
 
-  void it("uses a data-driven home dashboard and split notes workspace", () => {
+  void it("keeps Home focused on sticky notes and current Jira work", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /class="dashboard-card sticky-widget"/);
-    assert.match(html, /Current project/);
-    assert.match(html, /Quick actions/);
-    assert.match(html, /Favourite projects/);
-    assert.match(html, /Recent resources/);
     assert.match(html, /Current Jira task/);
-    assert.match(html, /id="global-search"/);
+    assert.doesNotMatch(
+      html,
+      /Current project|Quick actions|Favourite projects|Recent resources/,
+    );
+    assert.doesNotMatch(html, /id="global-search"/);
     assert.match(html, /message\?\.type==="home\.state"/);
-    assert.match(html, /type:"home\.search"/);
     assert.match(html, /renderHome=/);
     assert.doesNotMatch(
       html,
@@ -150,7 +156,26 @@ void describe("Webview shell", () => {
     assert.match(html, /type:"jira\.connect"/);
     assert.match(html, /message\?\.type==="jira\.state"/);
     assert.match(html, /function renderJira/);
+    assert.match(html, /data-view="settings"/);
+    assert.match(html, /class="settings-nav"/);
     assert.doesNotMatch(html, /id="jira-(?:pat|token)"/);
     assert.doesNotMatch(html, /Authorization|Bearer/);
+  });
+
+  void it("provides a Kanban board and constrained Start Work controls", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /id="jira-search"/);
+    assert.match(html, /class="jira-board"/);
+    assert.match(html, /className="jira-column"/);
+    assert.match(html, /To Do|In Progress|Done/);
+    assert.match(html, /Custom JQL filter/);
+    assert.match(html, /id="jira-local-form"/);
+    assert.match(html, /type:"jira\.local\.create"/);
+    assert.match(html, /type:"jira\.search"/);
+    assert.match(html, /type:"jira\.associate"/);
+    assert.match(html, /type:"jira\.startWork"/);
+    assert.match(html, /Optional branch name/);
+    assert.doesNotMatch(html, /type:"jira\.startWork"[^\n]*command:/);
   });
 });

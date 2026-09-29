@@ -15,6 +15,7 @@ export interface Project {
   readonly name: string;
   readonly localPath: string;
   readonly preferredIde?: PreferredIde;
+  readonly jiraProjectKey?: string;
   readonly isFavourite: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;

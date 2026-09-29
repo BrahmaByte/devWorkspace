@@ -29,12 +29,44 @@ void describe("Webview protocol validation", () => {
       parseWebviewRequest({ type: "jira.issue", issueKey: "DEV-7" }).ok,
       true,
     );
+    assert.equal(
+      parseWebviewRequest({ type: "jira.search", query: "login failure" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.associate",
+        issueKey: "DEV-7",
+        projectId: "00000000-0000-0000-0000-000000000007",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.startWork",
+        issueKey: "DEV-7",
+        branchName: "feature/DEV-7",
+      }).ok,
+      true,
+    );
     assert.deepEqual(
       parseWebviewRequest({ type: "navigation.select", page: "notes" }),
       {
         ok: true,
         value: { type: "navigation.select", page: "notes" },
       },
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "navigation.select", page: "settings" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.local.create",
+        summary: "Review changes",
+        status: "todo",
+      }).ok,
+      true,
     );
   });
 
@@ -43,7 +75,7 @@ void describe("Webview protocol validation", () => {
       null,
       "navigation.select",
       { type: "unknown" },
-      { type: "navigation.select", page: "settings" },
+      { type: "navigation.select", page: "admin" },
       { type: "navigation.select", page: "home", command: "rm -rf" },
       { type: "home.refresh", extra: true },
       { type: "home.search", query: "x".repeat(201) },
@@ -54,6 +86,15 @@ void describe("Webview protocol validation", () => {
         token: "secret",
       },
       { type: "jira.issue", issueKey: "../../etc/passwd" },
+      { type: "jira.search", query: "project = DEV\nOR project = OPS" },
+      { type: "jira.local.create", summary: "x", status: "unknown" },
+      { type: "jira.local.delete", id: "not-an-id" },
+      {
+        type: "jira.startWork",
+        issueKey: "DEV-7",
+        branchName: "x",
+        command: "rm -rf /",
+      },
       { type: "notes.create", title: "x", content: "x", extra: true },
       { type: "notes.delete", id: "../../etc/passwd" },
       {

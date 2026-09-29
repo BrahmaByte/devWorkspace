@@ -6,6 +6,10 @@ import { CommandExecutionService } from "../application/services/commandExecutio
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
 import { JiraService } from "../application/services/jiraService";
+import {
+  issueProjectKey,
+  StartWorkService,
+} from "../application/services/startWorkService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
@@ -13,11 +17,16 @@ import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
+import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
 } from "../infrastructure/vscode/vscodeCommandExecutor";
+import {
+  VscodeBranchConfirmationGateway,
+  VscodeProjectWorkspaceGateway,
+} from "../infrastructure/vscode/vscodeStartWorkGateway";
 import { createPlatformService } from "../platform/platformService";
 import { createWebviewHtml } from "../webview/app/shell";
 import type {
@@ -47,6 +56,12 @@ export async function activate(
     new JiraRepository(database),
     context.secrets,
     new FetchJiraClientFactory(),
+  );
+  const startWorkService = new StartWorkService(
+    workspaceRepository,
+    new NodeGitWorkflow(),
+    new VscodeProjectWorkspaceGateway(),
+    new VscodeBranchConfirmationGateway(),
   );
   const commandExecutionService = new CommandExecutionService(
     workspaceRepository,
@@ -194,13 +209,58 @@ export async function activate(
                 issue: await jiraService.getIssue(request.issueKey),
               } satisfies ExtensionResponse);
               return;
+            case "jira.search":
+              await panel.webview.postMessage({
+                type: "jira.state",
+                state: await jiraService.search(request.query),
+              } satisfies ExtensionResponse);
+              return;
+            case "jira.local.create":
+              await jiraService.createLocalCard(
+                request.summary,
+                request.status,
+              );
+              await sendJira();
+              return;
+            case "jira.local.move":
+              await jiraService.moveLocalCard(request.id, request.status);
+              await sendJira();
+              return;
+            case "jira.local.delete":
+              await jiraService.deleteLocalCard(request.id);
+              await sendJira();
+              return;
+            case "jira.associate":
+              await workspaceService.associateJiraProject(
+                request.projectId,
+                issueProjectKey(request.issueKey),
+              );
+              await sendWorkspace();
+              await sendJira();
+              return;
+            case "jira.startWork": {
+              const result = await startWorkService.start(
+                request.issueKey,
+                request.branchName,
+              );
+              if (!result.started) return;
+              await panel.webview.postMessage({
+                type: "jira.workStarted",
+                projectName: result.projectName,
+                ...(result.branchName ? { branchName: result.branchName } : {}),
+                branchChanged: result.branchChanged,
+                started: result.started,
+              } satisfies ExtensionResponse);
+              return;
+            }
             case "navigation.select":
               activePage = request.page;
               await sendState();
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
               if (activePage === "home") await sendHome();
-              if (activePage === "jira") await sendJira();
+              if (activePage === "jira" || activePage === "settings")
+                await sendJira();
               return;
             case "notes.refresh":
               await sendNotes(request.query);

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   JiraConnection,
+  JiraBoardStatus,
   JiraIssue,
   JiraState,
   JiraUser,
@@ -11,6 +12,7 @@ import type { JiraRepository } from "../../infrastructure/database/jiraRepositor
 export interface JiraClient {
   getCurrentUser(): Promise<JiraUser>;
   getAssignedIssues(): Promise<readonly JiraIssue[]>;
+  searchIssues(query: string): Promise<readonly JiraIssue[]>;
   getIssue(issueKey: string): Promise<JiraIssue>;
 }
 
@@ -25,6 +27,7 @@ export interface SecretStore {
 }
 
 export const jiraLimits = { name: 100, url: 2_000 } as const;
+export const jiraBoardLimits = { filter: 500, localSummary: 200 } as const;
 const secretKey = (connectionId: string) =>
   `devworkspace.jira.${connectionId}.pat`;
 
@@ -66,17 +69,25 @@ export class JiraService {
       await this.secrets.delete(secretKey(connection.id));
       throw error;
     }
-    return { connection, currentUser, issues, status: "connected" };
+    return {
+      connection,
+      currentUser,
+      issues,
+      localCards: this.repository.listLocalCards(),
+      status: "connected",
+    };
   }
 
   public async refresh(): Promise<JiraState> {
     const connection = this.repository.getConnection();
-    if (!connection) return { issues: [], status: "disconnected" };
+    const localCards = this.repository.listLocalCards();
+    if (!connection) return { issues: [], localCards, status: "disconnected" };
     const token = await this.secrets.get(secretKey(connection.id));
     if (!token)
       return {
         connection,
         issues: this.repository.listIssues(connection.id),
+        localCards,
         status: "expired",
         message: "The Jira personal access token is unavailable.",
       };
@@ -87,7 +98,13 @@ export class JiraService {
         client.getAssignedIssues(),
       ]);
       await this.repository.replaceIssues(connection.id, issues);
-      return { connection, currentUser, issues, status: "connected" };
+      return {
+        connection,
+        currentUser,
+        issues,
+        localCards,
+        status: "connected",
+      };
     } catch (error) {
       const authenticationFailed =
         typeof error === "object" &&
@@ -97,6 +114,7 @@ export class JiraService {
       return {
         connection,
         issues: this.repository.listIssues(connection.id),
+        localCards,
         status: authenticationFailed ? "expired" : "error",
         message: authenticationFailed
           ? "The Jira personal access token was rejected or has expired."
@@ -113,6 +131,66 @@ export class JiraService {
     const token = await this.secrets.get(secretKey(connection.id));
     if (!token) throw new Error("Jira credentials are unavailable.");
     return this.clients.create(connection.baseUrl, token).getIssue(issueKey);
+  }
+
+  public async search(query: string): Promise<JiraState> {
+    const normalized = query.trim();
+    if (
+      normalized.length === 0 ||
+      normalized.length > jiraBoardLimits.filter ||
+      /[\r\n\0]/u.test(normalized)
+    )
+      throw new Error("Jira filter is invalid.");
+    const connection = this.repository.getConnection();
+    if (!connection) throw new Error("Jira is not connected.");
+    const token = await this.secrets.get(secretKey(connection.id));
+    if (!token) throw new Error("Jira credentials are unavailable.");
+    const client = this.clients.create(connection.baseUrl, token);
+    const [currentUser, issues] = await Promise.all([
+      client.getCurrentUser(),
+      client.searchIssues(normalized),
+    ]);
+    return {
+      connection,
+      currentUser,
+      issues,
+      localCards: this.repository.listLocalCards(),
+      status: "connected",
+    };
+  }
+
+  public async createLocalCard(
+    summary: string,
+    status: JiraBoardStatus,
+  ): Promise<void> {
+    const normalized = this.validateLocalSummary(summary);
+    const now = new Date().toISOString();
+    await this.repository.saveLocalCard({
+      id: randomUUID(),
+      summary: normalized,
+      status,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  public async moveLocalCard(
+    id: string,
+    status: JiraBoardStatus,
+  ): Promise<void> {
+    const card = this.repository
+      .listLocalCards()
+      .find((item) => item.id === id);
+    if (!card) throw new Error("Local card was not found.");
+    await this.repository.saveLocalCard({
+      ...card,
+      status,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  public async deleteLocalCard(id: string): Promise<void> {
+    await this.repository.deleteLocalCard(id);
   }
 
   public async disconnect(): Promise<void> {
@@ -136,5 +214,12 @@ export class JiraService {
     url.hash = "";
     url.search = "";
     return url.toString().replace(/\/$/u, "");
+  }
+
+  private validateLocalSummary(value: string): string {
+    const normalized = value.trim();
+    if (!normalized || normalized.length > jiraBoardLimits.localSummary)
+      throw new Error("Local card summary is invalid.");
+    return normalized;
   }
 }

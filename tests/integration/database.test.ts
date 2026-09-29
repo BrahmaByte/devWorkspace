@@ -36,7 +36,7 @@ void describe("Local SQLite database", () => {
     const { database } = await createDatabase();
     const repository = new LocalStateRepository(database);
 
-    assert.equal(repository.getSchemaVersion(), 2);
+    assert.equal(repository.getSchemaVersion(), 3);
     assert.equal(
       database.getScalar(
         "SELECT name FROM schema_migrations WHERE version = 1;",
@@ -50,6 +50,7 @@ void describe("Local SQLite database", () => {
       "favourites",
       "jira_connections",
       "jira_issue_cache",
+      "jira_local_cards",
       "notes",
       "project_commands",
       "projects",
@@ -83,11 +84,11 @@ void describe("Local SQLite database", () => {
 
     const reopened = await LocalDatabase.open(filePath);
     const repository = new LocalStateRepository(reopened);
-    assert.equal(repository.getSchemaVersion(), 2);
+    assert.equal(repository.getSchemaVersion(), 3);
     assert.equal(repository.count("projects"), 1);
     assert.equal(
       reopened.getScalar("SELECT COUNT(*) FROM schema_migrations;"),
-      2,
+      3,
     );
     reopened.close();
   });

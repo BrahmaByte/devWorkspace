@@ -74,6 +74,16 @@ export class WorkspaceService {
     this.requireId(id);
     return this.repository.deleteProject(id);
   }
+  public associateJiraProject(id: string, jiraProjectKey: string) {
+    this.requireId(id);
+    if (!/^[A-Z][A-Z0-9_]{0,19}$/u.test(jiraProjectKey))
+      throw new Error("Jira project key is invalid.");
+    return this.repository.associateJiraProject(
+      id,
+      jiraProjectKey,
+      new Date().toISOString(),
+    );
+  }
 
   public async createCommand(
     projectId: string | undefined,

@@ -136,4 +136,17 @@ export const migrations: readonly Migration[] = [
       ALTER TABLE project_commands_v2 RENAME TO project_commands;
     `,
   },
+  {
+    version: 3,
+    name: "jira_local_cards",
+    sql: `
+      CREATE TABLE jira_local_cards (
+        id TEXT PRIMARY KEY,
+        summary TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('todo', 'in_progress', 'done')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

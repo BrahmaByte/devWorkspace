@@ -21,10 +21,22 @@ export interface JiraIssue {
   readonly description?: string;
 }
 
+export const jiraBoardStatuses = ["todo", "in_progress", "done"] as const;
+export type JiraBoardStatus = (typeof jiraBoardStatuses)[number];
+
+export interface JiraLocalCard {
+  readonly id: string;
+  readonly summary: string;
+  readonly status: JiraBoardStatus;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 export interface JiraState {
   readonly connection?: JiraConnection;
   readonly currentUser?: JiraUser;
   readonly issues: readonly JiraIssue[];
+  readonly localCards: readonly JiraLocalCard[];
   readonly status: "disconnected" | "connected" | "expired" | "error";
   readonly message?: string;
 }

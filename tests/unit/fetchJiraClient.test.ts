@@ -42,6 +42,7 @@ void describe("Jira REST provider", () => {
     );
     assert.equal((await client.getCurrentUser()).displayName, "User");
     assert.equal((await client.getAssignedIssues())[0]?.key, "DEV-1");
+    assert.equal((await client.searchIssues("workflow"))[0]?.key, "DEV-1");
     assert.equal((await client.getIssue("DEV-1")).description, "Details");
     assert.equal(
       requests[0]?.url,
@@ -51,7 +52,7 @@ void describe("Jira REST provider", () => {
       new Headers(requests[0]?.init?.headers).get("authorization"),
       "Bearer fake-token",
     );
-    assert.match(String(requests[2]?.url), /issue\/DEV-1/u);
+    assert.match(String(requests[3]?.url), /issue\/DEV-1/u);
   });
 
   void it("maps authentication failures without exposing response bodies", async () => {

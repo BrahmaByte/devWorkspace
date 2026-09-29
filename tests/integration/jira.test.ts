@@ -53,6 +53,9 @@ class FakeClient implements JiraClient {
       ? Promise.reject(new Error("offline"))
       : Promise.resolve([issue]);
   }
+  public searchIssues() {
+    return this.getAssignedIssues();
+  }
   public getIssue() {
     return Promise.resolve(issue);
   }
@@ -131,6 +134,30 @@ void describe("Jira integration", () => {
     assert.equal((await service.refresh()).status, "expired");
     await service.disconnect();
     assert.equal(repository.getConnection(), undefined);
+    database.close();
+  });
+
+  void it("persists local-only cards without calling Jira", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "devworkspace-jira-local-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new JiraRepository(database);
+    const factory = new FakeFactory();
+    const service = new JiraService(repository, new MemorySecrets(), factory);
+
+    await service.createLocalCard("Local investigation", "todo");
+    let state = await service.refresh();
+    assert.equal(state.localCards[0]?.summary, "Local investigation");
+    assert.equal(factory.tokens.length, 0);
+
+    const id = state.localCards[0]?.id;
+    assert.ok(id);
+    await service.moveLocalCard(id, "in_progress");
+    state = await service.refresh();
+    assert.equal(state.localCards[0]?.status, "in_progress");
+    await service.deleteLocalCard(id);
+    assert.equal((await service.refresh()).localCards.length, 0);
+    assert.equal(factory.tokens.length, 0);
     database.close();
   });
 });

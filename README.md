@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 6 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 7 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -195,15 +195,19 @@ been stored locally. Command shortcuts can run in the default VS Code terminal
 directory or an optional folder explicitly chosen with the native folder picker;
 they do not require a project association. The shortcut form exposes only its
 name, stored command, and optional terminal folder. Platform, shell, and
-confirmation defaults remain controlled by the Extension Host. Tests, packaging, and a
-Windows/macOS/Linux CI matrix are
-included. Home is a data-driven developer command center with the current and
-favourite projects, stored-command quick actions, sticky notes, recently updated
-local resources, and a local-note search entry point. Jira Data Center can be
-connected directly with a user-authorized PAT. VS Code collects the PAT in a masked native
-prompt and stores it in SecretStorage; the Webview receives only connection,
+confirmation defaults remain controlled by the Extension Host. Tests, packaging,
+and a Windows/macOS/Linux CI matrix are included. Home stays focused on sticky
+notes and the current Jira task. Jira Data Center can be connected directly with
+a user-authorized PAT. VS Code collects the PAT in a masked native prompt and
+stores it in SecretStorage; the Webview receives only connection,
 current-user, and issue data. Assigned unresolved issues are cached locally for
-offline display, and issue details are loaded on demand. Jira Cloud API-token
+offline display, and issue details are loaded on demand. Integration connection
+details are configured from the dedicated Settings page; PAT entry remains in a
+masked VS Code prompt. Jira work is shown in fixed To Do, In Progress, and Done
+columns with a bounded custom JQL filter. Local-only cards are stored separately
+in SQLite and are never sent to Jira. An issue can be associated with a local
+project and opened in a VS Code terminal; optional Git branch changes use fixed
+Git arguments and require explicit confirmation. Jira Cloud API-token
 authentication is not part of this PAT milestone. Confluence and AI remain
 intentionally unimplemented.
 

@@ -1,6 +1,10 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
 import type { HomeState } from "../../domain/home/models";
-import type { JiraIssue, JiraState } from "../../domain/jira/models";
+import type {
+  JiraBoardStatus,
+  JiraIssue,
+  JiraState,
+} from "../../domain/jira/models";
 import type {
   PreferredIde,
   WorkspaceState,
@@ -12,6 +16,7 @@ export const shellPages = [
   "workspace",
   "notes",
   "knowledge",
+  "settings",
 ] as const;
 
 export type ShellPage = (typeof shellPages)[number];
@@ -27,6 +32,28 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.refresh" | "jira.disconnect" }
   | { readonly type: "jira.issue"; readonly issueKey: string }
+  | { readonly type: "jira.search"; readonly query: string }
+  | {
+      readonly type: "jira.local.create";
+      readonly summary: string;
+      readonly status: JiraBoardStatus;
+    }
+  | {
+      readonly type: "jira.local.move";
+      readonly id: string;
+      readonly status: JiraBoardStatus;
+    }
+  | { readonly type: "jira.local.delete"; readonly id: string }
+  | {
+      readonly type: "jira.associate";
+      readonly issueKey: string;
+      readonly projectId: string;
+    }
+  | {
+      readonly type: "jira.startWork";
+      readonly issueKey: string;
+      readonly branchName?: string;
+    }
   | { readonly type: "navigation.select"; readonly page: ShellPage }
   | { readonly type: "notes.refresh"; readonly query: string }
   | {
@@ -110,6 +137,13 @@ export type ExtensionResponse =
     }
   | { readonly type: "jira.state"; readonly state: JiraState }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
+  | {
+      readonly type: "jira.workStarted";
+      readonly projectName: string;
+      readonly branchName?: string;
+      readonly branchChanged: boolean;
+      readonly started: boolean;
+    }
   | {
       readonly type: "shell.state";
       readonly page: ShellPage;

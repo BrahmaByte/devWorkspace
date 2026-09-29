@@ -7,6 +7,11 @@ import {
 } from "../../domain/workspace/models";
 import { workspaceLimits } from "../../application/services/workspaceService";
 import { jiraLimits } from "../../application/services/jiraService";
+import { jiraBoardLimits } from "../../application/services/jiraService";
+import {
+  jiraBoardStatuses,
+  type JiraBoardStatus,
+} from "../../domain/jira/models";
 
 export type ParseResult =
   | { readonly ok: true; readonly value: WebviewRequest }
@@ -58,6 +63,12 @@ function isPreferredIde(value: unknown): value is PreferredIde | undefined {
       (preferredIdes as readonly string[]).includes(value))
   );
 }
+function isJiraBoardStatus(value: unknown): value is JiraBoardStatus {
+  return (
+    typeof value === "string" &&
+    (jiraBoardStatuses as readonly string[]).includes(value)
+  );
+}
 export function parseWebviewRequest(value: unknown): ParseResult {
   if (!isRecord(value) || typeof value.type !== "string") {
     return { ok: false, error: "Message must be an object with a type." };
@@ -103,6 +114,82 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey)
       ? { ok: true, value: { type: "jira.issue", issueKey: value.issueKey } }
       : { ok: false, error: "jira.issue is invalid." };
+  }
+  if (value.type === "jira.search") {
+    return hasOnlyKeys(value, ["type", "query"]) &&
+      typeof value.query === "string" &&
+      value.query.trim().length > 0 &&
+      value.query.length <= jiraBoardLimits.filter &&
+      !/[\r\n\0]/u.test(value.query)
+      ? { ok: true, value: { type: "jira.search", query: value.query } }
+      : { ok: false, error: "jira.search is invalid." };
+  }
+  if (value.type === "jira.local.create") {
+    return hasOnlyKeys(value, ["type", "summary", "status"]) &&
+      typeof value.summary === "string" &&
+      value.summary.trim().length > 0 &&
+      value.summary.length <= jiraBoardLimits.localSummary &&
+      isJiraBoardStatus(value.status)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.local.create",
+            summary: value.summary,
+            status: value.status,
+          },
+        }
+      : { ok: false, error: "jira.local.create is invalid." };
+  }
+  if (value.type === "jira.local.move") {
+    return hasOnlyKeys(value, ["type", "id", "status"]) &&
+      isId(value.id) &&
+      isJiraBoardStatus(value.status)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.local.move",
+            id: value.id,
+            status: value.status,
+          },
+        }
+      : { ok: false, error: "jira.local.move is invalid." };
+  }
+  if (value.type === "jira.local.delete") {
+    return hasOnlyKeys(value, ["type", "id"]) && isId(value.id)
+      ? { ok: true, value: { type: "jira.local.delete", id: value.id } }
+      : { ok: false, error: "jira.local.delete is invalid." };
+  }
+  if (value.type === "jira.associate") {
+    return hasOnlyKeys(value, ["type", "issueKey", "projectId"]) &&
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
+      isId(value.projectId)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.associate",
+            issueKey: value.issueKey,
+            projectId: value.projectId,
+          },
+        }
+      : { ok: false, error: "jira.associate is invalid." };
+  }
+  if (value.type === "jira.startWork") {
+    return hasOnlyKeys(value, ["type", "issueKey", "branchName"]) &&
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
+      (value.branchName === undefined ||
+        (typeof value.branchName === "string" &&
+          value.branchName.length <= 100))
+      ? {
+          ok: true,
+          value: {
+            type: "jira.startWork",
+            issueKey: value.issueKey,
+            ...(value.branchName ? { branchName: value.branchName } : {}),
+          },
+        }
+      : { ok: false, error: "jira.startWork is invalid." };
   }
   if (value.type === "navigation.select") {
     if (!hasOnlyKeys(value, ["type", "page"]) || !isShellPage(value.page)) {

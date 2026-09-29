@@ -36,10 +36,20 @@ export class FetchJiraClient implements JiraClient {
   }
 
   public async getAssignedIssues(): Promise<readonly JiraIssue[]> {
+    return this.searchByJql(
+      "assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC",
+    );
+  }
+
+  public async searchIssues(query: string): Promise<readonly JiraIssue[]> {
+    return this.searchByJql(query);
+  }
+
+  private async searchByJql(jql: string): Promise<readonly JiraIssue[]> {
     const data = await this.request("/rest/api/2/search", {
       method: "POST",
       body: JSON.stringify({
-        jql: "assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC",
+        jql,
         maxResults: 50,
         fields: ["summary", "status", "updated"],
       }),

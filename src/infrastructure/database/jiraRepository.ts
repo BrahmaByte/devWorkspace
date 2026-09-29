@@ -1,4 +1,9 @@
-import type { JiraConnection, JiraIssue } from "../../domain/jira/models";
+import type {
+  JiraBoardStatus,
+  JiraConnection,
+  JiraIssue,
+  JiraLocalCard,
+} from "../../domain/jira/models";
 import type { LocalDatabase, SqlValue } from "./localDatabase";
 
 const text = (row: Readonly<Record<string, SqlValue>>, key: string): string => {
@@ -82,6 +87,31 @@ export class JiraRepository {
 
   public async deleteConnection(id: string): Promise<void> {
     this.database.run("DELETE FROM jira_connections WHERE id=?;", [id]);
+    await this.database.persist();
+  }
+
+  public listLocalCards(): readonly JiraLocalCard[] {
+    return this.database
+      .query("SELECT * FROM jira_local_cards ORDER BY created_at ASC;")
+      .map((row) => ({
+        id: text(row, "id"),
+        summary: text(row, "summary"),
+        status: text(row, "status") as JiraBoardStatus,
+        createdAt: text(row, "created_at"),
+        updatedAt: text(row, "updated_at"),
+      }));
+  }
+
+  public async saveLocalCard(card: JiraLocalCard): Promise<void> {
+    this.database.run(
+      "INSERT INTO jira_local_cards(id,summary,status,created_at,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET summary=excluded.summary,status=excluded.status,updated_at=excluded.updated_at;",
+      [card.id, card.summary, card.status, card.createdAt, card.updatedAt],
+    );
+    await this.database.persist();
+  }
+
+  public async deleteLocalCard(id: string): Promise<void> {
+    this.database.run("DELETE FROM jira_local_cards WHERE id=?;", [id]);
     await this.database.persist();
   }
 }
