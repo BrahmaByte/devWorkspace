@@ -34,7 +34,11 @@ void afterEach(async () => {
 void describe("local notes", () => {
   void it("creates, searches, edits, pins, archives, and deletes notes", async () => {
     const { database, service } = await openNotes();
-    await service.createNote("Release plan", "Ship the local workspace");
+    const createdId = await service.createNote(
+      "Release plan",
+      "Ship the local workspace",
+    );
+    assert.match(createdId, /^[0-9a-f-]{36}$/u);
     await service.createNote("Other", "Unrelated");
     const found = service.getState("workspace").notes;
     assert.equal(found.length, 1);

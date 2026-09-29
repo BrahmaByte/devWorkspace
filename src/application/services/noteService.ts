@@ -21,14 +21,16 @@ export class NoteService {
     };
   }
 
-  public createNote(title: string, content: string): Promise<void> {
+  public async createNote(title: string, content: string): Promise<string> {
     this.validateNote(title, content);
-    return this.repository.create({
-      id: randomUUID(),
+    const id = randomUUID();
+    await this.repository.create({
+      id,
       title: title.trim(),
       content,
       now: new Date().toISOString(),
     });
+    return id;
   }
 
   public updateNote(id: string, title: string, content: string): Promise<void> {

@@ -68,13 +68,16 @@ void describe("Webview shell", () => {
     assert.match(html, /stickyDialog\.showModal\(\)/);
     assert.match(
       html,
-      /setTimeout\(\(\)=>\{autosaveTimer=undefined;saveExisting\(\)/,
+      /setTimeout\(\(\)=>\{autosaveTimer=undefined;noteId\.value\?saveExisting\(\):createDraft\(\)/,
     );
     assert.match(html, /const flushAutosave=/);
     assert.match(
       html,
       /noteContent\.addEventListener\("input",scheduleAutosave\)/,
     );
+    assert.match(html, /const createDraft=/);
+    assert.match(html, /message\?\.type==="notes\.created"/);
+    assert.match(html, /type:"notes\.create",\.\.\.creatingSnapshot/);
     assert.match(html, /aria-label="Delete note" title="Delete note">/);
     assert.match(html, /<symbol id="i-trash"/);
     assert.match(html, /<use href="#i-trash"\/>/);

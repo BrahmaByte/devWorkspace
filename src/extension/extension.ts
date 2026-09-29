@@ -87,7 +87,13 @@ export async function activate(
               await sendNotes(request.query);
               return;
             case "notes.create":
-              await noteService.createNote(request.title, request.content);
+              await panel.webview.postMessage({
+                type: "notes.created",
+                id: await noteService.createNote(
+                  request.title,
+                  request.content,
+                ),
+              } satisfies ExtensionResponse);
               break;
             case "notes.update":
               await noteService.updateNote(

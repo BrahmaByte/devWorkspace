@@ -67,4 +67,8 @@ export type ExtensionResponse =
       readonly query: string;
       readonly notes: readonly Note[];
       readonly stickyNotes: readonly StickyNote[];
+    }
+  | {
+      readonly type: "notes.created";
+      readonly id: string;
     };

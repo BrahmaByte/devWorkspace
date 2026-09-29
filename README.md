@@ -178,8 +178,8 @@ manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
 layer. The database is stored under VS Code's extension global-storage directory,
-not inside the extension or a project. Notes support debounced autosave after
-editing, plus create, delete, pin/archive, and local text search. Sticky notes use
+not inside the extension or a project. New and existing notes support debounced
+autosave, plus create, delete, pin/archive, and local text search. Sticky notes use
 a centered editor dialog for viewing and editing. Saved content is rendered
 as plain text inside the network-isolated Webview. A shared header provides a
 live local clock and persistent light/dark appearance toggle. Home includes a
