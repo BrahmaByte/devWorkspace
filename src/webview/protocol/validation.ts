@@ -2,9 +2,7 @@ import { shellPages, type ShellPage, type WebviewRequest } from "./messages";
 import { noteLimits } from "../../application/services/noteService";
 import { stickyColors, type StickyColor } from "../../domain/notes/models";
 import {
-  confirmationPolicies,
   preferredIdes,
-  type ConfirmationPolicy,
   type PreferredIde,
 } from "../../domain/workspace/models";
 import type { OperatingSystem } from "../../platform/platformService";
@@ -66,13 +64,6 @@ function isPlatform(value: unknown): value is OperatingSystem | "any" {
     ["windows", "macos", "linux", "any"].includes(value)
   );
 }
-function isPolicy(value: unknown): value is ConfirmationPolicy {
-  return (
-    typeof value === "string" &&
-    (confirmationPolicies as readonly string[]).includes(value)
-  );
-}
-
 export function parseWebviewRequest(value: unknown): ParseResult {
   if (!isRecord(value) || typeof value.type !== "string") {
     return { ok: false, error: "Message must be an object with a type." };
@@ -261,37 +252,28 @@ export function parseWebviewRequest(value: unknown): ParseResult {
     if (
       !hasOnlyKeys(value, [
         "type",
-        "projectId",
         "name",
         "command",
         "platform",
-        "shell",
         "workingDirectory",
-        "confirmationPolicy",
       ]) ||
-      (value.projectId !== undefined && !isId(value.projectId)) ||
       !isString(value.name, workspaceLimits.name) ||
       !isString(value.command, workspaceLimits.command) ||
       /[\r\n\0]/u.test(value.command) ||
       !isPlatform(value.platform) ||
-      !isString(value.shell, workspaceLimits.path) ||
-      !isOptionalString(value.workingDirectory, workspaceLimits.path) ||
-      !isPolicy(value.confirmationPolicy)
+      !isOptionalString(value.workingDirectory, workspaceLimits.path)
     )
       return { ok: false, error: "commands.create is invalid." };
     return {
       ok: true,
       value: {
         type: "commands.create",
-        projectId: value.projectId,
         name: value.name,
         command: value.command,
         platform: value.platform,
-        shell: value.shell,
         ...(value.workingDirectory
           ? { workingDirectory: value.workingDirectory }
           : {}),
-        confirmationPolicy: value.confirmationPolicy,
       },
     };
   }

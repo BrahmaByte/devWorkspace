@@ -241,13 +241,13 @@ export async function activate(
               )
                 throw new Error("Command path was not selected by the user.");
               await workspaceService.createCommand(
-                request.projectId,
+                undefined,
                 request.name,
                 request.command,
                 request.platform,
-                request.shell,
+                platform.defaultShell,
                 request.workingDirectory,
-                request.confirmationPolicy,
+                "always",
               );
               selectedCommandPath = undefined;
               break;

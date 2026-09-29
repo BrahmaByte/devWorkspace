@@ -117,6 +117,12 @@ void describe("Webview shell", () => {
     assert.match(html, /message\?\.type==="commands\.pathSelected"/);
     assert.match(html, /project\.gitBranch/);
     assert.match(html, /className="git-branch"/);
+    assert.doesNotMatch(
+      html,
+      /id="command-project"|id="command-shell"|id="command-policy"/,
+    );
+    assert.match(html, /class="icon-button primary-icon-button"/);
+    assert.match(html, /workspace-item-copy strong\{display:inline-block\}/);
     assert.match(
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,

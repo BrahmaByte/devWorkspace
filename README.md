@@ -193,7 +193,9 @@ that retain variable names but never secret values.
 Commands can only be launched after they have passed host-side validation and
 been stored locally. Command shortcuts can run in the default VS Code terminal
 directory or an optional folder explicitly chosen with the native folder picker;
-they do not require a project association. Tests, packaging, and a
+they do not require a project association. The shortcut form exposes only its
+name, stored command, target platform, and optional terminal folder; shell and
+confirmation defaults remain controlled by the Extension Host. Tests, packaging, and a
 Windows/macOS/Linux CI matrix are
 included. Jira, Confluence, and AI are intentionally not implemented yet.
 

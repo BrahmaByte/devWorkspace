@@ -1,6 +1,5 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
 import type {
-  ConfirmationPolicy,
   PreferredIde,
   WorkspaceState,
 } from "../../domain/workspace/models";
@@ -77,13 +76,10 @@ export type WebviewRequest =
     }
   | {
       readonly type: "commands.create";
-      readonly projectId?: string;
       readonly name: string;
       readonly command: string;
       readonly platform: OperatingSystem | "any";
-      readonly shell: string;
       readonly workingDirectory?: string;
-      readonly confirmationPolicy: ConfirmationPolicy;
     }
   | {
       readonly type: "commands.delete" | "commands.execute";
