@@ -66,6 +66,17 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "shell.ready" } }
       : { ok: false, error: "shell.ready contains unknown fields." };
   }
+  if (value.type === "home.refresh") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "home.refresh" } }
+      : { ok: false, error: "home.refresh contains unknown fields." };
+  }
+  if (value.type === "home.search") {
+    return hasOnlyKeys(value, ["type", "query"]) &&
+      isString(value.query, noteLimits.search)
+      ? { ok: true, value: { type: "home.search", query: value.query } }
+      : { ok: false, error: "home.search is invalid." };
+  }
   if (value.type === "navigation.select") {
     if (!hasOnlyKeys(value, ["type", "page"]) || !isShellPage(value.page)) {
       return { ok: false, error: "navigation.select has an invalid page." };

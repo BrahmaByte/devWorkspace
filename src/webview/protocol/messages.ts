@@ -1,4 +1,5 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
+import type { HomeState } from "../../domain/home/models";
 import type {
   PreferredIde,
   WorkspaceState,
@@ -16,6 +17,8 @@ export type ShellPage = (typeof shellPages)[number];
 
 export type WebviewRequest =
   | { readonly type: "shell.ready" }
+  | { readonly type: "home.refresh" }
+  | { readonly type: "home.search"; readonly query: string }
   | { readonly type: "navigation.select"; readonly page: ShellPage }
   | { readonly type: "notes.refresh"; readonly query: string }
   | {
@@ -93,6 +96,10 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | {
+      readonly type: "home.state";
+      readonly state: HomeState;
+    }
   | {
       readonly type: "shell.state";
       readonly page: ShellPage;

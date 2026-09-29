@@ -9,7 +9,7 @@ void describe("Webview shell", () => {
 
     assert.match(html, /id="greeting" class="brand"><\/p>/);
     assert.match(html, /<header class="app-header">/);
-    assert.match(html, /Sticky Notes Board/);
+    assert.match(html, /Sticky notes/);
     for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
       assert.match(html, new RegExp(`>${area}<`));
     }
@@ -29,15 +29,19 @@ void describe("Webview shell", () => {
     assert.match(html, /radial-gradient/);
   });
 
-  void it("uses the reference dashboard cards and split notes workspace", () => {
+  void it("uses a data-driven home dashboard and split notes workspace", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /class="dashboard-card sticky-widget"/);
-    assert.match(html, /Quick App Launcher/);
-    assert.match(html, /Next Meeting/);
-    assert.match(html, /Daily Dev URLs/);
-    assert.match(html, /Current Jira Task/);
-    assert.match(html, /Today's Schedule/);
+    assert.match(html, /Current project/);
+    assert.match(html, /Quick actions/);
+    assert.match(html, /Favourite projects/);
+    assert.match(html, /Recent resources/);
+    assert.match(html, /Current Jira task/);
+    assert.match(html, /id="global-search"/);
+    assert.match(html, /message\?\.type==="home\.state"/);
+    assert.match(html, /type:"home\.search"/);
+    assert.match(html, /renderHome=/);
     assert.doesNotMatch(
       html,
       /Sukanto|Jira OK|Confluence OK|Security Month|GCP Dev|Personal Desk/,

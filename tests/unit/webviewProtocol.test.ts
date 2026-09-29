@@ -9,6 +9,14 @@ void describe("Webview protocol validation", () => {
       ok: true,
       value: { type: "shell.ready" },
     });
+    assert.deepEqual(parseWebviewRequest({ type: "home.refresh" }), {
+      ok: true,
+      value: { type: "home.refresh" },
+    });
+    assert.deepEqual(
+      parseWebviewRequest({ type: "home.search", query: "runbook" }),
+      { ok: true, value: { type: "home.search", query: "runbook" } },
+    );
     assert.deepEqual(
       parseWebviewRequest({ type: "navigation.select", page: "notes" }),
       {
@@ -25,6 +33,8 @@ void describe("Webview protocol validation", () => {
       { type: "unknown" },
       { type: "navigation.select", page: "settings" },
       { type: "navigation.select", page: "home", command: "rm -rf" },
+      { type: "home.refresh", extra: true },
+      { type: "home.search", query: "x".repeat(201) },
       { type: "notes.create", title: "x", content: "x", extra: true },
       { type: "notes.delete", id: "../../etc/passwd" },
       {

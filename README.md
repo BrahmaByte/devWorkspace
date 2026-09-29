@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 4 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 5 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -197,7 +197,11 @@ they do not require a project association. The shortcut form exposes only its
 name, stored command, and optional terminal folder. Platform, shell, and
 confirmation defaults remain controlled by the Extension Host. Tests, packaging, and a
 Windows/macOS/Linux CI matrix are
-included. Jira, Confluence, and AI are intentionally not implemented yet.
+included. Home is a data-driven developer command center with the current and
+favourite projects, stored-command quick actions, sticky notes, recently updated
+local resources, and a local-note search entry point. Jira has an explicit safe
+empty state until its user-authorized integration is added. Jira, Confluence,
+and AI are intentionally not implemented yet.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 

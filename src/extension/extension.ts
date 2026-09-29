@@ -4,6 +4,7 @@ import { basename } from "node:path";
 import { NoteService } from "../application/services/noteService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
+import { HomeService } from "../application/services/homeService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
@@ -30,13 +31,15 @@ export async function activate(
   const database = await LocalDatabase.open(
     getDatabasePath(context.globalStorageUri.fsPath),
   );
-  const noteService = new NoteService(new NoteRepository(database));
+  const noteRepository = new NoteRepository(database);
+  const noteService = new NoteService(noteRepository);
   const platform = createPlatformService();
   const workspaceRepository = new WorkspaceRepository(database);
   const workspaceService = new WorkspaceService(
     workspaceRepository,
     platform.operatingSystem,
   );
+  const homeService = new HomeService(workspaceRepository, noteRepository);
   const commandExecutionService = new CommandExecutionService(
     workspaceRepository,
     new VscodeCommandExecutor(),
@@ -96,6 +99,27 @@ export async function activate(
         projects,
       } satisfies ExtensionResponse);
     };
+    const sendHome = async (): Promise<boolean> => {
+      const state = homeService.getState();
+      const withGitBranch = async <T extends { localPath: string }>(
+        project: T,
+      ) => ({
+        ...project,
+        gitBranch: await gitBranchService.getBranch(project.localPath),
+      });
+      return panel.webview.postMessage({
+        type: "home.state",
+        state: {
+          ...state,
+          currentProject: state.currentProject
+            ? await withGitBranch(state.currentProject)
+            : undefined,
+          favouriteProjects: await Promise.all(
+            state.favouriteProjects.map(withGitBranch),
+          ),
+        },
+      } satisfies ExtensionResponse);
+    };
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -115,12 +139,22 @@ export async function activate(
               await sendState();
               await sendNotes();
               await sendWorkspace();
+              await sendHome();
+              return;
+            case "home.refresh":
+              await sendHome();
+              return;
+            case "home.search":
+              activePage = "notes";
+              await sendState();
+              await sendNotes(request.query);
               return;
             case "navigation.select":
               activePage = request.page;
               await sendState();
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
+              if (activePage === "home") await sendHome();
               return;
             case "notes.refresh":
               await sendNotes(request.query);
@@ -275,6 +309,7 @@ export async function activate(
           )
             await sendNotes(noteQuery);
           else await sendWorkspace();
+          await sendHome();
         } catch {
           await panel.webview.postMessage({
             type: "protocol.error",
