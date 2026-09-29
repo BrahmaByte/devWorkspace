@@ -7,9 +7,9 @@ void describe("Webview shell", () => {
   void it("renders the DevWorkspace placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
-    assert.match(html, /class="brand">DevWorkspace<\/p>/);
+    assert.match(html, /class="brand">Good morning, Sukanto<\/p>/);
     assert.match(html, /<header class="app-header">/);
-    assert.match(html, /local-first developer command center/i);
+    assert.match(html, /Sticky Notes Board/);
     for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
       assert.match(html, new RegExp(`>${area}<`));
     }
@@ -25,11 +25,15 @@ void describe("Webview shell", () => {
     assert.match(html, /setInterval\(updateClock,1000\)/);
   });
 
-  void it("uses a dashboard sticky widget and three-pane notes workspace", () => {
+  void it("uses the reference dashboard cards and split notes workspace", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /class="dashboard-card sticky-widget"/);
-    assert.match(html, /class="notes-folders"/);
+    assert.match(html, /Quick App Launcher/);
+    assert.match(html, /Next Meeting/);
+    assert.match(html, /Daily Dev URLs/);
+    assert.match(html, /Current Jira Task/);
+    assert.match(html, /Today's Schedule/);
     assert.match(html, /class="notes-browser"/);
     assert.match(html, /class="note-editor"/);
   });
