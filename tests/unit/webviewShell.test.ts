@@ -75,6 +75,17 @@ void describe("Webview shell", () => {
       html,
       /noteContent\.addEventListener\("input",scheduleAutosave\)/,
     );
-    assert.match(html, /aria-label="Delete note"[^>]*>⌫<\/button>/);
+    assert.match(html, /aria-label="Delete note" title="Delete note">/);
+    assert.match(html, /<symbol id="i-trash"/);
+    assert.match(html, /<use href="#i-trash"\/>/);
+  });
+
+  void it("uses platform-neutral SVG icons with hover hints", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /class="svg-sprite"/);
+    assert.match(html, /aria-label="New note" title="New note"/);
+    assert.match(html, /data-page="home"[^>]*title="Home"/);
+    assert.doesNotMatch(html, />[⌂⌖⌫☾☀✎✓×＋▣▤◇]</);
   });
 });
