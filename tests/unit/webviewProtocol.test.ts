@@ -17,6 +17,18 @@ void describe("Webview protocol validation", () => {
       parseWebviewRequest({ type: "home.search", query: "runbook" }),
       { ok: true, value: { type: "home.search", query: "runbook" } },
     );
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.connect",
+        displayName: "Corporate Jira",
+        baseUrl: "https://jira.example.test",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "jira.issue", issueKey: "DEV-7" }).ok,
+      true,
+    );
     assert.deepEqual(
       parseWebviewRequest({ type: "navigation.select", page: "notes" }),
       {
@@ -35,6 +47,13 @@ void describe("Webview protocol validation", () => {
       { type: "navigation.select", page: "home", command: "rm -rf" },
       { type: "home.refresh", extra: true },
       { type: "home.search", query: "x".repeat(201) },
+      {
+        type: "jira.connect",
+        displayName: "Jira",
+        baseUrl: "x",
+        token: "secret",
+      },
+      { type: "jira.issue", issueKey: "../../etc/passwd" },
       { type: "notes.create", title: "x", content: "x", extra: true },
       { type: "notes.delete", id: "../../etc/passwd" },
       {

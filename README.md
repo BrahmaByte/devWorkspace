@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 5 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 6 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -199,9 +199,13 @@ confirmation defaults remain controlled by the Extension Host. Tests, packaging,
 Windows/macOS/Linux CI matrix are
 included. Home is a data-driven developer command center with the current and
 favourite projects, stored-command quick actions, sticky notes, recently updated
-local resources, and a local-note search entry point. Jira has an explicit safe
-empty state until its user-authorized integration is added. Jira, Confluence,
-and AI are intentionally not implemented yet.
+local resources, and a local-note search entry point. Jira Data Center can be
+connected directly with a user-authorized PAT. VS Code collects the PAT in a masked native
+prompt and stores it in SecretStorage; the Webview receives only connection,
+current-user, and issue data. Assigned unresolved issues are cached locally for
+offline display, and issue details are loaded on demand. Jira Cloud API-token
+authentication is not part of this PAT milestone. Confluence and AI remain
+intentionally unimplemented.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 

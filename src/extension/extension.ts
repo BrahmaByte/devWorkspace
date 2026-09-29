@@ -5,12 +5,15 @@ import { NoteService } from "../application/services/noteService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
+import { JiraService } from "../application/services/jiraService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
+import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
+import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
@@ -40,6 +43,11 @@ export async function activate(
     platform.operatingSystem,
   );
   const homeService = new HomeService(workspaceRepository, noteRepository);
+  const jiraService = new JiraService(
+    new JiraRepository(database),
+    context.secrets,
+    new FetchJiraClientFactory(),
+  );
   const commandExecutionService = new CommandExecutionService(
     workspaceRepository,
     new VscodeCommandExecutor(),
@@ -120,6 +128,11 @@ export async function activate(
         },
       } satisfies ExtensionResponse);
     };
+    const sendJira = async (): Promise<boolean> =>
+      panel.webview.postMessage({
+        type: "jira.state",
+        state: await jiraService.refresh(),
+      } satisfies ExtensionResponse);
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -140,6 +153,7 @@ export async function activate(
               await sendNotes();
               await sendWorkspace();
               await sendHome();
+              await sendJira();
               return;
             case "home.refresh":
               await sendHome();
@@ -149,12 +163,44 @@ export async function activate(
               await sendState();
               await sendNotes(request.query);
               return;
+            case "jira.connect": {
+              const token = await vscode.window.showInputBox({
+                title: "Connect Jira",
+                prompt: "Enter a Jira personal access token",
+                password: true,
+                ignoreFocusOut: true,
+              });
+              if (token === undefined) return;
+              await panel.webview.postMessage({
+                type: "jira.state",
+                state: await jiraService.connect(
+                  request.displayName,
+                  request.baseUrl,
+                  token,
+                ),
+              } satisfies ExtensionResponse);
+              return;
+            }
+            case "jira.refresh":
+              await sendJira();
+              return;
+            case "jira.disconnect":
+              await jiraService.disconnect();
+              await sendJira();
+              return;
+            case "jira.issue":
+              await panel.webview.postMessage({
+                type: "jira.issue",
+                issue: await jiraService.getIssue(request.issueKey),
+              } satisfies ExtensionResponse);
+              return;
             case "navigation.select":
               activePage = request.page;
               await sendState();
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
               if (activePage === "home") await sendHome();
+              if (activePage === "jira") await sendJira();
               return;
             case "notes.refresh":
               await sendNotes(request.query);

@@ -142,4 +142,15 @@ void describe("Webview shell", () => {
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
     );
   });
+
+  void it("keeps Jira credentials out of the Webview", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /id="jira-form"/);
+    assert.match(html, /type:"jira\.connect"/);
+    assert.match(html, /message\?\.type==="jira\.state"/);
+    assert.match(html, /function renderJira/);
+    assert.doesNotMatch(html, /id="jira-(?:pat|token)"/);
+    assert.doesNotMatch(html, /Authorization|Bearer/);
+  });
 });

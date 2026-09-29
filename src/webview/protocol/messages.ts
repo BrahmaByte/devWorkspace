@@ -1,5 +1,6 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
 import type { HomeState } from "../../domain/home/models";
+import type { JiraIssue, JiraState } from "../../domain/jira/models";
 import type {
   PreferredIde,
   WorkspaceState,
@@ -19,6 +20,13 @@ export type WebviewRequest =
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }
+  | {
+      readonly type: "jira.connect";
+      readonly displayName: string;
+      readonly baseUrl: string;
+    }
+  | { readonly type: "jira.refresh" | "jira.disconnect" }
+  | { readonly type: "jira.issue"; readonly issueKey: string }
   | { readonly type: "navigation.select"; readonly page: ShellPage }
   | { readonly type: "notes.refresh"; readonly query: string }
   | {
@@ -100,6 +108,8 @@ export type ExtensionResponse =
       readonly type: "home.state";
       readonly state: HomeState;
     }
+  | { readonly type: "jira.state"; readonly state: JiraState }
+  | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
       readonly type: "shell.state";
       readonly page: ShellPage;

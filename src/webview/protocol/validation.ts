@@ -6,6 +6,7 @@ import {
   type PreferredIde,
 } from "../../domain/workspace/models";
 import { workspaceLimits } from "../../application/services/workspaceService";
+import { jiraLimits } from "../../application/services/jiraService";
 
 export type ParseResult =
   | { readonly ok: true; readonly value: WebviewRequest }
@@ -76,6 +77,32 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       isString(value.query, noteLimits.search)
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
+  }
+  if (value.type === "jira.connect") {
+    return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&
+      isString(value.displayName, jiraLimits.name) &&
+      isString(value.baseUrl, jiraLimits.url)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.connect",
+            displayName: value.displayName,
+            baseUrl: value.baseUrl,
+          },
+        }
+      : { ok: false, error: "jira.connect is invalid." };
+  }
+  if (value.type === "jira.refresh" || value.type === "jira.disconnect") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: value.type } }
+      : { ok: false, error: `${value.type} is invalid.` };
+  }
+  if (value.type === "jira.issue") {
+    return hasOnlyKeys(value, ["type", "issueKey"]) &&
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey)
+      ? { ok: true, value: { type: "jira.issue", issueKey: value.issueKey } }
+      : { ok: false, error: "jira.issue is invalid." };
   }
   if (value.type === "navigation.select") {
     if (!hasOnlyKeys(value, ["type", "page"]) || !isShellPage(value.page)) {
