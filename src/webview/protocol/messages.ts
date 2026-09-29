@@ -3,7 +3,6 @@ import type {
   PreferredIde,
   WorkspaceState,
 } from "../../domain/workspace/models";
-import type { OperatingSystem } from "../../platform/platformService";
 
 export const shellPages = [
   "home",
@@ -78,7 +77,6 @@ export type WebviewRequest =
       readonly type: "commands.create";
       readonly name: string;
       readonly command: string;
-      readonly platform: OperatingSystem | "any";
       readonly workingDirectory?: string;
     }
   | {

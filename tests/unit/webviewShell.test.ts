@@ -119,7 +119,7 @@ void describe("Webview shell", () => {
     assert.match(html, /className="git-branch"/);
     assert.doesNotMatch(
       html,
-      /id="command-project"|id="command-shell"|id="command-policy"/,
+      /id="command-project"|id="command-shell"|id="command-policy"|id="command-platform"/,
     );
     assert.doesNotMatch(html, /querySelector\("#command-project"\)/);
     assert.match(
@@ -128,6 +128,11 @@ void describe("Webview shell", () => {
     );
     assert.match(html, /class="icon-button primary-icon-button"/);
     assert.match(html, /workspace-item-copy strong\{display:inline-block\}/);
+    assert.match(
+      html,
+      /workspace-item-copy small\{overflow-wrap:anywhere;white-space:pre-wrap\}/,
+    );
+    assert.match(html, /class="command-input"[^>]*spellcheck="false"/);
     assert.match(
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,

@@ -5,7 +5,6 @@ import {
   preferredIdes,
   type PreferredIde,
 } from "../../domain/workspace/models";
-import type { OperatingSystem } from "../../platform/platformService";
 import { workspaceLimits } from "../../application/services/workspaceService";
 
 export type ParseResult =
@@ -56,12 +55,6 @@ function isPreferredIde(value: unknown): value is PreferredIde | undefined {
     value === undefined ||
     (typeof value === "string" &&
       (preferredIdes as readonly string[]).includes(value))
-  );
-}
-function isPlatform(value: unknown): value is OperatingSystem | "any" {
-  return (
-    typeof value === "string" &&
-    ["windows", "macos", "linux", "any"].includes(value)
   );
 }
 export function parseWebviewRequest(value: unknown): ParseResult {
@@ -250,17 +243,10 @@ export function parseWebviewRequest(value: unknown): ParseResult {
   }
   if (value.type === "commands.create") {
     if (
-      !hasOnlyKeys(value, [
-        "type",
-        "name",
-        "command",
-        "platform",
-        "workingDirectory",
-      ]) ||
+      !hasOnlyKeys(value, ["type", "name", "command", "workingDirectory"]) ||
       !isString(value.name, workspaceLimits.name) ||
       !isString(value.command, workspaceLimits.command) ||
       /[\r\n\0]/u.test(value.command) ||
-      !isPlatform(value.platform) ||
       !isOptionalString(value.workingDirectory, workspaceLimits.path)
     )
       return { ok: false, error: "commands.create is invalid." };
@@ -270,7 +256,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         type: "commands.create",
         name: value.name,
         command: value.command,
-        platform: value.platform,
         ...(value.workingDirectory
           ? { workingDirectory: value.workingDirectory }
           : {}),

@@ -52,7 +52,6 @@ void describe("Webview protocol validation", () => {
         type: "commands.create",
         name: "Status",
         command: "git status",
-        platform: "any",
       }).ok,
       true,
     );
@@ -93,7 +92,6 @@ void describe("Webview protocol validation", () => {
         type: "commands.create",
         name: "Test",
         command: "npm test",
-        platform: "linux",
         workingDirectory: "/work/scripts",
       }).ok,
       true,
@@ -103,7 +101,6 @@ void describe("Webview protocol validation", () => {
         type: "commands.create",
         name: "Bad",
         command: "npm test\nrm -rf /",
-        platform: "linux",
       }).ok,
       false,
     );
@@ -112,9 +109,17 @@ void describe("Webview protocol validation", () => {
         type: "commands.create",
         name: "Unsafe fields",
         command: "git status",
-        platform: "any",
         shell: "/bin/sh",
         confirmationPolicy: "never",
+      }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "commands.create",
+        name: "Host-owned platform",
+        command: "git status",
+        platform: "linux",
       }).ok,
       false,
     );

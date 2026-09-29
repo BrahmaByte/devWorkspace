@@ -244,7 +244,7 @@ export async function activate(
                 undefined,
                 request.name,
                 request.command,
-                request.platform,
+                platform.operatingSystem,
                 platform.defaultShell,
                 request.workingDirectory,
                 "always",

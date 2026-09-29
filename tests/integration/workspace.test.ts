@@ -197,10 +197,11 @@ void describe("workspace management", () => {
 
   void it("runs a project-independent command in the default terminal directory", async () => {
     const { database, repository, service } = await setup();
+    const exactCommand = 'node  -e  "console.log(1)"';
     const commandId = await service.createCommand(
       undefined,
       "Status",
-      "git status",
+      exactCommand,
       "any",
       "/bin/sh",
       undefined,
@@ -215,7 +216,7 @@ void describe("workspace management", () => {
     ).execute(commandId);
     assert.deepEqual(executor.calls[0], {
       shell: "/bin/sh",
-      command: "git status",
+      command: exactCommand,
       cwd: undefined,
     });
     database.close();
