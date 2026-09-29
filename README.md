@@ -25,7 +25,7 @@ The product is designed to feel like a native developer workspace rather than a 
 - macOS
 - Linux
 
-Initial architecture should target:
+The release-validation matrix targets:
 - Windows x64
 - macOS Intel
 - macOS Apple Silicon
@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 11 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 12 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -227,6 +227,10 @@ Security hardening adds a documented threat model, strict plain-object protocol
 validation, one-use native folder-picker authorization for new project paths,
 and dedicated regression coverage for hostile messages, XSS sinks, command
 controls, path traversal, URLs, and credential boundaries.
+Cross-platform release validation runs the same format, lint, typecheck, test,
+build, and VSIX packaging gate on pinned Windows x64, macOS Intel, macOS Apple
+Silicon, and Linux x64 runners. Each job verifies its actual runtime architecture
+before testing and retains its validated VSIX as a CI artifact.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 See `docs/SECURITY.md` for the threat model, privacy behavior, residual risks,
