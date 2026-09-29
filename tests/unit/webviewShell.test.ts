@@ -23,6 +23,10 @@ void describe("Webview shell", () => {
     assert.match(html, /vscode\.getState\(\)/);
     assert.match(html, /vscode\.setState/);
     assert.match(html, /setInterval\(updateClock,1000\)/);
+    assert.match(html, /grid-column:2/);
+    assert.match(html, /grid-row:1\/-1/);
+    assert.match(html, /linear-gradient/);
+    assert.match(html, /radial-gradient/);
   });
 
   void it("uses the reference dashboard cards and split notes workspace", () => {

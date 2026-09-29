@@ -184,6 +184,8 @@ a centered editor dialog for viewing and editing. Saved content is rendered
 as plain text inside the network-isolated Webview. A shared header provides a
 live local clock and persistent light/dark appearance toggle. Home includes a
 desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
+The shared enterprise visual system uses layered color gradients, elevated
+content panels, and a foreground navigation rail across both themes.
 Workspace management adds folder-picker-based local project CRUD, favourites,
 preferred IDE and Git branch metadata, terminal launching, stored
 platform-specific commands with confirmation policies, and environment profiles
