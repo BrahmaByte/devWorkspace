@@ -189,4 +189,15 @@ void describe("Webview shell", () => {
     assert.match(html, /Optional branch name/);
     assert.doesNotMatch(html, /type:"jira\.startWork"[^\n]*command:/);
   });
+
+  void it("provides host-validated linked context for notes", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /id="knowledge-links"/);
+    assert.match(html, /id="knowledge-candidate"/);
+    assert.match(html, /type:"knowledge\.list"/);
+    assert.match(html, /type:"knowledge\.attach"/);
+    assert.match(html, /type:"knowledge\.detach"/);
+    assert.match(html, /type:"knowledge\.open"/);
+    assert.doesNotMatch(html, /type:"knowledge\.open"[^\n]*url:/);
+  });
 });

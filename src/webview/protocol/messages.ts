@@ -2,6 +2,10 @@ import type { Note, StickyNote } from "../../domain/notes/models";
 import type { HomeState } from "../../domain/home/models";
 import type { ConfluenceState } from "../../domain/confluence/models";
 import type {
+  KnowledgeState,
+  RelationshipTargetType,
+} from "../../domain/knowledge/models";
+import type {
   JiraBoardStatus,
   JiraIssue,
   JiraState,
@@ -34,6 +38,23 @@ export type WebviewRequest =
   | { readonly type: "confluence.refresh" | "confluence.disconnect" }
   | { readonly type: "confluence.search"; readonly query: string }
   | { readonly type: "confluence.open"; readonly id: string }
+  | { readonly type: "knowledge.list"; readonly noteId: string }
+  | {
+      readonly type: "knowledge.attach";
+      readonly noteId: string;
+      readonly targetType: RelationshipTargetType;
+      readonly targetId: string;
+    }
+  | {
+      readonly type: "knowledge.detach";
+      readonly noteId: string;
+      readonly relationshipId: string;
+    }
+  | {
+      readonly type: "knowledge.open";
+      readonly targetType: RelationshipTargetType;
+      readonly targetId: string;
+    }
   | {
       readonly type: "jira.connect";
       readonly displayName: string;
@@ -146,6 +167,7 @@ export type ExtensionResponse =
     }
   | { readonly type: "jira.state"; readonly state: JiraState }
   | { readonly type: "confluence.state"; readonly state: ConfluenceState }
+  | { readonly type: "knowledge.state"; readonly state: KnowledgeState }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
       readonly type: "jira.workStarted";

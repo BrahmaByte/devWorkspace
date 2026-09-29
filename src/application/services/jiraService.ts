@@ -133,6 +133,14 @@ export class JiraService {
     return this.clients.create(connection.baseUrl, token).getIssue(issueKey);
   }
 
+  public getIssueUrl(issueKey: string): string {
+    if (!/^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(issueKey))
+      throw new Error("Issue key is invalid.");
+    const connection = this.repository.getConnection();
+    if (!connection) throw new Error("Jira is not connected.");
+    return new URL(`/browse/${issueKey}`, connection.baseUrl).toString();
+  }
+
   public async search(query: string): Promise<JiraState> {
     const normalized = query.trim();
     if (

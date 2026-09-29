@@ -6,6 +6,7 @@ import { ConfluenceService } from "../application/services/confluenceService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
+import { KnowledgeService } from "../application/services/knowledgeService";
 import { JiraService } from "../application/services/jiraService";
 import {
   issueProjectKey,
@@ -18,6 +19,7 @@ import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { ConfluenceRepository } from "../infrastructure/database/confluenceRepository";
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
+import { RelationshipRepository } from "../infrastructure/database/relationshipRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
@@ -55,15 +57,25 @@ export async function activate(
     platform.operatingSystem,
   );
   const homeService = new HomeService(workspaceRepository, noteRepository);
+  const jiraRepository = new JiraRepository(database);
+  const confluenceRepository = new ConfluenceRepository(database);
+  const relationshipRepository = new RelationshipRepository(database);
   const jiraService = new JiraService(
-    new JiraRepository(database),
+    jiraRepository,
     context.secrets,
     new FetchJiraClientFactory(),
   );
   const confluenceService = new ConfluenceService(
-    new ConfluenceRepository(database),
+    confluenceRepository,
     context.secrets,
     new FetchConfluenceClientFactory(),
+  );
+  const knowledgeService = new KnowledgeService(
+    relationshipRepository,
+    noteRepository,
+    jiraRepository,
+    confluenceRepository,
+    workspaceRepository,
   );
   const startWorkService = new StartWorkService(
     workspaceRepository,
@@ -161,6 +173,11 @@ export async function activate(
         type: "confluence.state",
         state: await confluenceService.refresh(),
       } satisfies ExtensionResponse);
+    const sendKnowledge = (noteId: string): Thenable<boolean> =>
+      panel.webview.postMessage({
+        type: "knowledge.state",
+        state: knowledgeService.getState(noteId),
+      } satisfies ExtensionResponse);
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -227,6 +244,45 @@ export async function activate(
               await vscode.env.openExternal(
                 vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
               );
+              return;
+            case "knowledge.list":
+              await sendKnowledge(request.noteId);
+              return;
+            case "knowledge.attach":
+              await knowledgeService.attach(
+                request.noteId,
+                request.targetType,
+                request.targetId,
+              );
+              await sendKnowledge(request.noteId);
+              return;
+            case "knowledge.detach":
+              await knowledgeService.detach(
+                request.noteId,
+                request.relationshipId,
+              );
+              await sendKnowledge(request.noteId);
+              return;
+            case "knowledge.open":
+              if (request.targetType === "jira_issue") {
+                await vscode.env.openExternal(
+                  vscode.Uri.parse(jiraService.getIssueUrl(request.targetId)),
+                );
+              } else if (request.targetType === "confluence_page") {
+                await vscode.env.openExternal(
+                  vscode.Uri.parse(
+                    confluenceService.getPageUrl(request.targetId),
+                  ),
+                );
+              } else {
+                const project = workspaceRepository.getProject(
+                  request.targetId,
+                );
+                if (!project) throw new Error("Project was not found.");
+                await new VscodeProjectWorkspaceGateway().openProject(
+                  project.localPath,
+                );
+              }
               return;
             case "jira.connect": {
               const token = await vscode.window.showInputBox({
@@ -340,6 +396,7 @@ export async function activate(
               await noteService.setArchived(request.id, request.archived);
               break;
             case "notes.delete":
+              await knowledgeService.deleteForResource("note", request.id);
               await noteService.deleteNote(request.id);
               break;
             case "sticky.create":
@@ -412,6 +469,7 @@ export async function activate(
               );
               break;
             case "projects.delete":
+              await knowledgeService.deleteForResource("project", request.id);
               await workspaceService.deleteProject(request.id);
               break;
             case "projects.favourite":

@@ -34,6 +34,22 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({
+        type: "knowledge.list",
+        noteId: "00000000-0000-4000-8000-000000000001",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "knowledge.attach",
+        noteId: "00000000-0000-4000-8000-000000000001",
+        targetType: "jira_issue",
+        targetId: "DEV-7",
+      }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({ type: "jira.issue", issueKey: "DEV-7" }).ok,
       true,
     );
@@ -99,6 +115,17 @@ void describe("Webview protocol validation", () => {
       { type: "jira.local.delete", id: "not-an-id" },
       { type: "confluence.search", query: "bad\nquery" },
       { type: "confluence.open", id: "https://evil.test" },
+      {
+        type: "knowledge.attach",
+        noteId: "../../etc/passwd",
+        targetType: "project",
+        targetId: "x",
+      },
+      {
+        type: "knowledge.open",
+        targetType: "url",
+        targetId: "https://evil.test",
+      },
       {
         type: "confluence.connect",
         displayName: "Docs",

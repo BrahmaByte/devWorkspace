@@ -13,6 +13,10 @@ import {
   jiraBoardStatuses,
   type JiraBoardStatus,
 } from "../../domain/jira/models";
+import {
+  relationshipTargetTypes,
+  type RelationshipTargetType,
+} from "../../domain/knowledge/models";
 
 export type ParseResult =
   | { readonly ok: true; readonly value: WebviewRequest }
@@ -68,6 +72,14 @@ function isJiraBoardStatus(value: unknown): value is JiraBoardStatus {
   return (
     typeof value === "string" &&
     (jiraBoardStatuses as readonly string[]).includes(value)
+  );
+}
+function isRelationshipTargetType(
+  value: unknown,
+): value is RelationshipTargetType {
+  return (
+    typeof value === "string" &&
+    (relationshipTargetTypes as readonly string[]).includes(value)
   );
 }
 export function parseWebviewRequest(value: unknown): ParseResult {
@@ -127,6 +139,59 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       /^[0-9A-Za-z_-]{1,100}$/u.test(value.id)
       ? { ok: true, value: { type: "confluence.open", id: value.id } }
       : { ok: false, error: "confluence.open is invalid." };
+  }
+  if (value.type === "knowledge.list") {
+    return hasOnlyKeys(value, ["type", "noteId"]) && isId(value.noteId)
+      ? { ok: true, value: { type: "knowledge.list", noteId: value.noteId } }
+      : { ok: false, error: "knowledge.list is invalid." };
+  }
+  if (value.type === "knowledge.attach" || value.type === "knowledge.open") {
+    const noteValid = value.type === "knowledge.open" || isId(value.noteId);
+    const allowed =
+      value.type === "knowledge.open"
+        ? ["type", "targetType", "targetId"]
+        : ["type", "noteId", "targetType", "targetId"];
+    if (
+      !hasOnlyKeys(value, allowed) ||
+      !noteValid ||
+      !isRelationshipTargetType(value.targetType) ||
+      typeof value.targetId !== "string" ||
+      value.targetId.length < 1 ||
+      value.targetId.length > 100
+    )
+      return { ok: false, error: `${value.type} is invalid.` };
+    return value.type === "knowledge.open"
+      ? {
+          ok: true,
+          value: {
+            type: "knowledge.open",
+            targetType: value.targetType,
+            targetId: value.targetId,
+          },
+        }
+      : {
+          ok: true,
+          value: {
+            type: "knowledge.attach",
+            noteId: value.noteId as string,
+            targetType: value.targetType,
+            targetId: value.targetId,
+          },
+        };
+  }
+  if (value.type === "knowledge.detach") {
+    return hasOnlyKeys(value, ["type", "noteId", "relationshipId"]) &&
+      isId(value.noteId) &&
+      isId(value.relationshipId)
+      ? {
+          ok: true,
+          value: {
+            type: "knowledge.detach",
+            noteId: value.noteId,
+            relationshipId: value.relationshipId,
+          },
+        }
+      : { ok: false, error: "knowledge.detach is invalid." };
   }
   if (value.type === "jira.connect") {
     return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&
