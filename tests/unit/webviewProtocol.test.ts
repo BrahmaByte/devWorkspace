@@ -25,8 +25,39 @@ void describe("Webview protocol validation", () => {
       { type: "unknown" },
       { type: "navigation.select", page: "settings" },
       { type: "navigation.select", page: "home", command: "rm -rf" },
+      { type: "notes.create", title: "x", content: "x", extra: true },
+      { type: "notes.delete", id: "../../etc/passwd" },
+      {
+        type: "sticky.create",
+        content: "x",
+        color: "url(javascript:1)",
+        sortOrder: 0,
+      },
     ]) {
       assert.equal(parseWebviewRequest(message).ok, false);
     }
+  });
+
+  void it("accepts only bounded note operations", () => {
+    assert.equal(
+      parseWebviewRequest({
+        type: "notes.create",
+        title: "Safe",
+        content: "<script>plain text</script>",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "notes.refresh", query: "x".repeat(201) }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "notes.create",
+        title: "x".repeat(201),
+        content: "",
+      }).ok,
+      false,
+    );
   });
 });

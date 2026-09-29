@@ -6,6 +6,7 @@ import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
 import { migrations } from "./migrations";
 
 export type SqlParameter = string | number | Uint8Array | null;
+export type SqlValue = string | number | Uint8Array | null;
 
 let sqliteRuntime: Promise<SqlJsStatic> | undefined;
 
@@ -67,6 +68,20 @@ export class LocalDatabase {
     const statement = this.database.prepare(sql, [...parameters]);
     try {
       return statement.step() ? statement.get()[0] : undefined;
+    } finally {
+      statement.free();
+    }
+  }
+
+  public query(
+    sql: string,
+    parameters: readonly SqlParameter[] = [],
+  ): readonly Readonly<Record<string, SqlValue>>[] {
+    const statement = this.database.prepare(sql, [...parameters]);
+    try {
+      const rows: Array<Readonly<Record<string, SqlValue>>> = [];
+      while (statement.step()) rows.push(statement.getAsObject());
+      return rows;
     } finally {
       statement.free();
     }

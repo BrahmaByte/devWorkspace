@@ -23,5 +23,14 @@ void describe("Webview shell", () => {
     assert.match(html, /script-src 'nonce-[^']+'/);
     assert.match(html, /<script nonce="[^"]+">/);
     assert.doesNotMatch(html, /https?:\/\//);
+    assert.doesNotMatch(html, /\bfetch\s*\(|XMLHttpRequest|WebSocket/);
+  });
+
+  void it("renders untrusted note content only as text", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /heading\.textContent = note\.title/);
+    assert.match(html, /content\.textContent = note\.content/);
+    assert.doesNotMatch(html, /innerHTML|insertAdjacentHTML|document\.write/);
   });
 });
