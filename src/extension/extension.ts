@@ -1,12 +1,15 @@
 import * as vscode from "vscode";
+import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
+import { GitBranchService } from "../application/services/gitBranchService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
+import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
@@ -40,6 +43,7 @@ export async function activate(
     new VscodeConfirmationGateway(),
     platform.operatingSystem,
   );
+  const gitBranchService = new GitBranchService(new NodeGitRunner());
   context.subscriptions.push({
     dispose: () => {
       database.close();
@@ -77,11 +81,20 @@ export async function activate(
         ...state,
       } satisfies ExtensionResponse);
     };
-    const sendWorkspace = (): Thenable<boolean> =>
-      panel.webview.postMessage({
+    const sendWorkspace = async (): Promise<boolean> => {
+      const state = workspaceService.getState();
+      const projects = await Promise.all(
+        state.projects.map(async (project) => ({
+          ...project,
+          gitBranch: await gitBranchService.getBranch(project.localPath),
+        })),
+      );
+      return panel.webview.postMessage({
         type: "workspace.state",
-        ...workspaceService.getState(),
+        ...state,
+        projects,
       } satisfies ExtensionResponse);
+    };
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -157,6 +170,22 @@ export async function activate(
             case "workspace.refresh":
               await sendWorkspace();
               return;
+            case "projects.browse": {
+              const selected = await vscode.window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                openLabel: "Select project folder",
+              });
+              const folder = selected?.[0];
+              if (folder)
+                await panel.webview.postMessage({
+                  type: "projects.pathSelected",
+                  localPath: folder.fsPath,
+                  name: basename(folder.fsPath),
+                } satisfies ExtensionResponse);
+              return;
+            }
             case "projects.create":
               await workspaceService.createProject(
                 request.name,

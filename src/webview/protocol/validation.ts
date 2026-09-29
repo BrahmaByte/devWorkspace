@@ -192,10 +192,10 @@ export function parseWebviewRequest(value: unknown): ParseResult {
           },
         };
   }
-  if (value.type === "workspace.refresh")
+  if (value.type === "workspace.refresh" || value.type === "projects.browse")
     return hasOnlyKeys(value, ["type"])
-      ? { ok: true, value: { type: "workspace.refresh" } }
-      : { ok: false, error: "workspace.refresh is invalid." };
+      ? { ok: true, value: { type: value.type } }
+      : { ok: false, error: `${value.type} is invalid.` };
   if (value.type === "projects.create" || value.type === "projects.update") {
     const update = value.type === "projects.update";
     if (

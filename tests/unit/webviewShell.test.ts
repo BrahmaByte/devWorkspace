@@ -100,5 +100,11 @@ void describe("Webview shell", () => {
     assert.match(html, /message\?\.type==="workspace\.state"/);
     assert.match(html, /type:"commands\.execute"/);
     assert.match(html, /aria-label="Save command" title="Save command"/);
+    assert.match(
+      html,
+      /id="project-browse"[^>]*aria-label="Browse for project folder"/,
+    );
+    assert.match(html, /type:"projects\.browse"/);
+    assert.match(html, /project\.gitBranch/);
   });
 });

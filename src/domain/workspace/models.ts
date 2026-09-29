@@ -18,6 +18,7 @@ export interface Project {
   readonly isFavourite: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly gitBranch?: string;
 }
 
 export interface ProjectCommand {

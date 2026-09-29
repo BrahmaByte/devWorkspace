@@ -184,9 +184,10 @@ a centered editor dialog for viewing and editing. Saved content is rendered
 as plain text inside the network-isolated Webview. A shared header provides a
 live local clock and persistent light/dark appearance toggle. Home includes a
 desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
-Workspace management adds local project CRUD, favourites, preferred IDE metadata,
-terminal launching, stored platform-specific commands with confirmation policies,
-and environment profiles that retain variable names but never secret values.
+Workspace management adds folder-picker-based local project CRUD, favourites,
+preferred IDE and Git branch metadata, terminal launching, stored
+platform-specific commands with confirmation policies, and environment profiles
+that retain variable names but never secret values.
 Commands can only be launched after they have passed host-side validation and
 been stored locally. Tests, packaging, and a Windows/macOS/Linux CI matrix are
 included. Jira, Confluence, and AI are intentionally not implemented yet.

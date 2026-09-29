@@ -62,6 +62,10 @@ void describe("Webview protocol validation", () => {
   });
 
   void it("accepts validated workspace operations and rejects over-posting", () => {
+    assert.deepEqual(parseWebviewRequest({ type: "projects.browse" }), {
+      ok: true,
+      value: { type: "projects.browse" },
+    });
     assert.equal(
       parseWebviewRequest({
         type: "projects.create",
