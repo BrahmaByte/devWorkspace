@@ -121,6 +121,11 @@ void describe("Webview shell", () => {
       html,
       /id="command-project"|id="command-shell"|id="command-policy"/,
     );
+    assert.doesNotMatch(html, /querySelector\("#command-project"\)/);
+    assert.match(
+      html,
+      /fillProjectSelect=\(select,includeAll\)=>\{if\(!select\)return/,
+    );
     assert.match(html, /class="icon-button primary-icon-button"/);
     assert.match(html, /workspace-item-copy strong\{display:inline-block\}/);
     assert.match(
