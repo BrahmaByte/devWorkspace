@@ -5,6 +5,7 @@ import type {
   KnowledgeState,
   RelationshipTargetType,
 } from "../../domain/knowledge/models";
+import type { SearchResultType, SearchState } from "../../domain/search/models";
 import type {
   JiraBoardStatus,
   JiraIssue,
@@ -22,6 +23,7 @@ export const shellPages = [
   "notes",
   "knowledge",
   "settings",
+  "search",
 ] as const;
 
 export type ShellPage = (typeof shellPages)[number];
@@ -30,6 +32,12 @@ export type WebviewRequest =
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }
+  | { readonly type: "search.query"; readonly query: string }
+  | {
+      readonly type: "search.open";
+      readonly resultType: SearchResultType;
+      readonly id: string;
+    }
   | {
       readonly type: "confluence.connect";
       readonly displayName: string;
@@ -168,6 +176,8 @@ export type ExtensionResponse =
   | { readonly type: "jira.state"; readonly state: JiraState }
   | { readonly type: "confluence.state"; readonly state: ConfluenceState }
   | { readonly type: "knowledge.state"; readonly state: KnowledgeState }
+  | { readonly type: "search.state"; readonly state: SearchState }
+  | { readonly type: "search.note"; readonly id: string }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
       readonly type: "jira.workStarted";

@@ -19,7 +19,8 @@
     "workspace"
   ],
   "activationEvents": [
-    "onCommand:devworkspace.open"
+    "onCommand:devworkspace.open",
+    "onCommand:devworkspace.search"
   ],
   "main": "./dist/src/extension/extension.js",
   "contributes": {
@@ -28,6 +29,18 @@
         "command": "devworkspace.open",
         "title": "Open DevWorkspace",
         "category": "DevWorkspace"
+      },
+      {
+        "command": "devworkspace.search",
+        "title": "Search DevWorkspace",
+        "category": "DevWorkspace"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "devworkspace.search",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k"
       }
     ]
   },

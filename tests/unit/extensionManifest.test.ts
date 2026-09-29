@@ -10,6 +10,11 @@ interface ExtensionManifest {
       readonly command?: string;
       readonly title?: string;
     }>;
+    readonly keybindings?: ReadonlyArray<{
+      readonly command?: string;
+      readonly key?: string;
+      readonly mac?: string;
+    }>;
   };
   readonly main?: string;
 }
@@ -31,6 +36,25 @@ void describe("Extension manifest", () => {
       manifest.contributes?.commands?.some(
         ({ command, title }) =>
           command === "devworkspace.open" && title === "Open DevWorkspace",
+      ),
+    );
+  });
+  void it("registers the global search command and shortcut", () => {
+    const manifest = readManifest();
+    assert.ok(
+      manifest.activationEvents?.includes("onCommand:devworkspace.search"),
+    );
+    assert.ok(
+      manifest.contributes?.commands?.some(
+        ({ command }) => command === "devworkspace.search",
+      ),
+    );
+    assert.ok(
+      manifest.contributes?.keybindings?.some(
+        ({ command, key, mac }) =>
+          command === "devworkspace.search" &&
+          key === "ctrl+alt+k" &&
+          mac === "cmd+alt+k",
       ),
     );
   });

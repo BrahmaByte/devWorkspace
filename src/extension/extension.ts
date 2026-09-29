@@ -7,6 +7,12 @@ import { CommandExecutionService } from "../application/services/commandExecutio
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
 import { KnowledgeService } from "../application/services/knowledgeService";
+import {
+  ConfluenceCacheSearchProvider,
+  JiraCacheSearchProvider,
+  LocalSearchProvider,
+  SearchService,
+} from "../application/services/searchService";
 import { JiraService } from "../application/services/jiraService";
 import {
   issueProjectKey,
@@ -41,6 +47,7 @@ import type {
 import { parseWebviewRequest } from "../webview/protocol/validation";
 
 const OPEN_COMMAND = "devworkspace.open";
+const SEARCH_COMMAND = "devworkspace.search";
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -77,6 +84,11 @@ export async function activate(
     confluenceRepository,
     workspaceRepository,
   );
+  const searchService = new SearchService([
+    new LocalSearchProvider(noteRepository, workspaceRepository),
+    new JiraCacheSearchProvider(jiraRepository),
+    new ConfluenceCacheSearchProvider(confluenceRepository),
+  ]);
   const startWorkService = new StartWorkService(
     workspaceRepository,
     new NodeGitWorkflow(),
@@ -96,8 +108,8 @@ export async function activate(
     },
   });
 
-  const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () => {
-    let activePage: ShellPage = "home";
+  const showDevWorkspace = (initialPage: ShellPage): void => {
+    let activePage: ShellPage = initialPage;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const panel = vscode.window.createWebviewPanel(
@@ -178,6 +190,11 @@ export async function activate(
         type: "knowledge.state",
         state: knowledgeService.getState(noteId),
       } satisfies ExtensionResponse);
+    const sendSearch = (query = ""): Thenable<boolean> =>
+      panel.webview.postMessage({
+        type: "search.state",
+        state: searchService.search(query),
+      } satisfies ExtensionResponse);
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -200,6 +217,7 @@ export async function activate(
               await sendHome();
               await sendJira();
               await sendConfluence();
+              if (activePage === "search") await sendSearch();
               return;
             case "home.refresh":
               await sendHome();
@@ -208,6 +226,36 @@ export async function activate(
               activePage = "notes";
               await sendState();
               await sendNotes(request.query);
+              return;
+            case "search.query":
+              await sendSearch(request.query);
+              return;
+            case "search.open":
+              if (request.resultType === "note") {
+                activePage = "notes";
+                await sendState();
+                await sendNotes();
+                await panel.webview.postMessage({
+                  type: "search.note",
+                  id: request.id,
+                } satisfies ExtensionResponse);
+              } else if (request.resultType === "project") {
+                const project = workspaceRepository.getProject(request.id);
+                if (!project) throw new Error("Project was not found.");
+                await new VscodeProjectWorkspaceGateway().openProject(
+                  project.localPath,
+                );
+              } else if (request.resultType === "command") {
+                await commandExecutionService.execute(request.id);
+              } else if (request.resultType === "jira_issue") {
+                await vscode.env.openExternal(
+                  vscode.Uri.parse(jiraService.getIssueUrl(request.id)),
+                );
+              } else {
+                await vscode.env.openExternal(
+                  vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
+                );
+              }
               return;
             case "confluence.connect": {
               const token = await vscode.window.showInputBox({
@@ -369,6 +417,7 @@ export async function activate(
                 await sendJira();
               if (activePage === "knowledge" || activePage === "settings")
                 await sendConfluence();
+              if (activePage === "search") await sendSearch();
               return;
             case "notes.refresh":
               await sendNotes(request.query);
@@ -539,9 +588,16 @@ export async function activate(
     panel.onDidDispose(() => {
       messageSubscription.dispose();
     });
-  });
+  };
 
-  context.subscriptions.push(openDevWorkspace);
+  const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () =>
+    showDevWorkspace("home"),
+  );
+  const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
+    showDevWorkspace("search"),
+  );
+
+  context.subscriptions.push(openDevWorkspace, openSearch);
 }
 
 export function deactivate(): void {

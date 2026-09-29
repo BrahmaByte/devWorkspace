@@ -38,14 +38,16 @@ void describe("Webview shell", () => {
 
   void it("keeps Home focused on sticky notes and current Jira work", () => {
     const html = createWebviewHtml("vscode-webview://test");
+    const homeMarkup =
+      html.match(/data-view="home">([\s\S]*?)<\/section>/u)?.[1] ?? "";
 
-    assert.match(html, /class="dashboard-card sticky-widget"/);
-    assert.match(html, /Current Jira task/);
+    assert.match(homeMarkup, /class="dashboard-card sticky-widget"/);
+    assert.match(homeMarkup, /Current Jira task/);
     assert.doesNotMatch(
       html,
       /Current project|Quick actions|Favourite projects|Recent resources/,
     );
-    assert.doesNotMatch(html, /id="global-search"/);
+    assert.doesNotMatch(homeMarkup, /id="global-search"/);
     assert.match(html, /message\?\.type==="home\.state"/);
     assert.match(html, /renderHome=/);
     assert.doesNotMatch(
@@ -199,5 +201,15 @@ void describe("Webview shell", () => {
     assert.match(html, /type:"knowledge\.detach"/);
     assert.match(html, /type:"knowledge\.open"/);
     assert.doesNotMatch(html, /type:"knowledge\.open"[^\n]*url:/);
+  });
+
+  void it("provides a dedicated global search page with safe result rendering", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /data-view="search"/);
+    assert.match(html, /aria-label="Global search"/);
+    assert.match(html, /type:"search\.query"/);
+    assert.match(html, /type:"search\.open"/);
+    assert.match(html, /item\.title/);
+    assert.doesNotMatch(html, /results\.innerHTML/);
   });
 });

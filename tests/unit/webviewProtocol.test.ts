@@ -50,6 +50,18 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({ type: "search.query", query: "runbook" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "search.open",
+        resultType: "note",
+        id: "00000000-0000-4000-8000-000000000001",
+      }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({ type: "jira.issue", issueKey: "DEV-7" }).ok,
       true,
     );
@@ -126,6 +138,8 @@ void describe("Webview protocol validation", () => {
         targetType: "url",
         targetId: "https://evil.test",
       },
+      { type: "search.query", query: "bad\nquery" },
+      { type: "search.open", resultType: "url", id: "https://evil.test" },
       {
         type: "confluence.connect",
         displayName: "Docs",

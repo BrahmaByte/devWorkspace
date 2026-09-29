@@ -17,6 +17,11 @@ import {
   relationshipTargetTypes,
   type RelationshipTargetType,
 } from "../../domain/knowledge/models";
+import { searchLimit } from "../../application/services/searchService";
+import {
+  searchResultTypes,
+  type SearchResultType,
+} from "../../domain/search/models";
 
 export type ParseResult =
   | { readonly ok: true; readonly value: WebviewRequest }
@@ -82,6 +87,12 @@ function isRelationshipTargetType(
     (relationshipTargetTypes as readonly string[]).includes(value)
   );
 }
+function isSearchResultType(value: unknown): value is SearchResultType {
+  return (
+    typeof value === "string" &&
+    (searchResultTypes as readonly string[]).includes(value)
+  );
+}
 export function parseWebviewRequest(value: unknown): ParseResult {
   if (!isRecord(value) || typeof value.type !== "string") {
     return { ok: false, error: "Message must be an object with a type." };
@@ -101,6 +112,30 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       isString(value.query, noteLimits.search)
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
+  }
+  if (value.type === "search.query") {
+    return hasOnlyKeys(value, ["type", "query"]) &&
+      typeof value.query === "string" &&
+      value.query.length <= searchLimit &&
+      !/[\r\n\0]/u.test(value.query)
+      ? { ok: true, value: { type: "search.query", query: value.query } }
+      : { ok: false, error: "search.query is invalid." };
+  }
+  if (value.type === "search.open") {
+    return hasOnlyKeys(value, ["type", "resultType", "id"]) &&
+      isSearchResultType(value.resultType) &&
+      typeof value.id === "string" &&
+      value.id.length > 0 &&
+      value.id.length <= 100
+      ? {
+          ok: true,
+          value: {
+            type: "search.open",
+            resultType: value.resultType,
+            id: value.id,
+          },
+        }
+      : { ok: false, error: "search.open is invalid." };
   }
   if (value.type === "confluence.connect") {
     return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&

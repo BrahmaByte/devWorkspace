@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 9 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 10 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -217,6 +217,12 @@ pages, and local projects as persistent linked context. External links open only
 through host-validated provider services; unavailable external resources remain
 visible as stale context, while deleting a note or project removes its local
 relationships.
+The dedicated Global Search page searches local notes, projects, and stored
+commands together with locally cached Jira issues and Confluence page metadata.
+An empty query shows recent resources, while unavailable providers are reported
+without hiding results from healthy providers. Results are rendered only through
+DOM text nodes and open through host-side, type-specific handlers. Use
+`Ctrl+Alt+K` (`Cmd+Alt+K` on macOS) or the header search icon to open it.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 
