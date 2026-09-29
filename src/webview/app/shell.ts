@@ -2,200 +2,32 @@ import { randomBytes } from "node:crypto";
 
 export function createWebviewHtml(cspSource: string): string {
   const nonce = randomBytes(16).toString("base64");
-
   return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}'; img-src ${cspSource} data:;" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DevWorkspace</title>
-    <style nonce="${nonce}">
-      :root { color-scheme: light dark; font-family: var(--vscode-font-family); }
-      * { box-sizing: border-box; }
-      body { background: var(--vscode-editor-background); color: var(--vscode-editor-foreground); margin: 0; min-height: 100vh; }
-      .shell { display: grid; grid-template-columns: 14rem 1fr; min-height: 100vh; }
-      aside { background: var(--vscode-sideBar-background); border-right: 1px solid var(--vscode-sideBar-border, transparent); padding: 1rem; }
-      .brand { font-size: 1.1rem; font-weight: 700; margin: 0 0 1.25rem; }
-      nav { display: grid; gap: 0.35rem; }
-      nav button { background: transparent; border: 0; border-radius: 0.3rem; color: var(--vscode-sideBar-foreground); cursor: pointer; font: inherit; padding: 0.65rem 0.75rem; text-align: left; }
-      nav button:hover { background: var(--vscode-list-hoverBackground); }
-      nav button[aria-current="page"] { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
-      main { padding: 2.5rem clamp(1.5rem, 5vw, 5rem); }
-      section[hidden] { display: none; }
-      h1 { margin-top: 0; }
-      p { color: var(--vscode-descriptionForeground); line-height: 1.6; max-width: 44rem; }
-      input, textarea, select, button { font: inherit; }
-      input, textarea, select { background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); color: var(--vscode-input-foreground); padding: 0.55rem; width: 100%; }
-      textarea { min-height: 9rem; resize: vertical; }
-      .notes-layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(16rem, 1fr) minmax(20rem, 2fr); }
-      .card { border: 1px solid var(--vscode-widget-border, var(--vscode-sideBar-border)); border-radius: 0.4rem; padding: 1rem; }
-      .field { display: grid; gap: 0.35rem; margin-bottom: 0.75rem; }
-      .actions, .item-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .actions button, .item-actions button { background: var(--vscode-button-secondaryBackground); border: 0; border-radius: 0.25rem; color: var(--vscode-button-secondaryForeground); cursor: pointer; padding: 0.45rem 0.7rem; }
-      .actions button:first-child { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
-      .list { display: grid; gap: 0.75rem; margin-top: 1rem; }
-      .note-title { font-size: 1rem; margin: 0; }
-      .note-content { color: var(--vscode-editor-foreground); margin: 0.6rem 0; white-space: pre-wrap; word-break: break-word; }
-      .meta { color: var(--vscode-descriptionForeground); font-size: 0.78rem; margin: 0 0 0.6rem; }
-      .stickies { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); }
-      .sticky[data-color="yellow"] { border-left: 0.35rem solid #d7ba7d; }
-      .sticky[data-color="blue"] { border-left: 0.35rem solid #75beff; }
-      .sticky[data-color="green"] { border-left: 0.35rem solid #89d185; }
-      .sticky[data-color="pink"] { border-left: 0.35rem solid #f28bca; }
-      .empty { color: var(--vscode-descriptionForeground); font-style: italic; }
-      .status { bottom: 1rem; color: var(--vscode-descriptionForeground); font-size: 0.8rem; left: 1rem; position: fixed; }
-      .status[data-error="true"] { color: var(--vscode-errorForeground); }
-      @media (max-width: 760px) { .shell, .notes-layout { grid-template-columns: 1fr; } aside { border-bottom: 1px solid var(--vscode-sideBar-border, transparent); border-right: 0; } nav { grid-template-columns: repeat(5, minmax(0, 1fr)); } nav button { overflow: hidden; text-align: center; text-overflow: ellipsis; } }
-    </style>
-  </head>
-  <body>
-    <div class="shell">
-      <aside>
-        <p class="brand">DevWorkspace</p>
-        <nav aria-label="DevWorkspace areas">
-          <button type="button" data-page="home" aria-current="page">Home</button>
-          <button type="button" data-page="jira">Jira</button>
-          <button type="button" data-page="workspace">Workspace</button>
-          <button type="button" data-page="notes">Notes</button>
-          <button type="button" data-page="knowledge">Knowledge</button>
-        </nav>
-      </aside>
-      <main>
-        <section data-view="home"><h1>Home</h1><p>Your local-first developer command center.</p></section>
-        <section data-view="jira" hidden><h1>Jira</h1><p>Jira connection and work views arrive in later milestones.</p></section>
-        <section data-view="workspace" hidden><h1>Workspace</h1><p>Projects, terminals, and controlled commands will live here.</p></section>
-        <section data-view="notes" hidden>
-          <h1>Notes</h1>
-          <div class="notes-layout">
-            <div>
-              <form id="note-form" class="card">
-                <input id="note-id" type="hidden" />
-                <label class="field">Title<input id="note-title" maxlength="200" required /></label>
-                <label class="field">Content<textarea id="note-content" maxlength="500000"></textarea></label>
-                <div class="actions"><button type="submit">Save note</button><button id="note-clear" type="button">Clear</button></div>
-              </form>
-              <form id="sticky-form" class="card">
-                <h2>Sticky note</h2><input id="sticky-id" type="hidden" />
-                <label class="field">Content<textarea id="sticky-content" maxlength="10000" required></textarea></label>
-                <label class="field">Color<select id="sticky-color"><option>yellow</option><option>blue</option><option>green</option><option>pink</option></select></label>
-                <div class="actions"><button type="submit">Add sticky</button></div>
-              </form>
-            </div>
-            <div>
-              <label class="field">Search notes<input id="note-search" type="search" maxlength="200" placeholder="Search title and content" /></label>
-              <div id="note-list" class="list" aria-live="polite"></div>
-              <h2>Sticky notes</h2><div id="sticky-list" class="stickies" aria-live="polite"></div>
-            </div>
-          </div>
-        </section>
-        <section data-view="knowledge" hidden><h1>Knowledge</h1><p>Linked Confluence knowledge arrives in a later milestone.</p></section>
-      </main>
-    </div>
-    <div class="status" role="status" aria-live="polite">Starting…</div>
-    <script nonce="${nonce}">
-      (() => {
-        const vscode = acquireVsCodeApi();
-        const allowedPages = new Set(["home", "jira", "workspace", "notes", "knowledge"]);
-        const status = document.querySelector(".status");
-        const noteId = document.querySelector("#note-id");
-        const noteTitle = document.querySelector("#note-title");
-        const noteContent = document.querySelector("#note-content");
-        const noteSearch = document.querySelector("#note-search");
-        const noteList = document.querySelector("#note-list");
-        const stickyList = document.querySelector("#sticky-list");
-        const stickyId = document.querySelector("#sticky-id");
-        let currentNotes = [];
-        const button = (label, action) => {
-          const element = document.createElement("button");
-          element.type = "button";
-          element.textContent = label;
-          element.addEventListener("click", action);
-          return element;
-        };
-        const clearEditor = () => { noteId.value = ""; noteTitle.value = ""; noteContent.value = ""; };
-        const renderNotes = (notes) => {
-          noteList.replaceChildren();
-          if (notes.length === 0) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "No notes found."; noteList.append(empty); }
-          notes.forEach((note) => {
-            const article = document.createElement("article"); article.className = "card";
-            const heading = document.createElement("h3"); heading.className = "note-title"; heading.textContent = note.title;
-            const meta = document.createElement("p"); meta.className = "meta"; meta.textContent = (note.isPinned ? "Pinned · " : "") + (note.isArchived ? "Archived · " : "") + new Date(note.updatedAt).toLocaleString();
-            const content = document.createElement("p"); content.className = "note-content"; content.textContent = note.content;
-            const actions = document.createElement("div"); actions.className = "item-actions";
-            actions.append(
-              button("Edit", () => { noteId.value = note.id; noteTitle.value = note.title; noteContent.value = note.content; noteTitle.focus(); }),
-              button(note.isPinned ? "Unpin" : "Pin", () => vscode.postMessage({ type: "notes.pin", id: note.id, pinned: !note.isPinned })),
-              button(note.isArchived ? "Restore" : "Archive", () => vscode.postMessage({ type: "notes.archive", id: note.id, archived: !note.isArchived })),
-              button("Delete", () => vscode.postMessage({ type: "notes.delete", id: note.id }))
-            );
-            article.append(heading, meta, content, actions); noteList.append(article);
-          });
-        };
-        const renderStickies = (notes) => {
-          stickyList.replaceChildren();
-          if (notes.length === 0) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "No sticky notes yet."; stickyList.append(empty); }
-          notes.forEach((note) => {
-            const article = document.createElement("article"); article.className = "card sticky"; article.dataset.color = note.color;
-            const content = document.createElement("p"); content.className = "note-content"; content.textContent = note.content;
-            const actions = document.createElement("div"); actions.className = "item-actions";
-            actions.append(
-              button("Edit", () => { stickyId.value = note.id; document.querySelector("#sticky-content").value = note.content; document.querySelector("#sticky-color").value = note.color; }),
-              button("Delete", () => vscode.postMessage({ type: "sticky.delete", id: note.id }))
-            );
-            article.append(content, actions); stickyList.append(article);
-          });
-        };
-        const showError = () => {
-          status.textContent = "The DevWorkspace shell encountered an error.";
-          status.dataset.error = "true";
-        };
-        const selectPage = (page) => {
-          if (!allowedPages.has(page)) return;
-          document.querySelectorAll("[data-page]").forEach((button) => {
-            if (button.dataset.page === page) button.setAttribute("aria-current", "page");
-            else button.removeAttribute("aria-current");
-          });
-          document.querySelectorAll("[data-view]").forEach((view) => {
-            view.hidden = view.dataset.view !== page;
-          });
-        };
-        window.addEventListener("error", showError);
-        window.addEventListener("unhandledrejection", showError);
-        window.addEventListener("message", (event) => {
-          try {
-            const message = event.data;
-            if (message?.type === "shell.state" && allowedPages.has(message.page)) {
-              selectPage(message.page);
-              status.textContent = "Ready · " + message.platform;
-              status.dataset.error = "false";
-            } else if (message?.type === "notes.state" && Array.isArray(message.notes) && Array.isArray(message.stickyNotes)) {
-              currentNotes = message.notes; noteSearch.value = typeof message.query === "string" ? message.query : ""; renderNotes(currentNotes); renderStickies(message.stickyNotes);
-              status.textContent = "Notes saved locally"; status.dataset.error = "false";
-            } else if (message?.type === "protocol.error") showError();
-          } catch { showError(); }
-        });
-        document.querySelectorAll("[data-page]").forEach((button) => {
-          button.addEventListener("click", () => {
-            vscode.postMessage({ type: "navigation.select", page: button.dataset.page });
-          });
-        });
-        document.querySelector("#note-form").addEventListener("submit", (event) => {
-          event.preventDefault();
-          const id = noteId.value;
-          vscode.postMessage(id ? { type: "notes.update", id, title: noteTitle.value, content: noteContent.value } : { type: "notes.create", title: noteTitle.value, content: noteContent.value });
-          clearEditor();
-        });
-        document.querySelector("#note-clear").addEventListener("click", clearEditor);
-        noteSearch.addEventListener("input", () => vscode.postMessage({ type: "notes.refresh", query: noteSearch.value }));
-        document.querySelector("#sticky-form").addEventListener("submit", (event) => {
-          event.preventDefault();
-          const content = document.querySelector("#sticky-content"); const color = document.querySelector("#sticky-color");
-          vscode.postMessage(stickyId.value ? { type: "sticky.update", id: stickyId.value, content: content.value, color: color.value, sortOrder: 0 } : { type: "sticky.create", content: content.value, color: color.value, sortOrder: 0 }); content.value = ""; stickyId.value = "";
-        });
-        vscode.postMessage({ type: "shell.ready" });
-      })();
-    </script>
-  </body>
-</html>`;
+<html lang="en" data-theme="dark"><head><meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}'; img-src ${cspSource} data:;" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>DevWorkspace</title>
+<style nonce="${nonce}">
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--bg:#111318;--panel:#181b21;--panel2:#20242c;--side:#15181e;--text:#f3f4f6;--muted:#9ca3af;--border:#303640;--accent:#ffb800;--accentText:#1e1600;--hover:#292e37;--shadow:0 14px 38px #0006;--yellow:#fff29b;--blue:#b9e4ff;--green:#c9f2ba;--pink:#ffc9df}
+:root[data-theme="light"]{color-scheme:light;--bg:#f5f5f7;--panel:#fff;--panel2:#f2f2f4;--side:#ececef;--text:#202124;--muted:#6e6e73;--border:#d7d7dc;--accent:#e9a600;--accentText:#fff;--hover:#e2e2e7;--shadow:0 14px 38px #0002}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);margin:0;min-height:100vh}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:14rem minmax(0,1fr);grid-template-rows:4rem minmax(0,1fr);min-height:100vh}
+.app-header{align-items:center;background:var(--panel);border-bottom:1px solid var(--border);display:flex;gap:1rem;grid-column:1/-1;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:10}.header-brand,.header-tools{align-items:center;display:flex;gap:.75rem}.logo{align-items:center;background:var(--accent);border-radius:.65rem;color:var(--accentText);display:inline-flex;font-weight:800;height:2.25rem;justify-content:center;width:2.25rem}.brand{font-size:1rem;font-weight:700;margin:0}.clock{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}.icon-button{background:var(--panel2);border:1px solid var(--border);border-radius:999px;color:var(--text);padding:.5rem .8rem}.icon-button:hover{background:var(--hover)}
+aside{background:var(--side);border-right:1px solid var(--border);padding:1rem .75rem}nav{display:grid;gap:.3rem}nav button{align-items:center;background:transparent;border:0;border-radius:.55rem;color:var(--muted);display:flex;gap:.75rem;padding:.7rem .8rem;text-align:left}nav button:hover{background:var(--hover);color:var(--text)}nav button[aria-current="page"]{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--text);font-weight:650}.nav-icon{font-size:1.05rem;width:1.2rem}main{min-width:0;overflow:auto}section[hidden]{display:none}.page{padding:clamp(1.25rem,4vw,3rem)}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(1.7rem,3vw,2.35rem);letter-spacing:-.035em}p{color:var(--muted);line-height:1.55}
+.dashboard-grid{display:grid;gap:1.25rem;grid-template-columns:repeat(12,minmax(0,1fr));margin-top:2rem}.dashboard-card{background:var(--panel);border:1px solid var(--border);border-radius:1rem;box-shadow:var(--shadow);grid-column:span 6;overflow:hidden}.dashboard-card-header{align-items:center;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;padding:1rem 1.1rem}.dashboard-card-header h2{font-size:1rem;margin:0}.placeholder-card{min-height:13rem;padding:1.2rem}.sticky-widget{grid-column:span 6}.sticky-toolbar{align-items:center;background:#e7ca49;color:#2b260e;display:flex;gap:.55rem;padding:.65rem}.sticky-toolbar input{background:transparent;border:0;color:inherit;flex:1;min-width:0;outline:0}.sticky-toolbar select{background:#ffffff66;border:0;border-radius:.35rem;color:#312b0e;padding:.3rem}.sticky-add{background:#2b260e;border:0;border-radius:999px;color:#fff;font-weight:700;height:1.85rem;width:1.85rem}.sticky-board{background:#f7e783;display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));min-height:13rem;padding:1rem}.sticky{box-shadow:0 5px 14px #5f4c1544;color:#292610;min-height:8.5rem;padding:.85rem;position:relative;transform:rotate(-.35deg)}.sticky:nth-child(even){transform:rotate(.45deg)}.sticky[data-color="yellow"]{background:var(--yellow)}.sticky[data-color="blue"]{background:var(--blue)}.sticky[data-color="green"]{background:var(--green)}.sticky[data-color="pink"]{background:var(--pink)}.sticky p{color:inherit;white-space:pre-wrap;word-break:break-word}.sticky-actions{bottom:.45rem;display:flex;gap:.3rem;opacity:0;position:absolute;right:.45rem}.sticky:hover .sticky-actions,.sticky:focus-within .sticky-actions{opacity:1}.sticky-actions button{background:#fff9;border:0;border-radius:.35rem;color:#222;font-size:.75rem;padding:.25rem .4rem}
+.notes-page{height:calc(100vh - 4rem);padding:0}.notes-app{background:var(--panel);display:grid;grid-template-columns:13rem minmax(15rem,20rem) minmax(20rem,1fr);height:100%}.notes-folders{background:var(--side);border-right:1px solid var(--border);padding:1.1rem .8rem}.notes-folders h2{color:var(--muted);font-size:.72rem;letter-spacing:.08em;margin:1.2rem .55rem .5rem;text-transform:uppercase}.folder{background:transparent;border:0;border-radius:.45rem;color:var(--text);display:flex;justify-content:space-between;padding:.55rem .65rem;width:100%}.folder.active{background:var(--accent);color:var(--accentText);font-weight:650}.notes-browser{border-right:1px solid var(--border);min-width:0;overflow:auto}.notes-browser-header{background:var(--panel);border-bottom:1px solid var(--border);padding:1rem;position:sticky;top:0;z-index:2}.notes-browser-header h1{font-size:1.35rem;margin-bottom:.7rem}.search{background:var(--panel2);border:1px solid var(--border);border-radius:.55rem;color:var(--text);outline:0;padding:.55rem .7rem;width:100%}.note-list{padding:.5rem}.note-row{background:transparent;border:0;border-bottom:1px solid var(--border);color:var(--text);display:block;padding:.85rem .7rem;text-align:left;width:100%}.note-row:hover,.note-row.active{background:var(--hover);border-radius:.55rem}.note-row-title{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.note-row-preview{color:var(--muted);display:block;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-editor{display:flex;flex-direction:column;min-width:0}.editor-toolbar{align-items:center;border-bottom:1px solid var(--border);display:flex;gap:.5rem;justify-content:space-between;padding:.65rem 1rem}.editor-actions{display:flex;gap:.4rem}.toolbar-button{background:transparent;border:1px solid transparent;border-radius:.45rem;color:var(--accent);padding:.4rem .55rem}.toolbar-button:hover{background:var(--hover)}.editor-meta{color:var(--muted);font-size:.75rem;margin:.9rem auto 0}.note-form{display:flex;flex:1;flex-direction:column;min-height:0;padding:0 clamp(1rem,5vw,4rem) 1.5rem}.note-title-input{background:transparent;border:0;color:var(--text);font-size:1.7rem;font-weight:750;outline:0;padding:1rem 0 .5rem;width:100%}.note-content-input{background:transparent;border:0;color:var(--text);flex:1;line-height:1.65;min-height:18rem;outline:0;padding:.5rem 0;resize:none;width:100%}.save-row{align-items:center;display:flex;justify-content:space-between}.save-button{background:var(--accent);border:0;border-radius:.55rem;color:var(--accentText);font-weight:700;padding:.55rem 1rem}.empty{color:var(--muted);font-style:italic;padding:1rem}.status{color:var(--muted);font-size:.75rem}.status[data-error="true"]{color:#e5484d}
+@media(max-width:900px){.app{grid-template-columns:4.2rem minmax(0,1fr)}nav button{justify-content:center}.nav-label{display:none}.notes-app{grid-template-columns:4rem minmax(13rem,17rem) minmax(18rem,1fr)}.folder span:first-child,.notes-folders h2{display:none}.dashboard-card,.sticky-widget{grid-column:1/-1}}@media(max-width:650px){.app{display:block}.app-header{height:4rem}aside{border-bottom:1px solid var(--border);border-right:0;padding:.45rem}nav{grid-template-columns:repeat(5,1fr)}.notes-page{height:auto}.notes-app{grid-template-columns:1fr;min-height:calc(100vh - 8rem)}.notes-folders{display:none}.notes-browser{border-bottom:1px solid var(--border);border-right:0;max-height:18rem}.note-editor{min-height:30rem}.clock{display:none}}
+</style></head><body><div class="app">
+<header class="app-header"><div class="header-brand"><span class="logo">DW</span><p class="brand">DevWorkspace</p></div><div class="header-tools"><time id="clock" class="clock"></time><button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode" aria-pressed="false">☀ Light</button></div></header>
+<aside><nav aria-label="DevWorkspace areas"><button type="button" data-page="home" aria-current="page"><span class="nav-icon">⌂</span><span class="nav-label">Home</span></button><button type="button" data-page="jira"><span class="nav-icon">✓</span><span class="nav-label">Jira</span></button><button type="button" data-page="workspace"><span class="nav-icon">▣</span><span class="nav-label">Workspace</span></button><button type="button" data-page="notes"><span class="nav-icon">▤</span><span class="nav-label">Notes</span></button><button type="button" data-page="knowledge"><span class="nav-icon">◇</span><span class="nav-label">Knowledge</span></button></nav></aside>
+<main><section class="page" data-view="home"><h1>Good to see you.</h1><p>Your local-first developer command center.</p><div class="dashboard-grid"><article class="dashboard-card sticky-widget"><div class="dashboard-card-header"><h2>Sticky Notes</h2><span>Local</span></div><form id="sticky-form" class="sticky-toolbar"><input id="sticky-id" type="hidden" /><input id="sticky-content" maxlength="10000" required aria-label="Sticky note text" placeholder="Take a note…" /><select id="sticky-color" aria-label="Sticky note color"><option>yellow</option><option>blue</option><option>green</option><option>pink</option></select><button class="sticky-add" type="submit" aria-label="Save sticky note">+</button></form><div id="sticky-list" class="sticky-board" aria-live="polite"></div></article><article class="dashboard-card placeholder-card"><div class="dashboard-card-header"><h2>Workspace overview</h2></div><p>Projects and recent activity will appear here in upcoming milestones.</p></article></div></section>
+<section class="page" data-view="jira" hidden><h1>Jira</h1><p>Jira connection and work views arrive in later milestones.</p></section><section class="page" data-view="workspace" hidden><h1>Workspace</h1><p>Projects, terminals, and controlled commands will live here.</p></section>
+<section class="notes-page" data-view="notes" hidden><div class="notes-app"><div class="notes-folders"><h2>On My Mac</h2><button class="folder active" data-filter="all" type="button"><span>Notes</span><span id="note-count">0</span></button><button class="folder" data-filter="pinned" type="button"><span>Pinned</span></button><button class="folder" data-filter="archived" type="button"><span>Archive</span></button></div><div class="notes-browser"><div class="notes-browser-header"><h1 id="notes-heading">Notes</h1><input id="note-search" class="search" type="search" maxlength="200" placeholder="Search" aria-label="Search notes" /></div><div id="note-list" class="note-list" aria-live="polite"></div></div><div class="note-editor"><div class="editor-toolbar"><div class="editor-actions"><button id="note-new" class="toolbar-button" type="button">＋ New note</button></div><div class="editor-actions"><button id="note-pin" class="toolbar-button" type="button">Pin</button><button id="note-archive" class="toolbar-button" type="button">Archive</button><button id="note-delete" class="toolbar-button" type="button">Delete</button></div></div><p id="editor-meta" class="editor-meta">New note</p><form id="note-form" class="note-form"><input id="note-id" type="hidden" /><input id="note-title" class="note-title-input" maxlength="200" required placeholder="Title" aria-label="Note title" /><textarea id="note-content" class="note-content-input" maxlength="500000" placeholder="Start writing…" aria-label="Note content"></textarea><div class="save-row"><span class="status" role="status" aria-live="polite">Ready</span><button class="save-button" type="submit">Save note</button></div></form></div></div></section>
+<section class="page" data-view="knowledge" hidden><h1>Knowledge</h1><p>Linked Confluence knowledge arrives in a later milestone.</p></section></main></div>
+<script nonce="${nonce}">(()=>{const vscode=acquireVsCodeApi(),savedState=vscode.getState()||{},allowedPages=new Set(["home","jira","workspace","notes","knowledge"]),status=document.querySelector(".status"),noteId=document.querySelector("#note-id"),noteTitle=document.querySelector("#note-title"),noteContent=document.querySelector("#note-content"),noteSearch=document.querySelector("#note-search"),noteList=document.querySelector("#note-list"),noteCount=document.querySelector("#note-count"),editorMeta=document.querySelector("#editor-meta"),stickyList=document.querySelector("#sticky-list"),stickyId=document.querySelector("#sticky-id");let currentNotes=[],selectedNote,activeFilter="all";
+const setTheme=theme=>{const safeTheme=theme==="light"?"light":"dark";document.documentElement.dataset.theme=safeTheme;const toggle=document.querySelector("#theme-toggle"),isLight=safeTheme==="light";toggle.textContent=isLight?"☾ Dark":"☀ Light";toggle.setAttribute("aria-label",isLight?"Switch to dark mode":"Switch to light mode");toggle.setAttribute("aria-pressed",String(isLight));vscode.setState({...savedState,theme:safeTheme})};const updateClock=()=>{document.querySelector("#clock").textContent=new Intl.DateTimeFormat(undefined,{weekday:"short",hour:"numeric",minute:"2-digit",second:"2-digit"}).format(new Date())};const button=(label,action)=>{const element=document.createElement("button");element.type="button";element.textContent=label;element.addEventListener("click",action);return element};
+const clearEditor=()=>{selectedNote=undefined;noteId.value="";noteTitle.value="";noteContent.value="";editorMeta.textContent="New note";document.querySelector("#note-pin").textContent="Pin";document.querySelector("#note-archive").textContent="Archive"};const selectNote=note=>{selectedNote=note;noteId.value=note.id;noteTitle.value=note.title;noteContent.value=note.content;editorMeta.textContent=new Date(note.updatedAt).toLocaleString();document.querySelector("#note-pin").textContent=note.isPinned?"Unpin":"Pin";document.querySelector("#note-archive").textContent=note.isArchived?"Restore":"Archive";renderNotes(currentNotes)};
+const renderNotes=notes=>{noteList.replaceChildren();noteCount.textContent=String(notes.length);const visible=activeFilter==="pinned"?notes.filter(note=>note.isPinned):activeFilter==="archived"?notes.filter(note=>note.isArchived):notes.filter(note=>!note.isArchived);if(visible.length===0){const empty=document.createElement("p");empty.className="empty";empty.textContent="No notes found.";noteList.append(empty);return}visible.forEach(note=>{const row=button("",()=>selectNote(note));row.className="note-row";if(selectedNote?.id===note.id)row.classList.add("active");const heading=document.createElement("span");heading.className="note-row-title";heading.textContent=(note.isPinned?"● ":"")+note.title;const preview=document.createElement("span");preview.className="note-row-preview";preview.textContent=new Date(note.updatedAt).toLocaleDateString()+"  "+note.content.replace(/\\s+/g," ");row.replaceChildren(heading,preview);noteList.append(row)})};
+const renderStickies=notes=>{stickyList.replaceChildren();if(notes.length===0){const empty=document.createElement("p");empty.className="empty";empty.textContent="No sticky notes yet. Add one above.";stickyList.append(empty);return}notes.forEach(note=>{const article=document.createElement("article");article.className="sticky";article.dataset.color=note.color;const content=document.createElement("p");content.textContent=note.content;const actions=document.createElement("div");actions.className="sticky-actions";actions.append(button("Edit",()=>{stickyId.value=note.id;document.querySelector("#sticky-content").value=note.content;document.querySelector("#sticky-color").value=note.color}),button("Delete",()=>vscode.postMessage({type:"sticky.delete",id:note.id})));article.append(content,actions);stickyList.append(article)})};const showError=()=>{status.textContent="DevWorkspace encountered an error.";status.dataset.error="true"};const selectPage=page=>{if(!allowedPages.has(page))return;document.querySelectorAll("[data-page]").forEach(element=>element.dataset.page===page?element.setAttribute("aria-current","page"):element.removeAttribute("aria-current"));document.querySelectorAll("[data-view]").forEach(view=>{view.hidden=view.dataset.view!==page})};
+setTheme(savedState.theme);updateClock();window.setInterval(updateClock,1000);document.querySelector("#theme-toggle").addEventListener("click",()=>setTheme(document.documentElement.dataset.theme==="dark"?"light":"dark"));window.addEventListener("error",showError);window.addEventListener("unhandledrejection",showError);window.addEventListener("message",event=>{try{const message=event.data;if(message?.type==="shell.state"&&allowedPages.has(message.page)){selectPage(message.page);status.textContent="Ready · "+message.platform;status.dataset.error="false"}else if(message?.type==="notes.state"&&Array.isArray(message.notes)&&Array.isArray(message.stickyNotes)){currentNotes=message.notes;noteSearch.value=typeof message.query==="string"?message.query:"";if(selectedNote)selectedNote=currentNotes.find(note=>note.id===selectedNote.id);renderNotes(currentNotes);renderStickies(message.stickyNotes);status.textContent="Saved locally";status.dataset.error="false"}else if(message?.type==="protocol.error")showError()}catch{showError()}});
+document.querySelectorAll("[data-page]").forEach(element=>element.addEventListener("click",()=>vscode.postMessage({type:"navigation.select",page:element.dataset.page})));document.querySelectorAll("[data-filter]").forEach(element=>element.addEventListener("click",()=>{activeFilter=element.dataset.filter;document.querySelectorAll("[data-filter]").forEach(folder=>folder.classList.toggle("active",folder===element));document.querySelector("#notes-heading").textContent=activeFilter==="all"?"Notes":activeFilter==="pinned"?"Pinned":"Archive";renderNotes(currentNotes)}));document.querySelector("#note-form").addEventListener("submit",event=>{event.preventDefault();const id=noteId.value;vscode.postMessage(id?{type:"notes.update",id,title:noteTitle.value,content:noteContent.value}:{type:"notes.create",title:noteTitle.value,content:noteContent.value});clearEditor()});document.querySelector("#note-new").addEventListener("click",()=>{clearEditor();noteTitle.focus()});document.querySelector("#note-pin").addEventListener("click",()=>{if(selectedNote)vscode.postMessage({type:"notes.pin",id:selectedNote.id,pinned:!selectedNote.isPinned})});document.querySelector("#note-archive").addEventListener("click",()=>{if(selectedNote)vscode.postMessage({type:"notes.archive",id:selectedNote.id,archived:!selectedNote.isArchived})});document.querySelector("#note-delete").addEventListener("click",()=>{if(selectedNote){vscode.postMessage({type:"notes.delete",id:selectedNote.id});clearEditor()}});noteSearch.addEventListener("input",()=>vscode.postMessage({type:"notes.refresh",query:noteSearch.value}));document.querySelector("#sticky-form").addEventListener("submit",event=>{event.preventDefault();const content=document.querySelector("#sticky-content"),color=document.querySelector("#sticky-color");vscode.postMessage(stickyId.value?{type:"sticky.update",id:stickyId.value,content:content.value,color:color.value,sortOrder:0}:{type:"sticky.create",content:content.value,color:color.value,sortOrder:0});content.value="";stickyId.value=""});vscode.postMessage({type:"shell.ready"})})();</script></body></html>`;
 }

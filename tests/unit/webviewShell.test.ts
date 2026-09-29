@@ -8,11 +8,30 @@ void describe("Webview shell", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /class="brand">DevWorkspace<\/p>/);
-    assert.match(html, /<h1>Home<\/h1>/);
+    assert.match(html, /<header class="app-header">/);
     assert.match(html, /local-first developer command center/i);
     for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
       assert.match(html, new RegExp(`>${area}<`));
     }
+  });
+
+  void it("provides a persistent global theme toggle and live header clock", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /id="theme-toggle"/);
+    assert.match(html, /id="clock"/);
+    assert.match(html, /vscode\.getState\(\)/);
+    assert.match(html, /vscode\.setState/);
+    assert.match(html, /setInterval\(updateClock,1000\)/);
+  });
+
+  void it("uses a dashboard sticky widget and three-pane notes workspace", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /class="dashboard-card sticky-widget"/);
+    assert.match(html, /class="notes-folders"/);
+    assert.match(html, /class="notes-browser"/);
+    assert.match(html, /class="note-editor"/);
   });
 
   void it("uses nonce-restricted scripts and styles", () => {
@@ -29,8 +48,8 @@ void describe("Webview shell", () => {
   void it("renders untrusted note content only as text", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
-    assert.match(html, /heading\.textContent = note\.title/);
-    assert.match(html, /content\.textContent = note\.content/);
+    assert.match(html, /heading\.textContent=.*note\.title/);
+    assert.match(html, /content\.textContent=note\.content/);
     assert.doesNotMatch(html, /innerHTML|insertAdjacentHTML|document\.write/);
   });
 });

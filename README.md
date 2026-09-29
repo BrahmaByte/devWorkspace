@@ -180,7 +180,10 @@ error boundary, platform abstraction, and a migration-backed local SQLite data
 layer. The database is stored under VS Code's extension global-storage directory,
 not inside the extension or a project. Notes and sticky notes support explicit
 save, edit, delete, pin/archive, and local text search. Saved content is rendered
-as plain text inside the network-isolated Webview. Tests, packaging, and a
+as plain text inside the network-isolated Webview. A shared header provides a
+live local clock and persistent light/dark appearance toggle. Home includes a
+desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
+Tests, packaging, and a
 Windows/macOS/Linux CI matrix are included. Projects/commands, Jira, Confluence,
 and AI are intentionally not implemented yet.
 
