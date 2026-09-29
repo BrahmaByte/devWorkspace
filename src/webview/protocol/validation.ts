@@ -7,6 +7,7 @@ import {
 } from "../../domain/workspace/models";
 import { workspaceLimits } from "../../application/services/workspaceService";
 import { jiraLimits } from "../../application/services/jiraService";
+import { confluenceLimits } from "../../application/services/confluenceService";
 import { jiraBoardLimits } from "../../application/services/jiraService";
 import {
   jiraBoardStatuses,
@@ -88,6 +89,44 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       isString(value.query, noteLimits.search)
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
+  }
+  if (value.type === "confluence.connect") {
+    return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&
+      isString(value.displayName, confluenceLimits.name) &&
+      isString(value.baseUrl, confluenceLimits.url)
+      ? {
+          ok: true,
+          value: {
+            type: "confluence.connect",
+            displayName: value.displayName,
+            baseUrl: value.baseUrl,
+          },
+        }
+      : { ok: false, error: "confluence.connect is invalid." };
+  }
+  if (
+    value.type === "confluence.refresh" ||
+    value.type === "confluence.disconnect"
+  ) {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: value.type } }
+      : { ok: false, error: `${value.type} is invalid.` };
+  }
+  if (value.type === "confluence.search") {
+    return hasOnlyKeys(value, ["type", "query"]) &&
+      typeof value.query === "string" &&
+      value.query.trim().length > 0 &&
+      value.query.length <= confluenceLimits.search &&
+      !/[\r\n\0]/u.test(value.query)
+      ? { ok: true, value: { type: "confluence.search", query: value.query } }
+      : { ok: false, error: "confluence.search is invalid." };
+  }
+  if (value.type === "confluence.open") {
+    return hasOnlyKeys(value, ["type", "id"]) &&
+      typeof value.id === "string" &&
+      /^[0-9A-Za-z_-]{1,100}$/u.test(value.id)
+      ? { ok: true, value: { type: "confluence.open", id: value.id } }
+      : { ok: false, error: "confluence.open is invalid." };
   }
   if (value.type === "jira.connect") {
     return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&

@@ -26,6 +26,14 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({ type: "confluence.search", query: "runbook" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "confluence.open", id: "42" }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({ type: "jira.issue", issueKey: "DEV-7" }).ok,
       true,
     );
@@ -89,6 +97,14 @@ void describe("Webview protocol validation", () => {
       { type: "jira.search", query: "project = DEV\nOR project = OPS" },
       { type: "jira.local.create", summary: "x", status: "unknown" },
       { type: "jira.local.delete", id: "not-an-id" },
+      { type: "confluence.search", query: "bad\nquery" },
+      { type: "confluence.open", id: "https://evil.test" },
+      {
+        type: "confluence.connect",
+        displayName: "Docs",
+        baseUrl: "https://docs.test",
+        token: "secret",
+      },
       {
         type: "jira.startWork",
         issueKey: "DEV-7",

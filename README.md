@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 7 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 8 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -208,7 +208,10 @@ columns with a bounded custom JQL filter. Local-only cards are stored separately
 in SQLite and are never sent to Jira. An issue can be associated with a local
 project and opened in a VS Code terminal; optional Git branch changes use fixed
 Git arguments and require explicit confirmation. Jira Cloud API-token
-authentication is not part of this PAT milestone. Confluence and AI remain
+authentication is not part of this PAT milestone. Confluence Data Center can be
+configured from Settings with a PAT collected by VS Code and stored in
+SecretStorage. Knowledge search fetches at most 25 page-metadata results, caches
+no page bodies, and opens same-origin page URLs through VS Code. AI remains
 intentionally unimplemented.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.

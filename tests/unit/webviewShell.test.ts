@@ -162,6 +162,17 @@ void describe("Webview shell", () => {
     assert.doesNotMatch(html, /Authorization|Bearer/);
   });
 
+  void it("keeps Confluence configuration in Settings and renders metadata-only search", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /id="confluence-form"/);
+    assert.match(html, /id="confluence-search"/);
+    assert.match(html, /type:"confluence\.connect"/);
+    assert.match(html, /type:"confluence\.search"/);
+    assert.match(html, /type:"confluence\.open"/);
+    assert.match(html, /page\.title/);
+    assert.doesNotMatch(html, /id="confluence-(?:pat|token)"/);
+  });
+
   void it("provides a Kanban board and constrained Start Work controls", () => {
     const html = createWebviewHtml("vscode-webview://test");
 

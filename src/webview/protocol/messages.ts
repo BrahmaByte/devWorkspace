@@ -1,5 +1,6 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
 import type { HomeState } from "../../domain/home/models";
+import type { ConfluenceState } from "../../domain/confluence/models";
 import type {
   JiraBoardStatus,
   JiraIssue,
@@ -25,6 +26,14 @@ export type WebviewRequest =
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }
+  | {
+      readonly type: "confluence.connect";
+      readonly displayName: string;
+      readonly baseUrl: string;
+    }
+  | { readonly type: "confluence.refresh" | "confluence.disconnect" }
+  | { readonly type: "confluence.search"; readonly query: string }
+  | { readonly type: "confluence.open"; readonly id: string }
   | {
       readonly type: "jira.connect";
       readonly displayName: string;
@@ -136,6 +145,7 @@ export type ExtensionResponse =
       readonly state: HomeState;
     }
   | { readonly type: "jira.state"; readonly state: JiraState }
+  | { readonly type: "confluence.state"; readonly state: ConfluenceState }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
       readonly type: "jira.workStarted";

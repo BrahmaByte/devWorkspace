@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
+import { ConfluenceService } from "../application/services/confluenceService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
@@ -14,11 +15,13 @@ import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
+import { ConfluenceRepository } from "../infrastructure/database/confluenceRepository";
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
+import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
@@ -56,6 +59,11 @@ export async function activate(
     new JiraRepository(database),
     context.secrets,
     new FetchJiraClientFactory(),
+  );
+  const confluenceService = new ConfluenceService(
+    new ConfluenceRepository(database),
+    context.secrets,
+    new FetchConfluenceClientFactory(),
   );
   const startWorkService = new StartWorkService(
     workspaceRepository,
@@ -148,6 +156,11 @@ export async function activate(
         type: "jira.state",
         state: await jiraService.refresh(),
       } satisfies ExtensionResponse);
+    const sendConfluence = async (): Promise<boolean> =>
+      panel.webview.postMessage({
+        type: "confluence.state",
+        state: await confluenceService.refresh(),
+      } satisfies ExtensionResponse);
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -169,6 +182,7 @@ export async function activate(
               await sendWorkspace();
               await sendHome();
               await sendJira();
+              await sendConfluence();
               return;
             case "home.refresh":
               await sendHome();
@@ -177,6 +191,42 @@ export async function activate(
               activePage = "notes";
               await sendState();
               await sendNotes(request.query);
+              return;
+            case "confluence.connect": {
+              const token = await vscode.window.showInputBox({
+                title: "Connect Confluence",
+                prompt: "Enter a Confluence personal access token",
+                password: true,
+                ignoreFocusOut: true,
+              });
+              if (token === undefined) return;
+              await panel.webview.postMessage({
+                type: "confluence.state",
+                state: await confluenceService.connect(
+                  request.displayName,
+                  request.baseUrl,
+                  token,
+                ),
+              } satisfies ExtensionResponse);
+              return;
+            }
+            case "confluence.refresh":
+              await sendConfluence();
+              return;
+            case "confluence.disconnect":
+              await confluenceService.disconnect();
+              await sendConfluence();
+              return;
+            case "confluence.search":
+              await panel.webview.postMessage({
+                type: "confluence.state",
+                state: await confluenceService.search(request.query),
+              } satisfies ExtensionResponse);
+              return;
+            case "confluence.open":
+              await vscode.env.openExternal(
+                vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
+              );
               return;
             case "jira.connect": {
               const token = await vscode.window.showInputBox({
@@ -261,6 +311,8 @@ export async function activate(
               if (activePage === "home") await sendHome();
               if (activePage === "jira" || activePage === "settings")
                 await sendJira();
+              if (activePage === "knowledge" || activePage === "settings")
+                await sendConfluence();
               return;
             case "notes.refresh":
               await sendNotes(request.query);
