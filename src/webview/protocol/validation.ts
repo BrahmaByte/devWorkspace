@@ -1,6 +1,14 @@
 import { shellPages, type ShellPage, type WebviewRequest } from "./messages";
 import { noteLimits } from "../../application/services/noteService";
 import { stickyColors, type StickyColor } from "../../domain/notes/models";
+import {
+  confirmationPolicies,
+  preferredIdes,
+  type ConfirmationPolicy,
+  type PreferredIde,
+} from "../../domain/workspace/models";
+import type { OperatingSystem } from "../../platform/platformService";
+import { workspaceLimits } from "../../application/services/workspaceService";
 
 export type ParseResult =
   | { readonly ok: true; readonly value: WebviewRequest }
@@ -36,6 +44,32 @@ function isStickyColor(value: unknown): value is StickyColor {
   return (
     typeof value === "string" &&
     (stickyColors as readonly string[]).includes(value)
+  );
+}
+
+function isOptionalString(
+  value: unknown,
+  maximum: number,
+): value is string | undefined {
+  return value === undefined || isString(value, maximum);
+}
+function isPreferredIde(value: unknown): value is PreferredIde | undefined {
+  return (
+    value === undefined ||
+    (typeof value === "string" &&
+      (preferredIdes as readonly string[]).includes(value))
+  );
+}
+function isPlatform(value: unknown): value is OperatingSystem | "any" {
+  return (
+    typeof value === "string" &&
+    ["windows", "macos", "linux", "any"].includes(value)
+  );
+}
+function isPolicy(value: unknown): value is ConfirmationPolicy {
+  return (
+    typeof value === "string" &&
+    (confirmationPolicies as readonly string[]).includes(value)
   );
 }
 
@@ -157,6 +191,135 @@ export function parseWebviewRequest(value: unknown): ParseResult {
             sortOrder: value.sortOrder as number,
           },
         };
+  }
+  if (value.type === "workspace.refresh")
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "workspace.refresh" } }
+      : { ok: false, error: "workspace.refresh is invalid." };
+  if (value.type === "projects.create" || value.type === "projects.update") {
+    const update = value.type === "projects.update";
+    if (
+      !hasOnlyKeys(value, [
+        "type",
+        "id",
+        "name",
+        "localPath",
+        "preferredIde",
+      ]) ||
+      (update && !isId(value.id)) ||
+      !isString(value.name, workspaceLimits.name) ||
+      !isString(value.localPath, workspaceLimits.path) ||
+      !isPreferredIde(value.preferredIde)
+    )
+      return { ok: false, error: `${value.type} is invalid.` };
+    return {
+      ok: true,
+      value: {
+        type: value.type,
+        ...(update ? { id: value.id as string } : {}),
+        name: value.name,
+        localPath: value.localPath,
+        ...(value.preferredIde ? { preferredIde: value.preferredIde } : {}),
+      } as WebviewRequest,
+    };
+  }
+  if (
+    [
+      "projects.delete",
+      "projects.terminal",
+      "commands.delete",
+      "commands.execute",
+      "environments.delete",
+    ].includes(value.type)
+  ) {
+    if (!hasOnlyKeys(value, ["type", "id"]) || !isId(value.id))
+      return { ok: false, error: `${value.type} is invalid.` };
+    return {
+      ok: true,
+      value: { type: value.type, id: value.id } as WebviewRequest,
+    };
+  }
+  if (value.type === "projects.favourite") {
+    return hasOnlyKeys(value, ["type", "id", "favourite"]) &&
+      isId(value.id) &&
+      typeof value.favourite === "boolean"
+      ? {
+          ok: true,
+          value: {
+            type: "projects.favourite",
+            id: value.id,
+            favourite: value.favourite,
+          },
+        }
+      : { ok: false, error: "projects.favourite is invalid." };
+  }
+  if (value.type === "commands.create") {
+    if (
+      !hasOnlyKeys(value, [
+        "type",
+        "projectId",
+        "name",
+        "command",
+        "platform",
+        "shell",
+        "workingDirectory",
+        "confirmationPolicy",
+      ]) ||
+      !isId(value.projectId) ||
+      !isString(value.name, workspaceLimits.name) ||
+      !isString(value.command, workspaceLimits.command) ||
+      /[\r\n\0]/u.test(value.command) ||
+      !isPlatform(value.platform) ||
+      !isString(value.shell, workspaceLimits.path) ||
+      !isOptionalString(value.workingDirectory, workspaceLimits.path) ||
+      !isPolicy(value.confirmationPolicy)
+    )
+      return { ok: false, error: "commands.create is invalid." };
+    return {
+      ok: true,
+      value: {
+        type: "commands.create",
+        projectId: value.projectId,
+        name: value.name,
+        command: value.command,
+        platform: value.platform,
+        shell: value.shell,
+        ...(value.workingDirectory
+          ? { workingDirectory: value.workingDirectory }
+          : {}),
+        confirmationPolicy: value.confirmationPolicy,
+      },
+    };
+  }
+  if (value.type === "environments.create") {
+    if (
+      !hasOnlyKeys(value, [
+        "type",
+        "projectId",
+        "name",
+        "description",
+        "variableNames",
+      ]) ||
+      (value.projectId !== undefined && !isId(value.projectId)) ||
+      !isString(value.name, workspaceLimits.name) ||
+      !isString(value.description, workspaceLimits.description) ||
+      !Array.isArray(value.variableNames) ||
+      value.variableNames.length > 100 ||
+      !value.variableNames.every((item) =>
+        isString(item, workspaceLimits.variableName),
+      )
+    )
+      return { ok: false, error: "environments.create is invalid." };
+    return {
+      ok: true,
+      value: {
+        type: "environments.create",
+        ...(value.projectId ? { projectId: value.projectId } : {}),
+        name: value.name,
+        description: value.description,
+        variableNames: value.variableNames,
+      },
+    };
   }
   return { ok: false, error: "Unknown message type." };
 }

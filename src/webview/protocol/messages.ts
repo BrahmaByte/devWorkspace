@@ -1,4 +1,10 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
+import type {
+  ConfirmationPolicy,
+  PreferredIde,
+  WorkspaceState,
+} from "../../domain/workspace/models";
+import type { OperatingSystem } from "../../platform/platformService";
 
 export const shellPages = [
   "home",
@@ -49,7 +55,46 @@ export type WebviewRequest =
       readonly color: "yellow" | "blue" | "green" | "pink";
       readonly sortOrder: number;
     }
-  | { readonly type: "sticky.delete"; readonly id: string };
+  | { readonly type: "sticky.delete"; readonly id: string }
+  | { readonly type: "workspace.refresh" }
+  | {
+      readonly type: "projects.create" | "projects.update";
+      readonly id?: string;
+      readonly name: string;
+      readonly localPath: string;
+      readonly preferredIde?: PreferredIde;
+    }
+  | {
+      readonly type: "projects.delete" | "projects.terminal";
+      readonly id: string;
+    }
+  | {
+      readonly type: "projects.favourite";
+      readonly id: string;
+      readonly favourite: boolean;
+    }
+  | {
+      readonly type: "commands.create";
+      readonly projectId: string;
+      readonly name: string;
+      readonly command: string;
+      readonly platform: OperatingSystem | "any";
+      readonly shell: string;
+      readonly workingDirectory?: string;
+      readonly confirmationPolicy: ConfirmationPolicy;
+    }
+  | {
+      readonly type: "commands.delete" | "commands.execute";
+      readonly id: string;
+    }
+  | {
+      readonly type: "environments.create";
+      readonly projectId?: string;
+      readonly name: string;
+      readonly description: string;
+      readonly variableNames: readonly string[];
+    }
+  | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
   | {
@@ -71,4 +116,7 @@ export type ExtensionResponse =
   | {
       readonly type: "notes.created";
       readonly id: string;
-    };
+    }
+  | ({
+      readonly type: "workspace.state";
+    } & WorkspaceState);

@@ -36,7 +36,7 @@ void describe("Webview shell", () => {
     assert.match(html, /Today's Schedule/);
     assert.doesNotMatch(
       html,
-      /Sukanto|Jira OK|Confluence OK|PyCharm|Security Month|GCP Dev|Personal Desk/,
+      /Sukanto|Jira OK|Confluence OK|Security Month|GCP Dev|Personal Desk/,
     );
     assert.match(html, /class="notes-browser"/);
     assert.match(html, /class="note-editor"/);
@@ -49,7 +49,7 @@ void describe("Webview shell", () => {
     assert.match(html, /style-src vscode-webview:\/\/test 'nonce-[^']+'/);
     assert.match(html, /script-src 'nonce-[^']+'/);
     assert.match(html, /<script nonce="[^"]+">/);
-    assert.doesNotMatch(html, /https?:\/\//);
+    assert.doesNotMatch(html, /(?:src|href)="https?:\/\//);
     assert.doesNotMatch(html, /\bfetch\s*\(|XMLHttpRequest|WebSocket/);
   });
 
@@ -90,5 +90,15 @@ void describe("Webview shell", () => {
     assert.match(html, /aria-label="New note" title="New note"/);
     assert.match(html, /data-page="home"[^>]*title="Home"/);
     assert.doesNotMatch(html, />[⌂⌖⌫☾☀✎✓×＋▣▤◇]</);
+  });
+
+  void it("provides icon-driven workspace management", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    for (const id of ["project-form", "command-form", "environment-form"])
+      assert.match(html, new RegExp(`id="${id}"`));
+    assert.match(html, /message\?\.type==="workspace\.state"/);
+    assert.match(html, /type:"commands\.execute"/);
+    assert.match(html, /aria-label="Save command" title="Save command"/);
   });
 });

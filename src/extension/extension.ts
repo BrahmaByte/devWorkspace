@@ -1,9 +1,16 @@
 import * as vscode from "vscode";
 
 import { NoteService } from "../application/services/noteService";
+import { CommandExecutionService } from "../application/services/commandExecutionService";
+import { WorkspaceService } from "../application/services/workspaceService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
+import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
+import {
+  VscodeCommandExecutor,
+  VscodeConfirmationGateway,
+} from "../infrastructure/vscode/vscodeCommandExecutor";
 import { createPlatformService } from "../platform/platformService";
 import { createWebviewHtml } from "../webview/app/shell";
 import type {
@@ -21,6 +28,18 @@ export async function activate(
     getDatabasePath(context.globalStorageUri.fsPath),
   );
   const noteService = new NoteService(new NoteRepository(database));
+  const platform = createPlatformService();
+  const workspaceRepository = new WorkspaceRepository(database);
+  const workspaceService = new WorkspaceService(
+    workspaceRepository,
+    platform.operatingSystem,
+  );
+  const commandExecutionService = new CommandExecutionService(
+    workspaceRepository,
+    new VscodeCommandExecutor(),
+    new VscodeConfirmationGateway(),
+    platform.operatingSystem,
+  );
   context.subscriptions.push({
     dispose: () => {
       database.close();
@@ -28,7 +47,6 @@ export async function activate(
   });
 
   const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () => {
-    const platform = createPlatformService();
     let activePage: ShellPage = "home";
     let noteQuery = "";
     const panel = vscode.window.createWebviewPanel(
@@ -59,6 +77,11 @@ export async function activate(
         ...state,
       } satisfies ExtensionResponse);
     };
+    const sendWorkspace = (): Thenable<boolean> =>
+      panel.webview.postMessage({
+        type: "workspace.state",
+        ...workspaceService.getState(),
+      } satisfies ExtensionResponse);
 
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
@@ -77,11 +100,13 @@ export async function activate(
             case "shell.ready":
               await sendState();
               await sendNotes();
+              await sendWorkspace();
               return;
             case "navigation.select":
               activePage = request.page;
               await sendState();
               if (activePage === "notes") await sendNotes();
+              if (activePage === "workspace") await sendWorkspace();
               return;
             case "notes.refresh":
               await sendNotes(request.query);
@@ -129,13 +154,79 @@ export async function activate(
             case "sticky.delete":
               await noteService.deleteStickyNote(request.id);
               break;
+            case "workspace.refresh":
+              await sendWorkspace();
+              return;
+            case "projects.create":
+              await workspaceService.createProject(
+                request.name,
+                request.localPath,
+                request.preferredIde,
+              );
+              break;
+            case "projects.update":
+              await workspaceService.updateProject(
+                request.id as string,
+                request.name,
+                request.localPath,
+                request.preferredIde,
+              );
+              break;
+            case "projects.delete":
+              await workspaceService.deleteProject(request.id);
+              break;
+            case "projects.favourite":
+              await workspaceService.setFavourite(
+                request.id,
+                request.favourite,
+              );
+              break;
+            case "projects.terminal":
+              await commandExecutionService.openProjectTerminal(
+                request.id,
+                platform.defaultShell,
+              );
+              break;
+            case "commands.create":
+              await workspaceService.createCommand(
+                request.projectId,
+                request.name,
+                request.command,
+                request.platform,
+                request.shell,
+                request.workingDirectory,
+                request.confirmationPolicy,
+              );
+              break;
+            case "commands.delete":
+              await workspaceService.deleteCommand(request.id);
+              break;
+            case "commands.execute":
+              await commandExecutionService.execute(request.id);
+              break;
+            case "environments.create":
+              await workspaceService.createEnvironment(
+                request.projectId,
+                request.name,
+                request.description,
+                request.variableNames,
+              );
+              break;
+            case "environments.delete":
+              await workspaceService.deleteEnvironment(request.id);
+              break;
           }
-          await sendNotes(noteQuery);
+          if (
+            request.type.startsWith("notes.") ||
+            request.type.startsWith("sticky.")
+          )
+            await sendNotes(noteQuery);
+          else await sendWorkspace();
         } catch {
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "operation_failed",
-            message: "DevWorkspace could not complete the note operation.",
+            message: "DevWorkspace could not complete the requested operation.",
           } satisfies ExtensionResponse);
         }
       },

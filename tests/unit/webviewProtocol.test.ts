@@ -60,4 +60,50 @@ void describe("Webview protocol validation", () => {
       false,
     );
   });
+
+  void it("accepts validated workspace operations and rejects over-posting", () => {
+    assert.equal(
+      parseWebviewRequest({
+        type: "projects.create",
+        name: "API",
+        localPath: "/work/api",
+        preferredIde: "vscode",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "commands.create",
+        projectId: "00000000-0000-4000-8000-000000000000",
+        name: "Test",
+        command: "npm test",
+        platform: "linux",
+        shell: "/bin/sh",
+        workingDirectory: "scripts",
+        confirmationPolicy: "always",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "commands.create",
+        projectId: "00000000-0000-4000-8000-000000000000",
+        name: "Bad",
+        command: "npm test\nrm -rf /",
+        platform: "linux",
+        shell: "/bin/sh",
+        confirmationPolicy: "never",
+      }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "projects.create",
+        name: "API",
+        localPath: "/work/api",
+        token: "secret",
+      }).ok,
+      false,
+    );
+  });
 });

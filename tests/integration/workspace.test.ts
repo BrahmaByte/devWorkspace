@@ -1,0 +1,213 @@
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
+
+import {
+  CommandExecutionService,
+  type CommandExecutor,
+  type ConfirmationGateway,
+} from "../../src/application/services/commandExecutionService";
+import { WorkspaceService } from "../../src/application/services/workspaceService";
+import { getDatabasePath } from "../../src/infrastructure/database/location";
+import { LocalDatabase } from "../../src/infrastructure/database/localDatabase";
+import { WorkspaceRepository } from "../../src/infrastructure/database/workspaceRepository";
+
+const directories: string[] = [];
+class FakeExecutor implements CommandExecutor {
+  public calls: Array<{ shell: string; command?: string; cwd: string }> = [];
+  public execute(shell: string, command: string, cwd: string) {
+    this.calls.push({ shell, command, cwd });
+    return Promise.resolve();
+  }
+  public openTerminal(cwd: string, shell: string) {
+    this.calls.push({ shell, cwd });
+    return Promise.resolve();
+  }
+}
+class FakeConfirmation implements ConfirmationGateway {
+  public constructor(
+    private readonly answer: boolean,
+    public calls = 0,
+  ) {}
+  public confirm() {
+    this.calls += 1;
+    return Promise.resolve(this.answer);
+  }
+}
+
+async function setup() {
+  const directory = await mkdtemp(join(tmpdir(), "devworkspace-workspace-"));
+  directories.push(directory);
+  const database = await LocalDatabase.open(getDatabasePath(directory));
+  const repository = new WorkspaceRepository(database);
+  return {
+    database,
+    repository,
+    service: new WorkspaceService(repository, "linux"),
+  };
+}
+void afterEach(async () => {
+  await Promise.all(
+    directories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
+  );
+});
+
+void describe("workspace management", () => {
+  void it("manages projects, favourites, IDEs, commands, and environment metadata", async () => {
+    const { database, service } = await setup();
+    const projectId = await service.createProject("API", "/work/api", "vscode");
+    await service.setFavourite(projectId, true);
+    const commandId = await service.createCommand(
+      projectId,
+      "Test",
+      "npm test",
+      "any",
+      "/bin/sh",
+      undefined,
+      "dangerous",
+    );
+    const environmentId = await service.createEnvironment(
+      projectId,
+      "Local",
+      "Names only",
+      ["API_URL", "LOG_LEVEL"],
+    );
+    const state = service.getState();
+    assert.equal(state.projects[0]?.isFavourite, true);
+    assert.equal(state.projects[0]?.preferredIde, "vscode");
+    assert.equal(state.commands[0]?.id, commandId);
+    assert.deepEqual(state.environmentProfiles[0]?.variableNames, [
+      "API_URL",
+      "LOG_LEVEL",
+    ]);
+    assert.doesNotMatch(
+      JSON.stringify(state.environmentProfiles),
+      /password|secret-value/iu,
+    );
+    await service.deleteEnvironment(environmentId);
+    await service.deleteCommand(commandId);
+    await service.deleteProject(projectId);
+    assert.equal(service.getState().projects.length, 0);
+    database.close();
+  });
+
+  void it("rejects traversal, multiline commands, invalid variables, and unsafe no-confirm commands", async () => {
+    const { database, service } = await setup();
+    const projectId = await service.createProject("API", "/work/api");
+    await assert.rejects(service.createProject("Bad", "../relative"));
+    await assert.rejects(service.createProject("Bad", "/work/../escape"));
+    await assert.rejects(
+      service.createCommand(
+        projectId,
+        "Bad",
+        "echo ok\nrm -rf /",
+        "any",
+        "/bin/sh",
+        undefined,
+        "always",
+      ),
+    );
+    await assert.rejects(
+      service.createCommand(
+        projectId,
+        "Bad",
+        "rm -rf /",
+        "any",
+        "/bin/sh",
+        undefined,
+        "never",
+      ),
+    );
+    await assert.rejects(
+      service.createEnvironment(projectId, "Bad", "", ["TOKEN=value"]),
+    );
+    database.close();
+  });
+
+  void it("executes only stored commands with platform checks, containment, and confirmation", async () => {
+    const { database, repository, service } = await setup();
+    const projectId = await service.createProject("API", "/work/api");
+    const safeId = await service.createCommand(
+      projectId,
+      "Test",
+      "npm test",
+      "linux",
+      "/bin/sh",
+      "scripts",
+      "always",
+    );
+    const executor = new FakeExecutor();
+    const confirmation = new FakeConfirmation(true);
+    const execution = new CommandExecutionService(
+      repository,
+      executor,
+      confirmation,
+      "linux",
+    );
+    await execution.execute(safeId);
+    assert.deepEqual(executor.calls[0], {
+      shell: "/bin/sh",
+      command: "npm test",
+      cwd: "/work/api/scripts",
+    });
+    assert.equal(confirmation.calls, 1);
+    const deniedId = await service.createCommand(
+      projectId,
+      "Denied",
+      "npm run build",
+      "any",
+      "/bin/sh",
+      undefined,
+      "always",
+    );
+    const deniedExecutor = new FakeExecutor();
+    await new CommandExecutionService(
+      repository,
+      deniedExecutor,
+      new FakeConfirmation(false),
+      "linux",
+    ).execute(deniedId);
+    assert.equal(deniedExecutor.calls.length, 0);
+    await assert.rejects(
+      new CommandExecutionService(
+        repository,
+        executor,
+        confirmation,
+        "windows",
+      ).execute(safeId),
+      /platform/u,
+    );
+    database.close();
+  });
+
+  void it("maps Windows project paths when resolving command directories", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "devworkspace-windows-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new WorkspaceRepository(database);
+    const service = new WorkspaceService(repository, "windows");
+    const projectId = await service.createProject("API", "C:\\work\\api");
+    const commandId = await service.createCommand(
+      projectId,
+      "Test",
+      "npm test",
+      "windows",
+      "cmd.exe",
+      "scripts",
+      "never",
+    );
+    const executor = new FakeExecutor();
+    await new CommandExecutionService(
+      repository,
+      executor,
+      new FakeConfirmation(true),
+      "windows",
+    ).execute(commandId);
+    assert.equal(executor.calls[0]?.cwd, "C:\\work\\api\\scripts");
+    database.close();
+  });
+});

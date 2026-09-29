@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 3 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 4 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -184,9 +184,12 @@ a centered editor dialog for viewing and editing. Saved content is rendered
 as plain text inside the network-isolated Webview. A shared header provides a
 live local clock and persistent light/dark appearance toggle. Home includes a
 desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
-Tests, packaging, and a
-Windows/macOS/Linux CI matrix are included. Projects/commands, Jira, Confluence,
-and AI are intentionally not implemented yet.
+Workspace management adds local project CRUD, favourites, preferred IDE metadata,
+terminal launching, stored platform-specific commands with confirmation policies,
+and environment profiles that retain variable names but never secret values.
+Commands can only be launched after they have passed host-side validation and
+been stored locally. Tests, packaging, and a Windows/macOS/Linux CI matrix are
+included. Jira, Confluence, and AI are intentionally not implemented yet.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 
