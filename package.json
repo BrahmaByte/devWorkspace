@@ -45,11 +45,15 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.18.6",
+    "@types/sql.js": "^1.4.11",
     "@types/vscode": "^1.95.0",
     "@vscode/vsce": "^3.6.0",
     "eslint": "^10.11.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.0"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.2"
   }
 }

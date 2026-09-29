@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 
+import { getDatabasePath } from "../infrastructure/database/location";
+import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { createPlatformService } from "../platform/platformService";
 import { createWebviewHtml } from "../webview/app/shell";
 import type {
@@ -10,7 +12,18 @@ import { parseWebviewRequest } from "../webview/protocol/validation";
 
 const OPEN_COMMAND = "devworkspace.open";
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(
+  context: vscode.ExtensionContext,
+): Promise<void> {
+  const database = await LocalDatabase.open(
+    getDatabasePath(context.globalStorageUri.fsPath),
+  );
+  context.subscriptions.push({
+    dispose: () => {
+      database.close();
+    },
+  });
+
   const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () => {
     const platform = createPlatformService();
     let activePage: ShellPage = "home";

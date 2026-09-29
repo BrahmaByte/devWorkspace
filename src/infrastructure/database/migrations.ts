@@ -1,0 +1,118 @@
+export interface Migration {
+  readonly version: number;
+  readonly name: string;
+  readonly sql: string;
+}
+
+export const migrations: readonly Migration[] = [
+  {
+    version: 1,
+    name: "initial_schema",
+    sql: `
+      CREATE TABLE notes (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
+        is_pinned INTEGER NOT NULL DEFAULT 0 CHECK (is_pinned IN (0, 1)),
+        is_archived INTEGER NOT NULL DEFAULT 0 CHECK (is_archived IN (0, 1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE sticky_notes (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL DEFAULT '',
+        color TEXT NOT NULL DEFAULT 'yellow',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        local_path TEXT NOT NULL UNIQUE,
+        preferred_ide TEXT,
+        jira_project_key TEXT,
+        is_favourite INTEGER NOT NULL DEFAULT 0 CHECK (is_favourite IN (0, 1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE project_commands (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        command TEXT NOT NULL,
+        platform TEXT NOT NULL CHECK (platform IN ('windows', 'macos', 'linux', 'any')),
+        shell TEXT NOT NULL,
+        working_directory TEXT,
+        confirmation_policy TEXT NOT NULL CHECK (confirmation_policy IN ('always', 'dangerous', 'never')),
+        UNIQUE(project_id, name, platform)
+      );
+      CREATE TABLE environment_profiles (
+        id TEXT PRIMARY KEY,
+        project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        variable_names_json TEXT NOT NULL DEFAULT '[]',
+        UNIQUE(project_id, name)
+      );
+      CREATE TABLE jira_connections (
+        id TEXT PRIMARY KEY,
+        base_url TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE jira_issue_cache (
+        id TEXT PRIMARY KEY,
+        connection_id TEXT NOT NULL REFERENCES jira_connections(id) ON DELETE CASCADE,
+        external_id TEXT NOT NULL,
+        issue_key TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        status TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(connection_id, external_id)
+      );
+      CREATE TABLE confluence_connections (
+        id TEXT PRIMARY KEY,
+        base_url TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE confluence_page_cache (
+        id TEXT PRIMARY KEY,
+        connection_id TEXT NOT NULL REFERENCES confluence_connections(id) ON DELETE CASCADE,
+        external_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        web_url TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(connection_id, external_id)
+      );
+      CREATE TABLE relationships (
+        id TEXT PRIMARY KEY,
+        source_type TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        CHECK (source_type IN ('note', 'project', 'jira_issue', 'confluence_page', 'repository', 'file', 'command', 'url')),
+        CHECK (target_type IN ('note', 'project', 'jira_issue', 'confluence_page', 'repository', 'file', 'command', 'url')),
+        UNIQUE(source_type, source_id, target_type, target_id)
+      );
+      CREATE TABLE recent_resources (
+        id TEXT PRIMARY KEY,
+        resource_type TEXT NOT NULL,
+        resource_id TEXT NOT NULL,
+        accessed_at TEXT NOT NULL,
+        UNIQUE(resource_type, resource_id)
+      );
+      CREATE TABLE favourites (
+        id TEXT PRIMARY KEY,
+        resource_type TEXT NOT NULL,
+        resource_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(resource_type, resource_id)
+      );
+    `,
+  },
+];

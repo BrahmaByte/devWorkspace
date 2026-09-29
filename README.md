@@ -173,12 +173,14 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 and 1 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 2 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
-error boundary, platform abstraction, tests, packaging, and a
-Windows/macOS/Linux CI matrix. Persistence, commands, Jira, Confluence, and AI
-are intentionally not implemented yet.
+error boundary, platform abstraction, and a migration-backed local SQLite data
+layer. The database is stored under VS Code's extension global-storage directory,
+not inside the extension or a project. Tests, packaging, and a
+Windows/macOS/Linux CI matrix are included. Feature CRUD, commands, Jira,
+Confluence, and AI are intentionally not implemented yet.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
 
