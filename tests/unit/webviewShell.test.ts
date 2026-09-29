@@ -109,6 +109,17 @@ void describe("Webview shell", () => {
       /id="project-browse"[^>]*aria-label="Browse for project folder"/,
     );
     assert.match(html, /type:"projects\.browse"/);
+    assert.match(
+      html,
+      /id="command-browse"[^>]*aria-label="Browse for terminal folder"/,
+    );
+    assert.match(html, /type:"commands\.browse"/);
+    assert.match(html, /message\?\.type==="commands\.pathSelected"/);
     assert.match(html, /project\.gitBranch/);
+    assert.match(html, /className="git-branch"/);
+    assert.match(
+      html,
+      /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
+    );
   });
 });

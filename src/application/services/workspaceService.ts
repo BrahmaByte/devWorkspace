@@ -76,7 +76,7 @@ export class WorkspaceService {
   }
 
   public async createCommand(
-    projectId: string,
+    projectId: string | undefined,
     name: string,
     command: string,
     platform: OperatingSystem | "any",
@@ -84,14 +84,14 @@ export class WorkspaceService {
     workingDirectory: string | undefined,
     policy: ConfirmationPolicy,
   ): Promise<string> {
-    this.requireId(projectId);
+    if (projectId) this.requireId(projectId);
     this.requireText(name, workspaceLimits.name);
     this.validateCommand(command);
     if (!["any", "windows", "macos", "linux"].includes(platform))
       throw new Error("Invalid platform.");
     if (!confirmationPolicies.includes(policy))
       throw new Error("Invalid confirmation policy.");
-    if (workingDirectory) this.validateWorkingDirectory(workingDirectory);
+    if (workingDirectory) this.validatePath(workingDirectory);
     if (policy === "never" && isDangerousCommand(command))
       throw new Error("Dangerous commands cannot bypass confirmation.");
     const id = randomUUID();
@@ -170,25 +170,6 @@ export class WorkspaceService {
         : normalize(value);
     const comparable = value.length > 1 ? value.replace(/[\\/]$/u, "") : value;
     if (normalized !== comparable) throw new Error("Path must be normalized.");
-  }
-  private validateWorkingDirectory(value: string): void {
-    const pathApi =
-      this.operatingSystem === "windows" ? win32 : { isAbsolute, normalize };
-    if (
-      value.length > workspaceLimits.path ||
-      value.includes("\0") ||
-      pathApi.isAbsolute(value)
-    )
-      throw new Error("Working directory must be relative.");
-    const normalized = pathApi.normalize(value);
-    if (
-      normalized !== value ||
-      normalized === ".." ||
-      normalized.startsWith(
-        `..${this.operatingSystem === "windows" ? "\\" : "/"}`,
-      )
-    )
-      throw new Error("Working directory must stay inside the project.");
   }
   private validateCommand(value: string): void {
     if (

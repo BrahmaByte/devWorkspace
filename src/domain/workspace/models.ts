@@ -23,7 +23,7 @@ export interface Project {
 
 export interface ProjectCommand {
   readonly id: string;
-  readonly projectId: string;
+  readonly projectId?: string;
   readonly name: string;
   readonly command: string;
   readonly platform: OperatingSystem | "any";

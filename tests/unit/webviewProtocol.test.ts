@@ -48,6 +48,17 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({
+        type: "commands.create",
+        name: "Status",
+        command: "git status",
+        platform: "any",
+        shell: "/bin/sh",
+        confirmationPolicy: "always",
+      }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({ type: "notes.refresh", query: "x".repeat(201) }).ok,
       false,
     );
@@ -65,6 +76,10 @@ void describe("Webview protocol validation", () => {
     assert.deepEqual(parseWebviewRequest({ type: "projects.browse" }), {
       ok: true,
       value: { type: "projects.browse" },
+    });
+    assert.deepEqual(parseWebviewRequest({ type: "commands.browse" }), {
+      ok: true,
+      value: { type: "commands.browse" },
     });
     assert.equal(
       parseWebviewRequest({

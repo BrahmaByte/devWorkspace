@@ -46,7 +46,7 @@ export class WorkspaceRepository {
         .query("SELECT * FROM project_commands ORDER BY name;")
         .map((row): ProjectCommand => ({
           id: text(row, "id"),
-          projectId: text(row, "project_id"),
+          projectId: optionalText(row, "project_id"),
           name: text(row, "name"),
           command: text(row, "command"),
           platform: text(row, "platform") as OperatingSystem | "any",
@@ -129,12 +129,12 @@ export class WorkspaceRepository {
   }
 
   public async createCommand(command: ProjectCommand): Promise<void> {
-    this.requireProject(command.projectId);
+    if (command.projectId) this.requireProject(command.projectId);
     this.database.run(
       "INSERT INTO project_commands(id,project_id,name,command,platform,shell,working_directory,confirmation_policy) VALUES(?,?,?,?,?,?,?,?);",
       [
         command.id,
-        command.projectId,
+        command.projectId ?? null,
         command.name,
         command.command,
         command.platform,

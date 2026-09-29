@@ -191,7 +191,10 @@ preferred IDE and Git branch metadata, terminal launching, stored
 platform-specific commands with confirmation policies, and environment profiles
 that retain variable names but never secret values.
 Commands can only be launched after they have passed host-side validation and
-been stored locally. Tests, packaging, and a Windows/macOS/Linux CI matrix are
+been stored locally. Command shortcuts can run in the default VS Code terminal
+directory or an optional folder explicitly chosen with the native folder picker;
+they do not require a project association. Tests, packaging, and a
+Windows/macOS/Linux CI matrix are
 included. Jira, Confluence, and AI are intentionally not implemented yet.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.

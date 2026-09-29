@@ -36,7 +36,7 @@ void describe("Local SQLite database", () => {
     const { database } = await createDatabase();
     const repository = new LocalStateRepository(database);
 
-    assert.equal(repository.getSchemaVersion(), 1);
+    assert.equal(repository.getSchemaVersion(), 2);
     assert.equal(
       database.getScalar(
         "SELECT name FROM schema_migrations WHERE version = 1;",
@@ -83,11 +83,11 @@ void describe("Local SQLite database", () => {
 
     const reopened = await LocalDatabase.open(filePath);
     const repository = new LocalStateRepository(reopened);
-    assert.equal(repository.getSchemaVersion(), 1);
+    assert.equal(repository.getSchemaVersion(), 2);
     assert.equal(repository.count("projects"), 1);
     assert.equal(
       reopened.getScalar("SELECT COUNT(*) FROM schema_migrations;"),
-      1,
+      2,
     );
     reopened.close();
   });

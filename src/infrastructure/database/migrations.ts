@@ -115,4 +115,25 @@ export const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: "optional_command_project",
+    sql: `
+      CREATE TABLE project_commands_v2 (
+        id TEXT PRIMARY KEY,
+        project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+        name TEXT NOT NULL,
+        command TEXT NOT NULL,
+        platform TEXT NOT NULL CHECK (platform IN ('windows', 'macos', 'linux', 'any')),
+        shell TEXT NOT NULL,
+        working_directory TEXT,
+        confirmation_policy TEXT NOT NULL CHECK (confirmation_policy IN ('always', 'dangerous', 'never'))
+      );
+      INSERT INTO project_commands_v2
+        SELECT id, project_id, name, command, platform, shell, working_directory, confirmation_policy
+        FROM project_commands;
+      DROP TABLE project_commands;
+      ALTER TABLE project_commands_v2 RENAME TO project_commands;
+    `,
+  },
 ];

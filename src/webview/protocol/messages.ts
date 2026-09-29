@@ -58,6 +58,7 @@ export type WebviewRequest =
   | { readonly type: "sticky.delete"; readonly id: string }
   | { readonly type: "workspace.refresh" }
   | { readonly type: "projects.browse" }
+  | { readonly type: "commands.browse" }
   | {
       readonly type: "projects.create" | "projects.update";
       readonly id?: string;
@@ -76,7 +77,7 @@ export type WebviewRequest =
     }
   | {
       readonly type: "commands.create";
-      readonly projectId: string;
+      readonly projectId?: string;
       readonly name: string;
       readonly command: string;
       readonly platform: OperatingSystem | "any";
@@ -122,6 +123,10 @@ export type ExtensionResponse =
       readonly type: "projects.pathSelected";
       readonly localPath: string;
       readonly name: string;
+    }
+  | {
+      readonly type: "commands.pathSelected";
+      readonly localPath: string;
     }
   | ({
       readonly type: "workspace.state";

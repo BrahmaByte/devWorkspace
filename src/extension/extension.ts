@@ -53,6 +53,7 @@ export async function activate(
   const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () => {
     let activePage: ShellPage = "home";
     let noteQuery = "";
+    let selectedCommandPath: string | undefined;
     const panel = vscode.window.createWebviewPanel(
       "devworkspace.main",
       "DevWorkspace",
@@ -186,6 +187,23 @@ export async function activate(
                 } satisfies ExtensionResponse);
               return;
             }
+            case "commands.browse": {
+              const selected = await vscode.window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                openLabel: "Select terminal folder",
+              });
+              const folder = selected?.[0];
+              if (folder) {
+                selectedCommandPath = folder.fsPath;
+                await panel.webview.postMessage({
+                  type: "commands.pathSelected",
+                  localPath: folder.fsPath,
+                } satisfies ExtensionResponse);
+              }
+              return;
+            }
             case "projects.create":
               await workspaceService.createProject(
                 request.name,
@@ -217,6 +235,11 @@ export async function activate(
               );
               break;
             case "commands.create":
+              if (
+                request.workingDirectory &&
+                request.workingDirectory !== selectedCommandPath
+              )
+                throw new Error("Command path was not selected by the user.");
               await workspaceService.createCommand(
                 request.projectId,
                 request.name,
@@ -226,6 +249,7 @@ export async function activate(
                 request.workingDirectory,
                 request.confirmationPolicy,
               );
+              selectedCommandPath = undefined;
               break;
             case "commands.delete":
               await workspaceService.deleteCommand(request.id);

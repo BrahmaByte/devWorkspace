@@ -16,8 +16,8 @@ import { WorkspaceRepository } from "../../src/infrastructure/database/workspace
 
 const directories: string[] = [];
 class FakeExecutor implements CommandExecutor {
-  public calls: Array<{ shell: string; command?: string; cwd: string }> = [];
-  public execute(shell: string, command: string, cwd: string) {
+  public calls: Array<{ shell: string; command?: string; cwd?: string }> = [];
+  public execute(shell: string, command: string, cwd?: string) {
     this.calls.push({ shell, command, cwd });
     return Promise.resolve();
   }
@@ -123,12 +123,23 @@ void describe("workspace management", () => {
       ),
     );
     await assert.rejects(
+      service.createCommand(
+        undefined,
+        "Bad path",
+        "npm test",
+        "any",
+        "/bin/sh",
+        "../escape",
+        "always",
+      ),
+    );
+    await assert.rejects(
       service.createEnvironment(projectId, "Bad", "", ["TOKEN=value"]),
     );
     database.close();
   });
 
-  void it("executes only stored commands with platform checks, containment, and confirmation", async () => {
+  void it("executes stored commands with optional trusted paths and confirmation", async () => {
     const { database, repository, service } = await setup();
     const projectId = await service.createProject("API", "/work/api");
     const safeId = await service.createCommand(
@@ -137,7 +148,7 @@ void describe("workspace management", () => {
       "npm test",
       "linux",
       "/bin/sh",
-      "scripts",
+      "/work/api/scripts",
       "always",
     );
     const executor = new FakeExecutor();
@@ -184,6 +195,32 @@ void describe("workspace management", () => {
     database.close();
   });
 
+  void it("runs a project-independent command in the default terminal directory", async () => {
+    const { database, repository, service } = await setup();
+    const commandId = await service.createCommand(
+      undefined,
+      "Status",
+      "git status",
+      "any",
+      "/bin/sh",
+      undefined,
+      "never",
+    );
+    const executor = new FakeExecutor();
+    await new CommandExecutionService(
+      repository,
+      executor,
+      new FakeConfirmation(true),
+      "linux",
+    ).execute(commandId);
+    assert.deepEqual(executor.calls[0], {
+      shell: "/bin/sh",
+      command: "git status",
+      cwd: undefined,
+    });
+    database.close();
+  });
+
   void it("maps Windows project paths when resolving command directories", async () => {
     const directory = await mkdtemp(join(tmpdir(), "devworkspace-windows-"));
     directories.push(directory);
@@ -197,7 +234,7 @@ void describe("workspace management", () => {
       "npm test",
       "windows",
       "cmd.exe",
-      "scripts",
+      "C:\\work\\api\\scripts",
       "never",
     );
     const executor = new FakeExecutor();

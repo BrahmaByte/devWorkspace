@@ -5,7 +5,7 @@ import type { WorkspaceRepository } from "../../infrastructure/database/workspac
 import type { OperatingSystem } from "../../platform/platformService";
 
 export interface CommandExecutor {
-  execute(shell: string, command: string, cwd: string): Promise<void>;
+  execute(shell: string, command: string, cwd?: string): Promise<void>;
   openTerminal(cwd: string, shell: string): Promise<void>;
 }
 export interface ConfirmationGateway {
@@ -24,18 +24,22 @@ export class CommandExecutionService {
     if (!command) throw new Error("Command not found.");
     if (command.platform !== "any" && command.platform !== this.operatingSystem)
       throw new Error("Command is not available on this platform.");
-    const project = this.repository.getProject(command.projectId);
-    if (!project) throw new Error("Project not found.");
     const pathApi = this.operatingSystem === "windows" ? win32 : posix;
+    const project = command.projectId
+      ? this.repository.getProject(command.projectId)
+      : undefined;
+    if (command.projectId && !project) throw new Error("Project not found.");
     const cwd = command.workingDirectory
-      ? pathApi.resolve(project.localPath, command.workingDirectory)
-      : project.localPath;
-    if (
-      !pathApi.isAbsolute(cwd) ||
-      (cwd !== project.localPath &&
-        !cwd.startsWith(project.localPath + pathApi.sep))
-    )
-      throw new Error("Working directory escapes the project.");
+      ? pathApi.isAbsolute(command.workingDirectory)
+        ? command.workingDirectory
+        : project
+          ? pathApi.resolve(project.localPath, command.workingDirectory)
+          : undefined
+      : project?.localPath;
+    if (command.workingDirectory && !cwd)
+      throw new Error("Working directory is invalid.");
+    if (cwd && !pathApi.isAbsolute(cwd))
+      throw new Error("Working directory must be absolute.");
     const mustConfirm =
       command.confirmationPolicy === "always" ||
       (command.confirmationPolicy === "dangerous" &&

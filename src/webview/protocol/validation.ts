@@ -192,7 +192,11 @@ export function parseWebviewRequest(value: unknown): ParseResult {
           },
         };
   }
-  if (value.type === "workspace.refresh" || value.type === "projects.browse")
+  if (
+    value.type === "workspace.refresh" ||
+    value.type === "projects.browse" ||
+    value.type === "commands.browse"
+  )
     return hasOnlyKeys(value, ["type"])
       ? { ok: true, value: { type: value.type } }
       : { ok: false, error: `${value.type} is invalid.` };
@@ -265,7 +269,7 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         "workingDirectory",
         "confirmationPolicy",
       ]) ||
-      !isId(value.projectId) ||
+      (value.projectId !== undefined && !isId(value.projectId)) ||
       !isString(value.name, workspaceLimits.name) ||
       !isString(value.command, workspaceLimits.command) ||
       /[\r\n\0]/u.test(value.command) ||

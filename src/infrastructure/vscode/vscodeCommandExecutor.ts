@@ -6,7 +6,7 @@ import type {
 } from "../../application/services/commandExecutionService";
 
 export class VscodeCommandExecutor implements CommandExecutor {
-  public execute(shell: string, command: string, cwd: string): Promise<void> {
+  public execute(shell: string, command: string, cwd?: string): Promise<void> {
     const terminal = vscode.window.createTerminal({
       name: "DevWorkspace command",
       cwd,
