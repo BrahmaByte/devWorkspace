@@ -7,7 +7,7 @@ void describe("Webview shell", () => {
   void it("renders the DevWorkspace placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
-    assert.match(html, /class="brand">Good morning, Sukanto<\/p>/);
+    assert.match(html, /id="greeting" class="brand"><\/p>/);
     assert.match(html, /<header class="app-header">/);
     assert.match(html, /Sticky Notes Board/);
     for (const area of ["Home", "Jira", "Workspace", "Notes", "Knowledge"]) {
@@ -34,6 +34,10 @@ void describe("Webview shell", () => {
     assert.match(html, /Daily Dev URLs/);
     assert.match(html, /Current Jira Task/);
     assert.match(html, /Today's Schedule/);
+    assert.doesNotMatch(
+      html,
+      /Sukanto|Jira OK|Confluence OK|PyCharm|Security Month|GCP Dev|Personal Desk/,
+    );
     assert.match(html, /class="notes-browser"/);
     assert.match(html, /class="note-editor"/);
   });
