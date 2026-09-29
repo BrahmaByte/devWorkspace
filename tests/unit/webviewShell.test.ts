@@ -60,4 +60,21 @@ void describe("Webview shell", () => {
     assert.match(html, /content\.textContent=note\.content/);
     assert.doesNotMatch(html, /innerHTML|insertAdjacentHTML|document\.write/);
   });
+
+  void it("autosaves edits and opens sticky notes in a modal editor", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /id="sticky-dialog"/);
+    assert.match(html, /stickyDialog\.showModal\(\)/);
+    assert.match(
+      html,
+      /setTimeout\(\(\)=>\{autosaveTimer=undefined;saveExisting\(\)/,
+    );
+    assert.match(html, /const flushAutosave=/);
+    assert.match(
+      html,
+      /noteContent\.addEventListener\("input",scheduleAutosave\)/,
+    );
+    assert.match(html, /aria-label="Delete note"[^>]*>⌫<\/button>/);
+  });
 });
