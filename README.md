@@ -173,7 +173,7 @@ for the complete Milestone 0 manual check.
 
 ## Current implementation
 
-Milestones 0 through 10 provide the npm/TypeScript toolchain, VS Code extension
+Milestones 0 through 11 provide the npm/TypeScript toolchain, VS Code extension
 manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
 navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
 error boundary, platform abstraction, and a migration-backed local SQLite data
@@ -223,8 +223,14 @@ An empty query shows recent resources, while unavailable providers are reported
 without hiding results from healthy providers. Results are rendered only through
 DOM text nodes and open through host-side, type-specific handlers. Use
 `Ctrl+Alt+K` (`Cmd+Alt+K` on macOS) or the header search icon to open it.
+Security hardening adds a documented threat model, strict plain-object protocol
+validation, one-use native folder-picker authorization for new project paths,
+and dedicated regression coverage for hostile messages, XSS sinks, command
+controls, path traversal, URLs, and credential boundaries.
 
 See `docs/ARCHITECTURE.md` for the source boundaries.
+See `docs/SECURITY.md` for the threat model, privacy behavior, residual risks,
+and release security checks.
 
 ## Roadmap
 

@@ -13,6 +13,7 @@ import {
   LocalSearchProvider,
   SearchService,
 } from "../application/services/searchService";
+import { SelectedPathAuthorizer } from "../application/services/pathAuthorizationService";
 import { JiraService } from "../application/services/jiraService";
 import {
   issueProjectKey,
@@ -112,6 +113,7 @@ export async function activate(
     let activePage: ShellPage = initialPage;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
+    const selectedProjectPaths = new SelectedPathAuthorizer();
     const panel = vscode.window.createWebviewPanel(
       "devworkspace.main",
       "DevWorkspace",
@@ -477,12 +479,14 @@ export async function activate(
                 openLabel: "Select project folder",
               });
               const folder = selected?.[0];
-              if (folder)
+              if (folder) {
+                selectedProjectPaths.authorize(folder.fsPath);
                 await panel.webview.postMessage({
                   type: "projects.pathSelected",
                   localPath: folder.fsPath,
                   name: basename(folder.fsPath),
                 } satisfies ExtensionResponse);
+              }
               return;
             }
             case "commands.browse": {
@@ -503,6 +507,8 @@ export async function activate(
               return;
             }
             case "projects.create":
+              if (!selectedProjectPaths.consume(request.localPath))
+                throw new Error("Project path was not selected by the user.");
               await workspaceService.createProject(
                 request.name,
                 request.localPath,
@@ -510,6 +516,12 @@ export async function activate(
               );
               break;
             case "projects.update":
+              if (
+                workspaceRepository.getProject(request.id as string)
+                  ?.localPath !== request.localPath &&
+                !selectedProjectPaths.consume(request.localPath)
+              )
+                throw new Error("Project path was not selected by the user.");
               await workspaceService.updateProject(
                 request.id as string,
                 request.name,
