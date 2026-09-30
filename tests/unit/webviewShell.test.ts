@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { Script } from "node:vm";
 
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("emits syntactically valid inline scripts", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gu)];
+
+    assert.ok(scripts.length > 0);
+    for (const script of scripts) {
+      assert.doesNotThrow(() => new Script(script[1] ?? ""));
+    }
+  });
+
   void it("renders the DevWorkspace placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
