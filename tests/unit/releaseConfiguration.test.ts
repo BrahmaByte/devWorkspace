@@ -29,8 +29,9 @@ void describe("Release validation configuration", () => {
     assert.match(workflow, /path: devworkspace\.vsix/u);
   });
 
-  void it("identifies the release candidate and verifies the packaged archive", () => {
-    assert.match(manifest.version, /^\d+\.\d+\.\d+-rc\.\d+$/u);
+  void it("identifies a Marketplace-compatible release and verifies the packaged archive", () => {
+    assert.match(manifest.version, /^\d+\.\d+\.\d+$/u);
+    assert.equal(manifest.version, "0.1.0");
     assert.match(manifest.scripts.validate ?? "", /npm run verify:vsix/u);
     assert.match(
       manifest.scripts["verify:vsix"] ?? "",

@@ -175,8 +175,8 @@ Every milestone must be tested, documented and committed.
 
 ## Installation
 
-DevWorkspace `0.1.0-rc.1` is a release candidate distributed as a VSIX; it is
-not published to the VS Code Marketplace.
+DevWorkspace `0.1.0` is distributed as a VSIX and is prepared for publication
+to the VS Code Marketplace.
 
 1. Download or build `devworkspace.vsix`.
 2. In VS Code, run **Extensions: Install from VSIX…** and select the file.
@@ -363,7 +363,8 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 
 ## Known limitations
 
-- This is an `0.1.0-rc.1` release candidate, not a Marketplace release.
+- Marketplace publication and automatic updates depend on the publisher's
+  release process.
 - OAuth 2.0 registered-app authentication is not implemented; Cloud API tokens
   and Data Center PATs are supported.
 - Jira status values are mapped into a fixed To Do, In Progress, and Done view;
@@ -375,8 +376,6 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 - Local SQLite data relies on device and VS Code profile protection and is not
   separately encrypted by the extension.
 - There is no cloud sync, multi-device synchronization, telemetry, or AI layer.
-- The package is `UNLICENSED` and intended for evaluation until a distribution
-  license is selected.
 
 ## Non-goals for the initial release
 
@@ -390,4 +389,4 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 
 ## License
 
-UNLICENSED. No redistribution grant is provided with this release candidate.
+Licensed under the [Apache License 2.0](LICENSE).

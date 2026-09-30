@@ -2,10 +2,14 @@
   "name": "devworkspace",
   "displayName": "DevWorkspace",
   "description": "A local-first developer command center inside VS Code.",
-  "version": "0.1.0-rc.1",
-  "publisher": "devworkspace",
+  "version": "0.1.0",
+  "publisher": "BrahmaByte",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrahmaByte/devWorkspace.git"
+  },
   "engines": {
     "vscode": "^1.95.0",
     "node": ">=22.0.0"
@@ -52,7 +56,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
-    "package:vsix": "npm run build && vsce package --allow-missing-repository --skip-license --out devworkspace.vsix",
+    "package:vsix": "npm run build && vsce package --allow-missing-repository --out devworkspace.vsix",
     "verify:vsix": "node scripts/verify-vsix.mjs devworkspace.vsix",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run package:vsix && npm run verify:vsix"
   },
