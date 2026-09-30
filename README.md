@@ -218,8 +218,12 @@ through host-validated provider services; unavailable external resources remain
 visible as stale context, while deleting a note or project removes its local
 relationships.
 Jira and Confluence connection attempts show progress and sanitized, actionable
-errors in Settings for invalid URLs, rejected PATs, missing API endpoints, and
-network or TLS failures. Raw server errors and credentials remain host-only.
+errors in Settings for invalid URLs, rejected PATs, missing API endpoints, HTTP
+failures, DNS, connection refusal, timeout, and TLS failures. Raw server errors
+and credentials remain host-only; TLS verification is never bypassed.
+Jira validates identity before loading assigned issues. If identity succeeds but
+issue access is denied, the valid connection is retained and the UI requests the
+required Browse Projects and issue permissions instead of mislabeling the PAT.
 The dedicated Global Search page searches local notes, projects, and stored
 commands together with locally cached Jira issues and Confluence page metadata.
 An empty query shows recent resources, while unavailable providers are reported

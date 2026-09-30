@@ -42,13 +42,17 @@ class MemorySecrets implements SecretStore {
 }
 
 class FakeClient implements JiraClient {
-  public constructor(private readonly fail = false) {}
+  public constructor(
+    private readonly fail = false,
+    private readonly issueFailure?: Error,
+  ) {}
   public getCurrentUser() {
     return this.fail
       ? Promise.reject(new Error("offline"))
       : Promise.resolve(user);
   }
   public getAssignedIssues() {
+    if (this.issueFailure) return Promise.reject(this.issueFailure);
     return this.fail
       ? Promise.reject(new Error("offline"))
       : Promise.resolve([issue]);
@@ -63,10 +67,11 @@ class FakeClient implements JiraClient {
 
 class FakeFactory implements JiraClientFactory {
   public fail = false;
+  public issueFailure: Error | undefined;
   public tokens: string[] = [];
   public create(_baseUrl: string, token: string) {
     this.tokens.push(token);
-    return new FakeClient(this.fail);
+    return new FakeClient(this.fail, this.issueFailure);
   }
 }
 
@@ -134,6 +139,27 @@ void describe("Jira integration", () => {
     assert.equal((await service.refresh()).status, "expired");
     await service.disconnect();
     assert.equal(repository.getConnection(), undefined);
+    database.close();
+  });
+
+  void it("keeps a valid connection when assigned issue access is denied", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "devworkspace-jira-perms-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new JiraRepository(database);
+    const secrets = new MemorySecrets();
+    const factory = new FakeFactory();
+    factory.issueFailure = Object.assign(new Error("denied"), { status: 403 });
+    const state = await new JiraService(repository, secrets, factory).connect(
+      "Jira",
+      "https://jira.example.test",
+      "fake",
+    );
+    assert.equal(state.status, "connected");
+    assert.equal(state.currentUser?.displayName, "Test User");
+    assert.match(state.message ?? "", /Browse Projects/u);
+    assert.ok(repository.getConnection());
+    assert.equal(secrets.values.size, 1);
     database.close();
   });
 

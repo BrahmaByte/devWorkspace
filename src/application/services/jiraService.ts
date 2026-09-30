@@ -48,11 +48,20 @@ export class JiraService {
       throw new Error("Connection name is invalid.");
     if (!token.trim()) throw new Error("A personal access token is required.");
     const client = this.clients.create(normalizedUrl, token);
-    const [currentUser, issues] = await Promise.all([
-      client.getCurrentUser(),
-      client.getAssignedIssues(),
-    ]);
+    const currentUser = await client.getCurrentUser();
     const existing = this.repository.getConnection();
+    let issues = existing
+      ? this.repository.listIssues(existing.id)
+      : ([] as readonly JiraIssue[]);
+    let issueWarning: string | undefined;
+    try {
+      issues = await client.getAssignedIssues();
+    } catch (error) {
+      const denied = hasStatus(error, 401, 403);
+      issueWarning = denied
+        ? "Connected to Jira, but this account cannot load assigned issues. Check Browse Projects and issue permissions."
+        : "Connected to Jira, but assigned issues could not be loaded. Check the network and Jira availability.";
+    }
     const now = new Date().toISOString();
     const connection: JiraConnection = {
       id: existing?.id ?? randomUUID(),
@@ -64,7 +73,8 @@ export class JiraService {
     await this.secrets.store(secretKey(connection.id), token);
     try {
       await this.repository.saveConnection(connection);
-      await this.repository.replaceIssues(connection.id, issues);
+      if (!issueWarning)
+        await this.repository.replaceIssues(connection.id, issues);
     } catch (error) {
       await this.secrets.delete(secretKey(connection.id));
       throw error;
@@ -75,6 +85,7 @@ export class JiraService {
       issues,
       localCards: this.repository.listLocalCards(),
       status: "connected",
+      ...(issueWarning ? { message: issueWarning } : {}),
     };
   }
 
@@ -230,4 +241,14 @@ export class JiraService {
       throw new Error("Local card summary is invalid.");
     return normalized;
   }
+}
+
+function hasStatus(error: unknown, ...statuses: readonly number[]): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number" &&
+    statuses.includes(error.status)
+  );
 }

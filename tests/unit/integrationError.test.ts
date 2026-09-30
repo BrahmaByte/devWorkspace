@@ -20,7 +20,36 @@ void describe("Integration connection errors", () => {
       new Error(`request failed with ${secret}`),
     );
     assert.doesNotMatch(message, new RegExp(secret, "u"));
-    assert.match(message, /network access/u);
+    assert.match(message, /VPN/u);
+  });
+
+  void it("distinguishes safe network and TLS failure categories", () => {
+    const failure = (code: string) =>
+      Object.assign(new Error("fetch failed"), {
+        cause: Object.assign(new Error("private detail"), { code }),
+      });
+    assert.match(connectionErrorMessage("jira", failure("ENOTFOUND")), /DNS/u);
+    assert.match(
+      connectionErrorMessage("jira", failure("ECONNREFUSED")),
+      /refused/u,
+    );
+    assert.match(
+      connectionErrorMessage("jira", failure("UND_ERR_CONNECT_TIMEOUT")),
+      /timed out/u,
+    );
+    assert.match(
+      connectionErrorMessage(
+        "jira",
+        failure("UNABLE_TO_VERIFY_LEAF_SIGNATURE"),
+      ),
+      /will not bypass TLS verification/u,
+    );
+  });
+
+  void it("reports safe HTTP failure categories", () => {
+    assert.match(connectionErrorMessage("jira", { status: 429 }), /rate/u);
+    assert.match(connectionErrorMessage("jira", { status: 503 }), /HTTP 503/u);
+    assert.match(connectionErrorMessage("jira", { status: 400 }), /HTTP 400/u);
   });
 
   void it("explains invalid URL and missing-token configuration", () => {
