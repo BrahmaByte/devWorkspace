@@ -162,6 +162,9 @@ void describe("Webview shell", () => {
     assert.match(html, /class="settings-nav"/);
     assert.doesNotMatch(html, /id="jira-(?:pat|token)"/);
     assert.doesNotMatch(html, /Authorization|Bearer/);
+    assert.match(html, /id="jira-settings-message"/);
+    assert.match(html, /message\?\.type==="integration\.error"/);
+    assert.match(html, /Connecting…/);
   });
 
   void it("keeps Confluence configuration in Settings and renders metadata-only search", () => {
@@ -173,6 +176,7 @@ void describe("Webview shell", () => {
     assert.match(html, /type:"confluence\.open"/);
     assert.match(html, /page\.title/);
     assert.doesNotMatch(html, /id="confluence-(?:pat|token)"/);
+    assert.match(html, /id="confluence-settings-message"/);
   });
 
   void it("provides a Kanban board and constrained Start Work controls", () => {

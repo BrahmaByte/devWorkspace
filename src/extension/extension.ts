@@ -14,6 +14,7 @@ import {
   SearchService,
 } from "../application/services/searchService";
 import { SelectedPathAuthorizer } from "../application/services/pathAuthorizationService";
+import { connectionErrorMessage } from "../application/services/integrationError";
 import { JiraService } from "../application/services/jiraService";
 import {
   issueProjectKey,
@@ -209,8 +210,8 @@ export async function activate(
           } satisfies ExtensionResponse);
           return;
         }
+        const request = parsed.value;
         try {
-          const request = parsed.value;
           switch (request.type) {
             case "shell.ready":
               await sendState();
@@ -587,7 +588,21 @@ export async function activate(
             await sendNotes(noteQuery);
           else await sendWorkspace();
           await sendHome();
-        } catch {
+        } catch (error) {
+          if (
+            request.type === "jira.connect" ||
+            request.type === "confluence.connect"
+          ) {
+            const provider = request.type.startsWith("jira")
+              ? "jira"
+              : "confluence";
+            await panel.webview.postMessage({
+              type: "integration.error",
+              provider,
+              message: connectionErrorMessage(provider, error),
+            } satisfies ExtensionResponse);
+            return;
+          }
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "operation_failed",

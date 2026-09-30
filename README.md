@@ -217,6 +217,9 @@ pages, and local projects as persistent linked context. External links open only
 through host-validated provider services; unavailable external resources remain
 visible as stale context, while deleting a note or project removes its local
 relationships.
+Jira and Confluence connection attempts show progress and sanitized, actionable
+errors in Settings for invalid URLs, rejected PATs, missing API endpoints, and
+network or TLS failures. Raw server errors and credentials remain host-only.
 The dedicated Global Search page searches local notes, projects, and stored
 commands together with locally cached Jira issues and Confluence page metadata.
 An empty query shows recent resources, while unavailable providers are reported

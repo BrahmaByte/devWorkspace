@@ -178,6 +178,11 @@ export type ExtensionResponse =
   | { readonly type: "knowledge.state"; readonly state: KnowledgeState }
   | { readonly type: "search.state"; readonly state: SearchState }
   | { readonly type: "search.note"; readonly id: string }
+  | {
+      readonly type: "integration.error";
+      readonly provider: "jira" | "confluence";
+      readonly message: string;
+    }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
       readonly type: "jira.workStarted";
