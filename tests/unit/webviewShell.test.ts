@@ -78,6 +78,13 @@ void describe("Webview shell", () => {
     assert.match(html, /initializeCardLayouts/);
     assert.match(html, /ResizeObserver/);
     assert.match(html, /cardLayouts/);
+    assert.match(
+      html,
+      /iconButton\("grip","Drag to rearrange card",\(\)=>\{\}\)/,
+    );
+    assert.match(html, /handle\.draggable=true/);
+    assert.match(html, /event\.key==="ArrowUp"/);
+    assert.match(html, /persistCardOrder/);
   });
 
   void it("uses nonce-restricted scripts and styles", () => {
@@ -151,6 +158,8 @@ void describe("Webview shell", () => {
     assert.match(html, /message\?\.type==="commands\.pathSelected"/);
     assert.match(html, /project\.gitBranch/);
     assert.match(html, /className="git-branch"/);
+    assert.match(html, /iconButton\("terminal","Open terminal"/);
+    assert.doesNotMatch(html, /id="project-ide"|projects\.favourite/);
     assert.doesNotMatch(
       html,
       /id="command-project"|id="command-shell"|id="command-policy"|id="command-platform"/,
@@ -171,6 +180,14 @@ void describe("Webview shell", () => {
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
     );
+  });
+
+  void it("shows the theme action with the correct sun or moon icon", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /<symbol id="i-sun"/);
+    assert.match(html, /<symbol id="i-moon"/);
+    assert.match(html, /isLight\?"#i-moon":"#i-sun"/);
   });
 
   void it("keeps Jira credentials out of the Webview", () => {

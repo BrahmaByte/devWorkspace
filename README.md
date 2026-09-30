@@ -78,8 +78,6 @@ Developer command center with:
 
 ### Workspace
 
-- favourite projects
-- preferred IDE
 - terminal
 - one-click commands
 - environment profiles
@@ -186,9 +184,9 @@ live local clock and persistent light/dark appearance toggle. Home includes a
 desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
 The shared enterprise visual system uses layered color gradients, elevated
 content panels, and a foreground navigation rail across both themes.
-Workspace management adds folder-picker-based local project CRUD, favourites,
-preferred IDE and Git branch metadata, terminal launching, stored
-platform-specific commands with confirmation policies, and environment profiles
+Workspace management adds folder-picker-based local project CRUD, Git branch
+metadata, VS Code terminal launching, stored platform-specific commands with
+confirmation policies, and environment profiles
 that retain variable names but never secret values.
 Commands can only be launched after they have passed host-side validation and
 been stored locally. Command shortcuts can run in the default VS Code terminal
