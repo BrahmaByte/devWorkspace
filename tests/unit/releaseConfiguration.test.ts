@@ -26,7 +26,7 @@ void describe("Release validation configuration", () => {
     assert.match(workflow, /scripts\/verify-release-target\.mjs/u);
     assert.match(workflow, /run: npm run validate/u);
     assert.match(workflow, /actions\/upload-artifact@v4/u);
-    assert.match(workflow, /path: devdashboard\.vsix/u);
+    assert.match(workflow, /path: devdashboardv1\.vsix/u);
   });
 
   void it("identifies a Marketplace-compatible release and verifies the packaged archive", () => {

@@ -8,12 +8,12 @@ void describe("Webview shell", () => {
   void it("renders the extension logo from an authorized Webview URI", () => {
     const html = createWebviewHtml(
       "vscode-webview://test",
-      "vscode-webview://test/assets/devdashboard-icon.png",
+      "vscode-webview://test/assets/devdashboardv1-icon.png",
     );
 
     assert.match(
       html,
-      /<img src="vscode-webview:\/\/test\/assets\/devdashboard-icon\.png" alt="DevDashboard"/u,
+      /<img src="vscode-webview:\/\/test\/assets\/devdashboardv1-icon\.png" alt="DevDashboardV1"/u,
     );
   });
 
@@ -27,7 +27,7 @@ void describe("Webview shell", () => {
     }
   });
 
-  void it("renders the DevDashboard placeholder", () => {
+  void it("renders the DevDashboardV1 placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /id="greeting" class="brand"><\/p>/);

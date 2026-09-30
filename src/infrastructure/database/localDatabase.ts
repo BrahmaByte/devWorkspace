@@ -19,7 +19,7 @@ function loadSqlite(): Promise<SqlJsStatic> {
 
 export class DatabaseInitializationError extends Error {
   public constructor() {
-    super("DevDashboard could not initialize its local database.");
+    super("DevDashboardV1 could not initialize its local database.");
     this.name = "DatabaseInitializationError";
   }
 }

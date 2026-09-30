@@ -26,38 +26,38 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
-  void it("uses the packaged DevDashboard Marketplace icon", () => {
-    assert.equal(readManifest().icon, "assets/devdashboard-icon.png");
+  void it("uses the packaged DevDashboardV1 Marketplace icon", () => {
+    assert.equal(readManifest().icon, "assets/devdashboardv1-icon.png");
   });
 
-  void it("registers the DevDashboard open command", () => {
+  void it("registers the DevDashboardV1 open command", () => {
     const manifest = readManifest();
 
     assert.equal(manifest.main, "./dist/src/extension/extension.js");
     assert.ok(
-      manifest.activationEvents?.includes("onCommand:devdashboard.open"),
+      manifest.activationEvents?.includes("onCommand:devdashboardv1.open"),
     );
     assert.ok(
       manifest.contributes?.commands?.some(
         ({ command, title }) =>
-          command === "devdashboard.open" && title === "Open DevDashboard",
+          command === "devdashboardv1.open" && title === "Open DevDashboardV1",
       ),
     );
   });
   void it("registers the global search command and shortcut", () => {
     const manifest = readManifest();
     assert.ok(
-      manifest.activationEvents?.includes("onCommand:devdashboard.search"),
+      manifest.activationEvents?.includes("onCommand:devdashboardv1.search"),
     );
     assert.ok(
       manifest.contributes?.commands?.some(
-        ({ command }) => command === "devdashboard.search",
+        ({ command }) => command === "devdashboardv1.search",
       ),
     );
     assert.ok(
       manifest.contributes?.keybindings?.some(
         ({ command, key, mac }) =>
-          command === "devdashboard.search" &&
+          command === "devdashboardv1.search" &&
           key === "ctrl+alt+k" &&
           mac === "cmd+alt+k",
       ),

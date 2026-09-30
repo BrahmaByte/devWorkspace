@@ -44,7 +44,7 @@ for (let index = 0; index < entryCount; index += 1) {
 const required = [
   "extension.vsixmanifest",
   "extension/LICENSE.txt",
-  "extension/assets/devdashboard-icon.png",
+  "extension/assets/devdashboardv1-icon.png",
   "extension/package.json",
   "extension/readme.md",
   "extension/dist/src/extension/extension.js",

@@ -1,14 +1,14 @@
-# DevDashboard
+# DevDashboardV1
 
 <p align="center">
-  <img src="assets/devdashboard-icon.png" width="128" height="128" alt="DevDashboard logo" />
+  <img src="assets/devdashboardv1-icon.png" width="128" height="128" alt="DevDashboardV1 logo" />
 </p>
 
 > A local-first developer command center inside VS Code.
 
 ## Vision
 
-DevDashboard brings the everyday developer workflow into one workspace:
+DevDashboardV1 brings the everyday developer workflow into one workspace:
 
 - Jira work
 - local projects
@@ -39,7 +39,7 @@ The release-validation matrix targets:
 
 ### Local-first
 
-The first version does not require a DevDashboard cloud backend.
+The first version does not require a DevDashboardV1 cloud backend.
 
 Corporate and personal data stays on the user's machine unless the user explicitly connects to an external service such as Jira or Confluence.
 
@@ -130,7 +130,7 @@ The Webview does not receive credentials and does not directly access filesystem
 
 ## Architecture and privacy
 
-DevDashboard is local-first and has no product backend or telemetry. Notes,
+DevDashboardV1 is local-first and has no product backend or telemetry. Notes,
 projects, commands, layouts, URL groups, relationships, and bounded Jira and
 Confluence metadata remain in the VS Code extension global-storage directory.
 Environment profiles store variable names, never values. Confluence page bodies
@@ -179,39 +179,39 @@ Every milestone must be tested, documented and committed.
 
 ## Installation
 
-DevDashboard `0.1.0` is distributed as a VSIX and is prepared for publication
+DevDashboardV1 `0.1.0` is distributed as a VSIX and is prepared for publication
 to the VS Code Marketplace.
 
-1. Download or build `devdashboard.vsix`.
+1. Download or build `devdashboardv1.vsix`.
 2. In VS Code, run **Extensions: Install from VSIX…** and select the file.
 3. Reload VS Code when prompted.
-4. Run **DevDashboard: Open DevDashboard** from the Command Palette.
+4. Run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
 
 For command-line installation:
 
 ```sh
-code --install-extension devdashboard.vsix --force
+code --install-extension devdashboardv1.vsix --force
 ```
 
 To build the candidate from source, run `npm ci` followed by
-`npm run validate`. The latter produces and verifies `devdashboard.vsix`.
+`npm run validate`. The latter produces and verifies `devdashboardv1.vsix`.
 
 ## Jira and Confluence setup
 
-Configuration lives under the settings icon at the bottom of the DevDashboard
+Configuration lives under the settings icon at the bottom of the DevDashboardV1
 navigation rail. Use the product root URL, not a board, project, space, or page
 URL. HTTPS is required except for loopback development endpoints.
 
 For Atlassian Cloud (`*.atlassian.net`):
 
-1. Enter the Cloud product root URL; DevDashboard selects Cloud authentication
+1. Enter the Cloud product root URL; DevDashboardV1 selects Cloud authentication
    from the hostname.
 2. Enter the Atlassian account email in VS Code's native prompt.
 3. Enter an Atlassian API token in the following masked prompt.
 
 For Jira or Confluence Data Center:
 
-1. Enter the Data Center product root URL; DevDashboard selects bearer-token
+1. Enter the Data Center product root URL; DevDashboardV1 selects bearer-token
    authentication for non-Cloud hosts.
 2. Enter the PAT in VS Code's masked native prompt.
 
@@ -230,13 +230,13 @@ npm run validate
 ```
 
 The validation command checks formatting, lint, type safety, unit tests,
-compilation and VSIX packaging. The generated `devdashboard.vsix` is ignored by
+compilation and VSIX packaging. The generated `devdashboardv1.vsix` is ignored by
 Git.
 
 ### Run the extension
 
-Open the repository in VS Code, press `F5`, and run **DevDashboard: Open
-DevDashboard** in the Extension Development Host. See `docs/MANUAL_TESTING.md`
+Open the repository in VS Code, press `F5`, and run **DevDashboardV1: Open
+DevDashboardV1** in the Extension Development Host. See `docs/MANUAL_TESTING.md`
 for the complete Milestone 0 manual check.
 
 ## Current implementation
@@ -347,7 +347,7 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 
 - **The command is missing:** run it in the Extension Development Host or ensure
   the VSIX is installed and VS Code has been reloaded. The command is named
-  **DevDashboard: Open DevDashboard**.
+  **DevDashboardV1: Open DevDashboardV1**.
 - **The extension host times out under F5:** use `npm run dev:host` or VS Code's
   **Run Without Debugging** action. A debugger paused on entry can produce the
   ten-second timeout before activation runs.
@@ -375,7 +375,7 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
   the app is not a complete Jira client.
 - Confluence stores and searches bounded page metadata only. It does not cache or
   render page bodies and does not bulk synchronize spaces.
-- Commands run in a visible VS Code terminal after confirmation; DevDashboard is
+- Commands run in a visible VS Code terminal after confirmation; DevDashboardV1 is
   not a shell sandbox and cannot prove that an approved command is harmless.
 - Local SQLite data relies on device and VS Code profile protection and is not
   separately encrypted by the extension.
@@ -384,7 +384,7 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 ## Non-goals for the initial release
 
 - AI assistant
-- DevDashboard cloud sync
+- DevDashboardV1 cloud sync
 - centralized corporate data ingestion
 - full Jira replacement
 - full Confluence replacement

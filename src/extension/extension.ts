@@ -51,8 +51,8 @@ import type {
 } from "../webview/protocol/messages";
 import { parseWebviewRequest } from "../webview/protocol/validation";
 
-const OPEN_COMMAND = "devdashboard.open";
-const SEARCH_COMMAND = "devdashboard.search";
+const OPEN_COMMAND = "devdashboardv1.open";
+const SEARCH_COMMAND = "devdashboardv1.search";
 const LEGACY_OPEN_COMMAND = "devworkspace.open";
 const LEGACY_SEARCH_COMMAND = "devworkspace.search";
 
@@ -121,14 +121,14 @@ export async function activate(
     },
   });
 
-  const showDevDashboard = (initialPage: ShellPage): void => {
+  const showDevDashboardV1 = (initialPage: ShellPage): void => {
     let activePage: ShellPage = initialPage;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const selectedProjectPaths = new SelectedPathAuthorizer();
     const panel = vscode.window.createWebviewPanel(
-      "devdashboard.main",
-      "DevDashboard",
+      "devdashboardv1.main",
+      "DevDashboardV1",
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -143,7 +143,7 @@ export async function activate(
       vscode.Uri.joinPath(
         context.extensionUri,
         "assets",
-        "devdashboard-icon.png",
+        "devdashboardv1-icon.png",
       ),
     );
     panel.webview.html = createWebviewHtml(
@@ -230,7 +230,7 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "invalid_message",
-            message: "DevDashboard rejected an invalid Webview message.",
+            message: "DevDashboardV1 rejected an invalid Webview message.",
           } satisfies ExtensionResponse);
           return;
         }
@@ -686,7 +686,8 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "operation_failed",
-            message: "DevDashboard could not complete the requested operation.",
+            message:
+              "DevDashboardV1 could not complete the requested operation.",
           } satisfies ExtensionResponse);
         }
       },
@@ -697,23 +698,23 @@ export async function activate(
     });
   };
 
-  const openDevDashboard = vscode.commands.registerCommand(OPEN_COMMAND, () =>
-    showDevDashboard("home"),
+  const openDevDashboardV1 = vscode.commands.registerCommand(OPEN_COMMAND, () =>
+    showDevDashboardV1("home"),
   );
   const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
-    showDevDashboard("search"),
+    showDevDashboardV1("search"),
   );
   const openLegacyDevWorkspace = vscode.commands.registerCommand(
     LEGACY_OPEN_COMMAND,
-    () => showDevDashboard("home"),
+    () => showDevDashboardV1("home"),
   );
   const openLegacySearch = vscode.commands.registerCommand(
     LEGACY_SEARCH_COMMAND,
-    () => showDevDashboard("search"),
+    () => showDevDashboardV1("search"),
   );
 
   context.subscriptions.push(
-    openDevDashboard,
+    openDevDashboardV1,
     openSearch,
     openLegacyDevWorkspace,
     openLegacySearch,
