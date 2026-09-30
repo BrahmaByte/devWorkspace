@@ -1,5 +1,9 @@
 # DevDashboard
 
+<p align="center">
+  <img src="assets/devdashboard-icon.png" width="128" height="128" alt="DevDashboard logo" />
+</p>
+
 > A local-first developer command center inside VS Code.
 
 ## Vision

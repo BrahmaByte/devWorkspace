@@ -132,11 +132,24 @@ export async function activate(
       vscode.ViewColumn.One,
       {
         enableScripts: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(context.extensionUri, "assets"),
+        ],
         retainContextWhenHidden: false,
       },
     );
 
-    panel.webview.html = createWebviewHtml(panel.webview.cspSource);
+    const logoUri = panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        context.extensionUri,
+        "assets",
+        "devdashboard-icon.png",
+      ),
+    );
+    panel.webview.html = createWebviewHtml(
+      panel.webview.cspSource,
+      logoUri.toString(),
+    );
 
     const sendState = (): Thenable<boolean> =>
       panel.webview.postMessage({

@@ -5,6 +5,18 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("renders the extension logo from an authorized Webview URI", () => {
+    const html = createWebviewHtml(
+      "vscode-webview://test",
+      "vscode-webview://test/assets/devdashboard-icon.png",
+    );
+
+    assert.match(
+      html,
+      /<img src="vscode-webview:\/\/test\/assets\/devdashboard-icon\.png" alt="DevDashboard"/u,
+    );
+  });
+
   void it("emits syntactically valid inline scripts", () => {
     const html = createWebviewHtml("vscode-webview://test");
     const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gu)];
