@@ -216,6 +216,11 @@ void describe("Webview shell", () => {
     assert.match(html, /page\.title/);
     assert.doesNotMatch(html, /id="confluence-(?:pat|token)"/);
     assert.match(html, /id="confluence-settings-message"/);
+    assert.match(html, /class="knowledge-app"/);
+    assert.match(html, /id="confluence-detail"/);
+    assert.match(html, /id="confluence-note-target"/);
+    assert.match(html, /targetType:"confluence_page"/);
+    assert.match(html, /Reference saved to note/);
   });
 
   void it("provides a Kanban board and constrained Start Work controls", () => {

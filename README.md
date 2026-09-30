@@ -99,7 +99,8 @@ Confluence integration:
 - search
 - page metadata
 - open page
-- attach pages to notes
+- two-pane page browsing and details
+- attach a selected page to an existing note
 
 ## Security boundary
 
@@ -220,7 +221,9 @@ project and opened in a VS Code terminal; optional Git branch changes use fixed
 Git arguments and require explicit confirmation. Confluence Cloud site roots
 are normalized to the product's `/wiki` path. Knowledge search fetches at most
 25 page-metadata results, caches
-no page bodies, and opens same-origin page URLs through VS Code. AI remains
+no page bodies, and opens same-origin page URLs through VS Code. The two-pane
+Knowledge view can save a selected cached page as persistent linked context on
+an existing local note. AI remains
 intentionally unimplemented. Notes can attach cached Jira issues, Confluence
 pages, and local projects as persistent linked context. External links open only
 through host-validated provider services; unavailable external resources remain

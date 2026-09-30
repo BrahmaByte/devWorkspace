@@ -96,4 +96,49 @@ void describe("knowledge relationships", () => {
     assert.equal(state.links[0]?.id, "DEV-404");
     database.close();
   });
+
+  void it("saves a cached Confluence page as persistent note context", async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), "devworkspace-knowledge-page-"),
+    );
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const notes = new NoteRepository(database);
+    const relationships = new RelationshipRepository(database);
+    const confluence = new ConfluenceRepository(database);
+    const noteId = "00000000-0000-4000-8000-000000000004";
+    const connectionId = "00000000-0000-4000-8000-000000000005";
+    const now = new Date().toISOString();
+    await notes.create({ id: noteId, title: "Runbook", content: "", now });
+    await confluence.saveConnection({
+      id: connectionId,
+      baseUrl: "https://confluence.example.test",
+      displayName: "Documentation",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await confluence.replacePages(connectionId, [
+      {
+        id: "page-42",
+        title: "Incident response",
+        webUrl: "https://confluence.example.test/pages/42",
+        updatedAt: now,
+      },
+    ]);
+    const service = new KnowledgeService(
+      relationships,
+      notes,
+      new JiraRepository(database),
+      confluence,
+      new WorkspaceRepository(database),
+    );
+
+    await service.attach(noteId, "confluence_page", "page-42");
+
+    const state = service.getState(noteId);
+    assert.equal(state.links[0]?.type, "confluence_page");
+    assert.equal(state.links[0]?.label, "Incident response");
+    assert.equal(state.links[0]?.stale, false);
+    database.close();
+  });
 });
