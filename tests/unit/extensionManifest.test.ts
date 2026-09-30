@@ -25,34 +25,34 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
-  void it("registers the DevWorkspace open command", () => {
+  void it("registers the DevDashboard open command", () => {
     const manifest = readManifest();
 
     assert.equal(manifest.main, "./dist/src/extension/extension.js");
     assert.ok(
-      manifest.activationEvents?.includes("onCommand:devworkspace.open"),
+      manifest.activationEvents?.includes("onCommand:devdashboard.open"),
     );
     assert.ok(
       manifest.contributes?.commands?.some(
         ({ command, title }) =>
-          command === "devworkspace.open" && title === "Open DevWorkspace",
+          command === "devdashboard.open" && title === "Open DevDashboard",
       ),
     );
   });
   void it("registers the global search command and shortcut", () => {
     const manifest = readManifest();
     assert.ok(
-      manifest.activationEvents?.includes("onCommand:devworkspace.search"),
+      manifest.activationEvents?.includes("onCommand:devdashboard.search"),
     );
     assert.ok(
       manifest.contributes?.commands?.some(
-        ({ command }) => command === "devworkspace.search",
+        ({ command }) => command === "devdashboard.search",
       ),
     );
     assert.ok(
       manifest.contributes?.keybindings?.some(
         ({ command, key, mac }) =>
-          command === "devworkspace.search" &&
+          command === "devdashboard.search" &&
           key === "ctrl+alt+k" &&
           mac === "cmd+alt+k",
       ),

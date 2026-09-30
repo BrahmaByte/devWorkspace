@@ -1,6 +1,6 @@
 {
-  "name": "devworkspace",
-  "displayName": "DevWorkspace",
+  "name": "devdashboard",
+  "displayName": "DevDashboard",
   "description": "A local-first developer command center inside VS Code.",
   "version": "0.1.0",
   "publisher": "BrahmaByte",
@@ -23,26 +23,26 @@
     "workspace"
   ],
   "activationEvents": [
-    "onCommand:devworkspace.open",
-    "onCommand:devworkspace.search"
+    "onCommand:devdashboard.open",
+    "onCommand:devdashboard.search"
   ],
   "main": "./dist/src/extension/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "devworkspace.open",
-        "title": "Open DevWorkspace",
-        "category": "DevWorkspace"
+        "command": "devdashboard.open",
+        "title": "Open DevDashboard",
+        "category": "DevDashboard"
       },
       {
-        "command": "devworkspace.search",
-        "title": "Search DevWorkspace",
-        "category": "DevWorkspace"
+        "command": "devdashboard.search",
+        "title": "Search DevDashboard",
+        "category": "DevDashboard"
       }
     ],
     "keybindings": [
       {
-        "command": "devworkspace.search",
+        "command": "devdashboard.search",
         "key": "ctrl+alt+k",
         "mac": "cmd+alt+k"
       }
@@ -56,8 +56,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
-    "package:vsix": "npm run build && vsce package --allow-missing-repository --out devworkspace.vsix",
-    "verify:vsix": "node scripts/verify-vsix.mjs devworkspace.vsix",
+    "package:vsix": "npm run build && vsce package --allow-missing-repository --out devdashboard.vsix",
+    "verify:vsix": "node scripts/verify-vsix.mjs devdashboard.vsix",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run package:vsix && npm run verify:vsix"
   },
   "devDependencies": {

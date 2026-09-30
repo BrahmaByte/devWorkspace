@@ -15,7 +15,7 @@ void describe("Webview shell", () => {
     }
   });
 
-  void it("renders the DevWorkspace placeholder", () => {
+  void it("renders the DevDashboard placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /id="greeting" class="brand"><\/p>/);

@@ -51,8 +51,10 @@ import type {
 } from "../webview/protocol/messages";
 import { parseWebviewRequest } from "../webview/protocol/validation";
 
-const OPEN_COMMAND = "devworkspace.open";
-const SEARCH_COMMAND = "devworkspace.search";
+const OPEN_COMMAND = "devdashboard.open";
+const SEARCH_COMMAND = "devdashboard.search";
+const LEGACY_OPEN_COMMAND = "devworkspace.open";
+const LEGACY_SEARCH_COMMAND = "devworkspace.search";
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -119,14 +121,14 @@ export async function activate(
     },
   });
 
-  const showDevWorkspace = (initialPage: ShellPage): void => {
+  const showDevDashboard = (initialPage: ShellPage): void => {
     let activePage: ShellPage = initialPage;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const selectedProjectPaths = new SelectedPathAuthorizer();
     const panel = vscode.window.createWebviewPanel(
-      "devworkspace.main",
-      "DevWorkspace",
+      "devdashboard.main",
+      "DevDashboard",
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -215,7 +217,7 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "invalid_message",
-            message: "DevWorkspace rejected an invalid Webview message.",
+            message: "DevDashboard rejected an invalid Webview message.",
           } satisfies ExtensionResponse);
           return;
         }
@@ -671,7 +673,7 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "operation_failed",
-            message: "DevWorkspace could not complete the requested operation.",
+            message: "DevDashboard could not complete the requested operation.",
           } satisfies ExtensionResponse);
         }
       },
@@ -682,14 +684,27 @@ export async function activate(
     });
   };
 
-  const openDevWorkspace = vscode.commands.registerCommand(OPEN_COMMAND, () =>
-    showDevWorkspace("home"),
+  const openDevDashboard = vscode.commands.registerCommand(OPEN_COMMAND, () =>
+    showDevDashboard("home"),
   );
   const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
-    showDevWorkspace("search"),
+    showDevDashboard("search"),
+  );
+  const openLegacyDevWorkspace = vscode.commands.registerCommand(
+    LEGACY_OPEN_COMMAND,
+    () => showDevDashboard("home"),
+  );
+  const openLegacySearch = vscode.commands.registerCommand(
+    LEGACY_SEARCH_COMMAND,
+    () => showDevDashboard("search"),
   );
 
-  context.subscriptions.push(openDevWorkspace, openSearch);
+  context.subscriptions.push(
+    openDevDashboard,
+    openSearch,
+    openLegacyDevWorkspace,
+    openLegacySearch,
+  );
 }
 
 export function deactivate(): void {

@@ -53,6 +53,6 @@ jobs:
       - name: Upload platform-validated VSIX
         uses: actions/upload-artifact@v4
         with:
-          name: devworkspace-${{ matrix.platform }}-${{ matrix.arch }}
-          path: devworkspace.vsix
+          name: devdashboard-${{ matrix.platform }}-${{ matrix.arch }}
+          path: devdashboard.vsix
           if-no-files-found: error

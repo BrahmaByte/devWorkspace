@@ -8,7 +8,7 @@ import type {
 export class VscodeProjectWorkspaceGateway implements ProjectWorkspaceGateway {
   public openTerminal(localPath: string): Promise<void> {
     vscode.window
-      .createTerminal({ name: "DevWorkspace", cwd: localPath })
+      .createTerminal({ name: "DevDashboard", cwd: localPath })
       .show();
     return Promise.resolve();
   }

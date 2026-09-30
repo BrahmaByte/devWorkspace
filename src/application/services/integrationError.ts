@@ -40,7 +40,7 @@ export function connectionErrorMessage(
   )
     return `${name} connection timed out. Check the VPN, proxy, firewall, and server availability.`;
   if (code && /CERT|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_SSL/iu.test(code))
-    return `${name} TLS certificate could not be verified. Ask an administrator to configure a trusted certificate or CA; DevWorkspace will not bypass TLS verification.`;
+    return `${name} TLS certificate could not be verified. Ask an administrator to configure a trusted certificate or CA; DevDashboard will not bypass TLS verification.`;
   return `${name} could not be reached. Check the base URL, VPN, proxy, firewall, and server availability.`;
 }
 
