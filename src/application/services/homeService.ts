@@ -1,11 +1,13 @@
 import type { HomeState, RecentResource } from "../../domain/home/models";
 import type { NoteRepository } from "../../infrastructure/database/noteRepository";
 import type { WorkspaceRepository } from "../../infrastructure/database/workspaceRepository";
+import type { UrlGroupRepository } from "../../infrastructure/database/urlGroupRepository";
 
 export class HomeService {
   public constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly noteRepository: NoteRepository,
+    private readonly urlGroupRepository: UrlGroupRepository,
   ) {}
 
   public getState(): HomeState {
@@ -41,6 +43,7 @@ export class HomeService {
       quickCommands: workspace.commands.slice(0, 6),
       recentResources,
       stickyNotes: this.noteRepository.listStickyNotes(),
+      urlGroups: this.urlGroupRepository.list(),
       jira: { connected: false },
     };
   }

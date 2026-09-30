@@ -160,4 +160,17 @@ export const migrations: readonly Migration[] = [
       INSERT INTO jira_board_preferences(id, jql_filter) VALUES(1, '');
     `,
   },
+  {
+    version: 5,
+    name: "home_url_groups",
+    sql: `
+      CREATE TABLE url_groups (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        urls_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

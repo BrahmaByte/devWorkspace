@@ -22,6 +22,7 @@ import {
   StartWorkService,
 } from "../application/services/startWorkService";
 import { WorkspaceService } from "../application/services/workspaceService";
+import { UrlGroupService } from "../application/services/urlGroupService";
 import { getDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
@@ -29,6 +30,7 @@ import { ConfluenceRepository } from "../infrastructure/database/confluenceRepos
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { RelationshipRepository } from "../infrastructure/database/relationshipRepository";
+import { UrlGroupRepository } from "../infrastructure/database/urlGroupRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
@@ -66,7 +68,13 @@ export async function activate(
     workspaceRepository,
     platform.operatingSystem,
   );
-  const homeService = new HomeService(workspaceRepository, noteRepository);
+  const urlGroupRepository = new UrlGroupRepository(database);
+  const urlGroupService = new UrlGroupService(urlGroupRepository);
+  const homeService = new HomeService(
+    workspaceRepository,
+    noteRepository,
+    urlGroupRepository,
+  );
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
   const relationshipRepository = new RelationshipRepository(database);
@@ -230,6 +238,25 @@ export async function activate(
               activePage = "notes";
               await sendState();
               await sendNotes(request.query);
+              return;
+            case "urls.create":
+              await urlGroupService.create(request.name, request.urls);
+              await sendHome();
+              return;
+            case "urls.delete":
+              await urlGroupService.delete(request.id);
+              await sendHome();
+              return;
+            case "urls.open":
+              await vscode.env.openExternal(
+                vscode.Uri.parse(
+                  urlGroupService.getUrl(request.id, request.index),
+                ),
+              );
+              return;
+            case "urls.openAll":
+              for (const url of urlGroupService.getUrls(request.id))
+                await vscode.env.openExternal(vscode.Uri.parse(url));
               return;
             case "search.query":
               await sendSearch(request.query);

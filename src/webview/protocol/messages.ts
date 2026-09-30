@@ -32,6 +32,13 @@ export type WebviewRequest =
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }
+  | {
+      readonly type: "urls.create";
+      readonly name: string;
+      readonly urls: readonly string[];
+    }
+  | { readonly type: "urls.delete" | "urls.openAll"; readonly id: string }
+  | { readonly type: "urls.open"; readonly id: string; readonly index: number }
   | { readonly type: "search.query"; readonly query: string }
   | {
       readonly type: "search.open";

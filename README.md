@@ -196,8 +196,12 @@ directory or an optional folder explicitly chosen with the native folder picker;
 they do not require a project association. The shortcut form exposes only its
 name, stored command, and optional terminal folder. Platform, shell, and
 confirmation defaults remain controlled by the Extension Host. Tests, packaging,
-and a Windows/macOS/Linux CI matrix are included. Home stays focused on sticky
-notes and the current Jira task. Jira and Confluence automatically select the
+and a Windows/macOS/Linux CI matrix are included. Home provides fixed-size
+sticky-note previews, the current Jira task, and locally saved groups of
+frequently used HTTPS URLs. Hovering a URL group reveals its links; individual
+links or the whole bounded group open through VS Code's external-browser API.
+Page cards can be resized and rearranged, with layout retained in VS Code
+Webview state. Jira and Confluence automatically select the
 direct authentication scheme from the site URL: Atlassian Cloud uses an account
 email plus API token over HTTP Basic authentication, while Data Center uses a
 personal access token (PAT) as a bearer token. VS Code collects emails and

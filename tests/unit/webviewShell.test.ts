@@ -58,6 +58,17 @@ void describe("Webview shell", () => {
     assert.match(html, /class="note-editor"/);
   });
 
+  void it("provides fixed sticky previews, URL groups, and persistent card layouts", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /height:8rem/);
+    assert.match(html, /URL groups/);
+    assert.match(html, /type:"urls\.openAll"/);
+    assert.match(html, /type:"urls\.open"/);
+    assert.match(html, /initializeCardLayouts/);
+    assert.match(html, /ResizeObserver/);
+    assert.match(html, /cardLayouts/);
+  });
+
   void it("uses nonce-restricted scripts and styles", () => {
     const html = createWebviewHtml("vscode-webview://test");
 

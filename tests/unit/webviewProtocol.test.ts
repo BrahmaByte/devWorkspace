@@ -110,6 +110,29 @@ void describe("Webview protocol validation", () => {
     );
   });
 
+  void it("accepts bounded URL group actions", () => {
+    assert.equal(
+      parseWebviewRequest({
+        type: "urls.create",
+        name: "Tools",
+        urls: ["https://example.test"],
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "urls.open",
+        id: "00000000-0000-4000-8000-000000000000",
+        index: 0,
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "urls.create", name: "x", urls: [] }).ok,
+      false,
+    );
+  });
+
   void it("rejects unknown, malformed, and over-posted messages", () => {
     for (const message of [
       null,

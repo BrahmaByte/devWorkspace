@@ -18,6 +18,7 @@ import {
   type RelationshipTargetType,
 } from "../../domain/knowledge/models";
 import { searchLimit } from "../../application/services/searchService";
+import { urlGroupLimits } from "../../application/services/urlGroupService";
 import {
   searchResultTypes,
   type SearchResultType,
@@ -115,6 +116,40 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       isString(value.query, noteLimits.search)
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
+  }
+  if (value.type === "urls.create") {
+    return hasOnlyKeys(value, ["type", "name", "urls"]) &&
+      isString(value.name, urlGroupLimits.name) &&
+      Array.isArray(value.urls) &&
+      value.urls.length > 0 &&
+      value.urls.length <= urlGroupLimits.urls &&
+      value.urls.every((url) => isString(url, urlGroupLimits.url))
+      ? {
+          ok: true,
+          value: { type: "urls.create", name: value.name, urls: value.urls },
+        }
+      : { ok: false, error: "urls.create is invalid." };
+  }
+  if (value.type === "urls.delete" || value.type === "urls.openAll") {
+    return hasOnlyKeys(value, ["type", "id"]) && isId(value.id)
+      ? { ok: true, value: { type: value.type, id: value.id } }
+      : { ok: false, error: `${value.type} is invalid.` };
+  }
+  if (value.type === "urls.open") {
+    return hasOnlyKeys(value, ["type", "id", "index"]) &&
+      isId(value.id) &&
+      Number.isInteger(value.index) &&
+      Number(value.index) >= 0 &&
+      Number(value.index) < urlGroupLimits.urls
+      ? {
+          ok: true,
+          value: {
+            type: "urls.open",
+            id: value.id,
+            index: Number(value.index),
+          },
+        }
+      : { ok: false, error: "urls.open is invalid." };
   }
   if (value.type === "search.query") {
     return hasOnlyKeys(value, ["type", "query"]) &&
