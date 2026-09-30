@@ -10,7 +10,7 @@ export function connectionErrorMessage(
       ? error.status
       : undefined;
   if (status === 401 || status === 403)
-    return `${name} rejected the personal access token. Check that it is valid and has the required permissions.`;
+    return `${name} rejected the credential. For Atlassian Cloud, check the account email and API token; for Data Center, check the personal access token and permissions.`;
   if (status === 404)
     return `${name} could not find the expected API endpoint. Check the base URL.`;
   if (status === 429)
@@ -25,8 +25,10 @@ export function connectionErrorMessage(
     return `Enter a valid HTTPS ${name} base URL. HTTP is allowed only for local development.`;
   if (/Connection name/iu.test(detail))
     return `Enter a valid ${name} connection name.`;
-  if (/personal access token is required/iu.test(detail))
-    return `A ${name} personal access token is required.`;
+  if (/credential is required|personal access token is required/iu.test(detail))
+    return `An Atlassian API token or ${name} personal access token is required.`;
+  if (/account email is required/iu.test(detail))
+    return `A valid Atlassian account email is required for ${name} Cloud.`;
   const code = errorCode(error);
   if (code === "ENOTFOUND" || code === "EAI_AGAIN")
     return `${name} host name could not be resolved. Check the base URL, DNS, and VPN connection.`;

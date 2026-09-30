@@ -11,6 +11,7 @@ import {
   type SecretStore,
 } from "../../src/application/services/jiraService";
 import type { JiraIssue, JiraUser } from "../../src/domain/jira/models";
+import type { AtlassianCredential } from "../../src/application/services/atlassianAuth";
 import { getDatabasePath } from "../../src/infrastructure/database/location";
 import { JiraRepository } from "../../src/infrastructure/database/jiraRepository";
 import { LocalDatabase } from "../../src/infrastructure/database/localDatabase";
@@ -68,9 +69,9 @@ class FakeClient implements JiraClient {
 class FakeFactory implements JiraClientFactory {
   public fail = false;
   public issueFailure: Error | undefined;
-  public tokens: string[] = [];
-  public create(_baseUrl: string, token: string) {
-    this.tokens.push(token);
+  public credentials: AtlassianCredential[] = [];
+  public create(_baseUrl: string, credential: AtlassianCredential) {
+    this.credentials.push(credential);
     return new FakeClient(this.fail, this.issueFailure);
   }
 }
@@ -142,6 +143,37 @@ void describe("Jira integration", () => {
     database.close();
   });
 
+  void it("stores Jira Cloud email and API token only in SecretStorage", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "devworkspace-jira-cloud-"));
+    directories.push(directory);
+    const databasePath = getDatabasePath(directory);
+    const database = await LocalDatabase.open(databasePath);
+    const repository = new JiraRepository(database);
+    const secrets = new MemorySecrets();
+    const factory = new FakeFactory();
+    await new JiraService(repository, secrets, factory).connect(
+      "Jira Cloud",
+      "https://team.atlassian.net",
+      "fake-cloud-token",
+      "user@example.com",
+    );
+    assert.deepEqual(factory.credentials[0], {
+      type: "basic",
+      email: "user@example.com",
+      token: "fake-cloud-token",
+    });
+    const databaseBytes = await readFile(databasePath);
+    assert.equal(
+      databaseBytes.includes(Buffer.from("fake-cloud-token")),
+      false,
+    );
+    assert.equal(
+      databaseBytes.includes(Buffer.from("user@example.com")),
+      false,
+    );
+    database.close();
+  });
+
   void it("keeps a valid connection when assigned issue access is denied", async () => {
     const directory = await mkdtemp(join(tmpdir(), "devworkspace-jira-perms-"));
     directories.push(directory);
@@ -174,7 +206,7 @@ void describe("Jira integration", () => {
     await service.createLocalCard("Local investigation", "todo");
     let state = await service.refresh();
     assert.equal(state.localCards[0]?.summary, "Local investigation");
-    assert.equal(factory.tokens.length, 0);
+    assert.equal(factory.credentials.length, 0);
 
     const id = state.localCards[0]?.id;
     assert.ok(id);
@@ -183,7 +215,7 @@ void describe("Jira integration", () => {
     assert.equal(state.localCards[0]?.status, "in_progress");
     await service.deleteLocalCard(id);
     assert.equal((await service.refresh()).localCards.length, 0);
-    assert.equal(factory.tokens.length, 0);
+    assert.equal(factory.credentials.length, 0);
     database.close();
   });
 });

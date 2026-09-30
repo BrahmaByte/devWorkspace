@@ -16,6 +16,7 @@ import {
 import { SelectedPathAuthorizer } from "../application/services/pathAuthorizationService";
 import { connectionErrorMessage } from "../application/services/integrationError";
 import { JiraService } from "../application/services/jiraService";
+import { isAtlassianCloud } from "../application/services/atlassianAuth";
 import {
   issueProjectKey,
   StartWorkService,
@@ -261,9 +262,24 @@ export async function activate(
               }
               return;
             case "confluence.connect": {
+              const cloud = isAtlassianCloud(request.baseUrl);
+              const email = cloud
+                ? await vscode.window.showInputBox({
+                    title: "Connect Confluence Cloud",
+                    prompt: "Enter your Atlassian account email",
+                    ignoreFocusOut: true,
+                    validateInput: (value) =>
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value.trim())
+                        ? undefined
+                        : "Enter a valid email address.",
+                  })
+                : undefined;
+              if (cloud && email === undefined) return;
               const token = await vscode.window.showInputBox({
                 title: "Connect Confluence",
-                prompt: "Enter a Confluence personal access token",
+                prompt: cloud
+                  ? "Enter your Atlassian API token"
+                  : "Enter a Confluence personal access token",
                 password: true,
                 ignoreFocusOut: true,
               });
@@ -274,6 +290,7 @@ export async function activate(
                   request.displayName,
                   request.baseUrl,
                   token,
+                  email,
                 ),
               } satisfies ExtensionResponse);
               return;
@@ -336,9 +353,24 @@ export async function activate(
               }
               return;
             case "jira.connect": {
+              const cloud = isAtlassianCloud(request.baseUrl);
+              const email = cloud
+                ? await vscode.window.showInputBox({
+                    title: "Connect Jira Cloud",
+                    prompt: "Enter your Atlassian account email",
+                    ignoreFocusOut: true,
+                    validateInput: (value) =>
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value.trim())
+                        ? undefined
+                        : "Enter a valid email address.",
+                  })
+                : undefined;
+              if (cloud && email === undefined) return;
               const token = await vscode.window.showInputBox({
                 title: "Connect Jira",
-                prompt: "Enter a Jira personal access token",
+                prompt: cloud
+                  ? "Enter your Atlassian API token"
+                  : "Enter a Jira personal access token",
                 password: true,
                 ignoreFocusOut: true,
               });
@@ -349,6 +381,7 @@ export async function activate(
                   request.displayName,
                   request.baseUrl,
                   token,
+                  email,
                 ),
               } satisfies ExtensionResponse);
               return;

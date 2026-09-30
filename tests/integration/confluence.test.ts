@@ -11,6 +11,7 @@ import {
 } from "../../src/application/services/confluenceService";
 import type { SecretStore } from "../../src/application/services/jiraService";
 import type { ConfluencePage } from "../../src/domain/confluence/models";
+import type { AtlassianCredential } from "../../src/application/services/atlassianAuth";
 import { ConfluenceRepository } from "../../src/infrastructure/database/confluenceRepository";
 import { getDatabasePath } from "../../src/infrastructure/database/location";
 import { LocalDatabase } from "../../src/infrastructure/database/localDatabase";
@@ -52,9 +53,9 @@ class FakeClient implements ConfluenceClient {
 }
 class FakeFactory implements ConfluenceClientFactory {
   public fail = false;
-  public tokens: string[] = [];
-  public create(_url: string, token: string) {
-    this.tokens.push(token);
+  public credentials: AtlassianCredential[] = [];
+  public create(_url: string, credential: AtlassianCredential) {
+    this.credentials.push(credential);
     return new FakeClient(this.fail);
   }
 }
@@ -122,6 +123,46 @@ void describe("Confluence integration", () => {
     await service.disconnect();
     assert.equal(repository.getConnection(), undefined);
     assert.equal(secrets.values.size, 0);
+    database.close();
+  });
+
+  void it("normalizes Confluence Cloud and keeps Cloud credentials secret", async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), "devworkspace-confluence-cloud-"),
+    );
+    directories.push(directory);
+    const databasePath = getDatabasePath(directory);
+    const database = await LocalDatabase.open(databasePath);
+    const repository = new ConfluenceRepository(database);
+    const factory = new FakeFactory();
+    await new ConfluenceService(
+      repository,
+      new MemorySecrets(),
+      factory,
+    ).connect(
+      "Confluence Cloud",
+      "https://team.atlassian.net",
+      "fake-cloud-token",
+      "user@example.com",
+    );
+    assert.equal(
+      repository.getConnection()?.baseUrl,
+      "https://team.atlassian.net/wiki",
+    );
+    assert.deepEqual(factory.credentials[0], {
+      type: "basic",
+      email: "user@example.com",
+      token: "fake-cloud-token",
+    });
+    const databaseBytes = await readFile(databasePath);
+    assert.equal(
+      databaseBytes.includes(Buffer.from("fake-cloud-token")),
+      false,
+    );
+    assert.equal(
+      databaseBytes.includes(Buffer.from("user@example.com")),
+      false,
+    );
     database.close();
   });
 });

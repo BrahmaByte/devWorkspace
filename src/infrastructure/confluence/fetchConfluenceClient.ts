@@ -3,6 +3,10 @@ import type {
   ConfluenceClientFactory,
 } from "../../application/services/confluenceService";
 import type { ConfluencePage } from "../../domain/confluence/models";
+import {
+  authorizationHeader,
+  type AtlassianCredential,
+} from "../../application/services/atlassianAuth";
 
 type JsonRecord = Record<string, unknown>;
 export class ConfluenceRequestError extends Error {
@@ -11,14 +15,17 @@ export class ConfluenceRequestError extends Error {
   }
 }
 export class FetchConfluenceClientFactory implements ConfluenceClientFactory {
-  public create(baseUrl: string, token: string): ConfluenceClient {
-    return new FetchConfluenceClient(baseUrl, token);
+  public create(
+    baseUrl: string,
+    credential: AtlassianCredential,
+  ): ConfluenceClient {
+    return new FetchConfluenceClient(baseUrl, credential);
   }
 }
 export class FetchConfluenceClient implements ConfluenceClient {
   public constructor(
     private readonly baseUrl: string,
-    private readonly token: string,
+    private readonly credential: AtlassianCredential,
   ) {}
   public async testConnection(): Promise<void> {
     await this.request("/rest/api/user/current");
@@ -41,7 +48,7 @@ export class FetchConfluenceClient implements ConfluenceClient {
     const response = await fetch(`${this.baseUrl}${path}`, {
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${this.token}`,
+        Authorization: authorizationHeader(this.credential),
       },
       redirect: "error",
       signal: AbortSignal.timeout(15_000),

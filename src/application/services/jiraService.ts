@@ -8,6 +8,12 @@ import type {
   JiraUser,
 } from "../../domain/jira/models";
 import type { JiraRepository } from "../../infrastructure/database/jiraRepository";
+import {
+  createAtlassianCredential,
+  deserializeCredential,
+  serializeCredential,
+  type AtlassianCredential,
+} from "./atlassianAuth";
 
 export interface JiraClient {
   getCurrentUser(): Promise<JiraUser>;
@@ -17,7 +23,7 @@ export interface JiraClient {
 }
 
 export interface JiraClientFactory {
-  create(baseUrl: string, token: string): JiraClient;
+  create(baseUrl: string, credential: AtlassianCredential): JiraClient;
 }
 
 export interface SecretStore {
@@ -42,12 +48,13 @@ export class JiraService {
     displayName: string,
     baseUrl: string,
     token: string,
+    email?: string,
   ): Promise<JiraState> {
     const normalizedUrl = this.validateUrl(baseUrl);
     if (!displayName.trim() || displayName.length > jiraLimits.name)
       throw new Error("Connection name is invalid.");
-    if (!token.trim()) throw new Error("A personal access token is required.");
-    const client = this.clients.create(normalizedUrl, token);
+    const credential = createAtlassianCredential(normalizedUrl, token, email);
+    const client = this.clients.create(normalizedUrl, credential);
     const currentUser = await client.getCurrentUser();
     const existing = this.repository.getConnection();
     let issues = existing
@@ -70,7 +77,10 @@ export class JiraService {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    await this.secrets.store(secretKey(connection.id), token);
+    await this.secrets.store(
+      secretKey(connection.id),
+      serializeCredential(credential),
+    );
     try {
       await this.repository.saveConnection(connection);
       if (!issueWarning)
@@ -93,17 +103,20 @@ export class JiraService {
     const connection = this.repository.getConnection();
     const localCards = this.repository.listLocalCards();
     if (!connection) return { issues: [], localCards, status: "disconnected" };
-    const token = await this.secrets.get(secretKey(connection.id));
-    if (!token)
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential)
       return {
         connection,
         issues: this.repository.listIssues(connection.id),
         localCards,
         status: "expired",
-        message: "The Jira personal access token is unavailable.",
+        message: "The Jira credential is unavailable.",
       };
     try {
-      const client = this.clients.create(connection.baseUrl, token);
+      const client = this.clients.create(
+        connection.baseUrl,
+        deserializeCredential(storedCredential),
+      );
       const [currentUser, issues] = await Promise.all([
         client.getCurrentUser(),
         client.getAssignedIssues(),
@@ -128,7 +141,7 @@ export class JiraService {
         localCards,
         status: authenticationFailed ? "expired" : "error",
         message: authenticationFailed
-          ? "The Jira personal access token was rejected or has expired."
+          ? "The Jira credential was rejected or has expired."
           : "Jira could not be reached. Showing locally cached issues.",
       };
     }
@@ -139,9 +152,11 @@ export class JiraService {
       throw new Error("Issue key is invalid.");
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Jira is not connected.");
-    const token = await this.secrets.get(secretKey(connection.id));
-    if (!token) throw new Error("Jira credentials are unavailable.");
-    return this.clients.create(connection.baseUrl, token).getIssue(issueKey);
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential) throw new Error("Jira credentials are unavailable.");
+    return this.clients
+      .create(connection.baseUrl, deserializeCredential(storedCredential))
+      .getIssue(issueKey);
   }
 
   public getIssueUrl(issueKey: string): string {
@@ -162,9 +177,12 @@ export class JiraService {
       throw new Error("Jira filter is invalid.");
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Jira is not connected.");
-    const token = await this.secrets.get(secretKey(connection.id));
-    if (!token) throw new Error("Jira credentials are unavailable.");
-    const client = this.clients.create(connection.baseUrl, token);
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential) throw new Error("Jira credentials are unavailable.");
+    const client = this.clients.create(
+      connection.baseUrl,
+      deserializeCredential(storedCredential),
+    );
     const [currentUser, issues] = await Promise.all([
       client.getCurrentUser(),
       client.searchIssues(normalized),

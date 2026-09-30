@@ -7,13 +7,20 @@ import type {
 } from "../../domain/confluence/models";
 import type { ConfluenceRepository } from "../../infrastructure/database/confluenceRepository";
 import type { SecretStore } from "./jiraService";
+import {
+  createAtlassianCredential,
+  deserializeCredential,
+  isAtlassianCloud,
+  serializeCredential,
+  type AtlassianCredential,
+} from "./atlassianAuth";
 
 export interface ConfluenceClient {
   testConnection(): Promise<void>;
   searchPages(query: string): Promise<readonly ConfluencePage[]>;
 }
 export interface ConfluenceClientFactory {
-  create(baseUrl: string, token: string): ConfluenceClient;
+  create(baseUrl: string, credential: AtlassianCredential): ConfluenceClient;
 }
 export const confluenceLimits = { name: 100, url: 2_000, search: 200 } as const;
 const secretKey = (id: string) => `devworkspace.confluence.${id}.pat`;
@@ -29,12 +36,13 @@ export class ConfluenceService {
     displayName: string,
     baseUrl: string,
     token: string,
+    email?: string,
   ): Promise<ConfluenceState> {
     const normalizedUrl = this.validateUrl(baseUrl);
     if (!displayName.trim() || displayName.length > confluenceLimits.name)
       throw new Error("Connection name is invalid.");
-    if (!token.trim()) throw new Error("A personal access token is required.");
-    await this.clients.create(normalizedUrl, token).testConnection();
+    const credential = createAtlassianCredential(normalizedUrl, token, email);
+    await this.clients.create(normalizedUrl, credential).testConnection();
     const existing = this.repository.getConnection();
     const now = new Date().toISOString();
     const connection: ConfluenceConnection = {
@@ -44,7 +52,10 @@ export class ConfluenceService {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    await this.secrets.store(secretKey(connection.id), token);
+    await this.secrets.store(
+      secretKey(connection.id),
+      serializeCredential(credential),
+    );
     try {
       await this.repository.saveConnection(connection);
     } catch (error) {
@@ -62,16 +73,18 @@ export class ConfluenceService {
     const connection = this.repository.getConnection();
     if (!connection) return { pages: [], status: "disconnected" };
     const pages = this.repository.listPages(connection.id);
-    const token = await this.secrets.get(secretKey(connection.id));
-    if (!token)
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential)
       return {
         connection,
         pages,
         status: "expired",
-        message: "The Confluence personal access token is unavailable.",
+        message: "The Confluence credential is unavailable.",
       };
     try {
-      await this.clients.create(connection.baseUrl, token).testConnection();
+      await this.clients
+        .create(connection.baseUrl, deserializeCredential(storedCredential))
+        .testConnection();
       return { connection, pages, status: "connected" };
     } catch (error) {
       const auth =
@@ -84,7 +97,7 @@ export class ConfluenceService {
         pages,
         status: auth ? "expired" : "error",
         message: auth
-          ? "The Confluence personal access token was rejected or has expired."
+          ? "The Confluence credential was rejected or has expired."
           : "Confluence could not be reached. Showing locally cached page metadata.",
       };
     }
@@ -100,10 +113,11 @@ export class ConfluenceService {
       throw new Error("Confluence search is invalid.");
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Confluence is not connected.");
-    const token = await this.secrets.get(secretKey(connection.id));
-    if (!token) throw new Error("Confluence credentials are unavailable.");
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential)
+      throw new Error("Confluence credentials are unavailable.");
     const pages = await this.clients
-      .create(connection.baseUrl, token)
+      .create(connection.baseUrl, deserializeCredential(storedCredential))
       .searchPages(normalized);
     await this.repository.replacePages(connection.id, pages);
     return { connection, pages, status: "connected" };
@@ -141,6 +155,11 @@ export class ConfluenceService {
       throw new Error("Confluence URL must use HTTPS.");
     url.hash = "";
     url.search = "";
+    if (
+      isAtlassianCloud(url.toString()) &&
+      (url.pathname === "/" || !url.pathname)
+    )
+      url.pathname = "/wiki";
     return url.toString().replace(/\/$/u, "");
   }
 }

@@ -197,20 +197,23 @@ they do not require a project association. The shortcut form exposes only its
 name, stored command, and optional terminal folder. Platform, shell, and
 confirmation defaults remain controlled by the Extension Host. Tests, packaging,
 and a Windows/macOS/Linux CI matrix are included. Home stays focused on sticky
-notes and the current Jira task. Jira Data Center can be connected directly with
-a user-authorized PAT. VS Code collects the PAT in a masked native prompt and
-stores it in SecretStorage; the Webview receives only connection,
+notes and the current Jira task. Jira and Confluence automatically select the
+direct authentication scheme from the site URL: Atlassian Cloud uses an account
+email plus API token over HTTP Basic authentication, while Data Center uses a
+personal access token (PAT) as a bearer token. VS Code collects emails and
+tokens in native prompts and stores the complete credential only in
+SecretStorage; the Webview receives only connection,
 current-user, and issue data. Assigned unresolved issues are cached locally for
 offline display, and issue details are loaded on demand. Integration connection
-details are configured from the dedicated Settings page; PAT entry remains in a
-masked VS Code prompt. Jira work is shown in fixed To Do, In Progress, and Done
-columns with a bounded custom JQL filter. Local-only cards are stored separately
+details are configured from the dedicated Settings page; credential entry
+remains in native VS Code prompts. Jira work is shown in fixed To Do, In
+Progress, and Done columns with a bounded custom JQL filter. Local-only cards
+are stored separately
 in SQLite and are never sent to Jira. An issue can be associated with a local
 project and opened in a VS Code terminal; optional Git branch changes use fixed
-Git arguments and require explicit confirmation. Jira Cloud API-token
-authentication is not part of this PAT milestone. Confluence Data Center can be
-configured from Settings with a PAT collected by VS Code and stored in
-SecretStorage. Knowledge search fetches at most 25 page-metadata results, caches
+Git arguments and require explicit confirmation. Confluence Cloud site roots
+are normalized to the product's `/wiki` path. Knowledge search fetches at most
+25 page-metadata results, caches
 no page bodies, and opens same-origin page URLs through VS Code. AI remains
 intentionally unimplemented. Notes can attach cached Jira issues, Confluence
 pages, and local projects as persistent linked context. External links open only
@@ -218,7 +221,7 @@ through host-validated provider services; unavailable external resources remain
 visible as stale context, while deleting a note or project removes its local
 relationships.
 Jira and Confluence connection attempts show progress and sanitized, actionable
-errors in Settings for invalid URLs, rejected PATs, missing API endpoints, HTTP
+errors in Settings for invalid URLs, rejected credentials, missing API endpoints, HTTP
 failures, DNS, connection refusal, timeout, and TLS failures. Raw server errors
 and credentials remain host-only; TLS verification is never bypassed.
 Jira validates identity before loading assigned issues. If identity succeeds but

@@ -36,10 +36,10 @@ void describe("Jira REST provider", () => {
       );
     };
 
-    const client = new FetchJiraClient(
-      "https://jira.example.test",
-      "fake-token",
-    );
+    const client = new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    });
     assert.equal((await client.getCurrentUser()).displayName, "User");
     assert.equal((await client.getAssignedIssues())[0]?.key, "DEV-1");
     assert.equal((await client.searchIssues("workflow"))[0]?.key, "DEV-1");
@@ -60,16 +60,46 @@ void describe("Jira REST provider", () => {
       Promise.resolve(
         new Response("sensitive server response", { status: 401 }),
       );
-    const client = new FetchJiraClient(
-      "https://jira.example.test",
-      "fake-token",
-    );
+    const client = new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    });
     await assert.rejects(client.getCurrentUser(), (error: unknown) => {
       assert.ok(error instanceof JiraRequestError);
       assert.equal(error.status, 401);
       assert.doesNotMatch(error.message, /sensitive/u);
       return true;
     });
+  });
+
+  void it("uses Cloud email and API token with basic authentication", async () => {
+    let authorization = "";
+    let requestUrl = "";
+    globalThis.fetch = (input, init) => {
+      requestUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      authorization = new Headers(init?.headers).get("authorization") ?? "";
+      return Promise.resolve(
+        new Response(JSON.stringify({ accountId: "u1", displayName: "User" }), {
+          status: 200,
+        }),
+      );
+    };
+    const client = new FetchJiraClient("https://team.atlassian.net", {
+      type: "basic",
+      email: "user@example.com",
+      token: "fake-api-token",
+    });
+    await client.getCurrentUser();
+    assert.equal(
+      authorization,
+      `Basic ${Buffer.from("user@example.com:fake-api-token").toString("base64")}`,
+    );
+    assert.equal(requestUrl, "https://team.atlassian.net/rest/api/3/myself");
   });
 });
 

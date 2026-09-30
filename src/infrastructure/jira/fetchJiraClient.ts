@@ -3,12 +3,16 @@ import type {
   JiraClientFactory,
 } from "../../application/services/jiraService";
 import type { JiraIssue, JiraUser } from "../../domain/jira/models";
+import {
+  authorizationHeader,
+  type AtlassianCredential,
+} from "../../application/services/atlassianAuth";
 
 type JsonRecord = Record<string, unknown>;
 
 export class FetchJiraClientFactory implements JiraClientFactory {
-  public create(baseUrl: string, token: string): JiraClient {
-    return new FetchJiraClient(baseUrl, token);
+  public create(baseUrl: string, credential: AtlassianCredential): JiraClient {
+    return new FetchJiraClient(baseUrl, credential);
   }
 }
 
@@ -21,11 +25,11 @@ export class JiraRequestError extends Error {
 export class FetchJiraClient implements JiraClient {
   public constructor(
     private readonly baseUrl: string,
-    private readonly token: string,
+    private readonly credential: AtlassianCredential,
   ) {}
 
   public async getCurrentUser(): Promise<JiraUser> {
-    const data = await this.request("/rest/api/2/myself");
+    const data = await this.request(`/rest/api/${this.apiVersion}/myself`);
     return {
       accountId: requiredString(data.accountId ?? data.key ?? data.name),
       displayName: requiredString(data.displayName),
@@ -46,7 +50,11 @@ export class FetchJiraClient implements JiraClient {
   }
 
   private async searchByJql(jql: string): Promise<readonly JiraIssue[]> {
-    const data = await this.request("/rest/api/2/search", {
+    const searchPath =
+      this.credential.type === "basic"
+        ? "/rest/api/3/search/jql"
+        : "/rest/api/2/search";
+    const data = await this.request(searchPath, {
       method: "POST",
       body: JSON.stringify({
         jql,
@@ -61,9 +69,13 @@ export class FetchJiraClient implements JiraClient {
   public async getIssue(issueKey: string): Promise<JiraIssue> {
     return toIssue(
       await this.request(
-        `/rest/api/2/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description`,
+        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description`,
       ),
     );
+  }
+
+  private get apiVersion(): 2 | 3 {
+    return this.credential.type === "basic" ? 3 : 2;
   }
 
   private async request(
@@ -74,7 +86,7 @@ export class FetchJiraClient implements JiraClient {
       ...init,
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${this.token}`,
+        Authorization: authorizationHeader(this.credential),
         ...(init.body ? { "Content-Type": "application/json" } : {}),
       },
       redirect: "error",

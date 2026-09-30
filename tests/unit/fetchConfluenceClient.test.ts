@@ -41,7 +41,7 @@ void describe("Confluence REST provider", () => {
     };
     const client = new FetchConfluenceClient(
       "https://confluence.example.test",
-      "fake-token",
+      { type: "bearer", token: "fake-token" },
     );
     await client.testConnection();
     const pages = await client.searchPages('release "guide"');
@@ -62,7 +62,7 @@ void describe("Confluence REST provider", () => {
       Promise.resolve(new Response("sensitive response", { status: 401 }));
     const client = new FetchConfluenceClient(
       "https://confluence.example.test",
-      "fake-token",
+      { type: "bearer", token: "fake-token" },
     );
     await assert.rejects(client.testConnection(), (error: unknown) => {
       assert.ok(error instanceof ConfluenceRequestError);
@@ -70,5 +70,28 @@ void describe("Confluence REST provider", () => {
       assert.doesNotMatch(error.message, /sensitive/u);
       return true;
     });
+  });
+
+  void it("uses Cloud email and API token with basic authentication", async () => {
+    let authorization = "";
+    globalThis.fetch = (_input, init) => {
+      authorization = new Headers(init?.headers).get("authorization") ?? "";
+      return Promise.resolve(
+        new Response(JSON.stringify({ accountId: "u1" }), { status: 200 }),
+      );
+    };
+    const client = new FetchConfluenceClient(
+      "https://team.atlassian.net/wiki",
+      {
+        type: "basic",
+        email: "user@example.com",
+        token: "fake-api-token",
+      },
+    );
+    await client.testConnection();
+    assert.equal(
+      authorization,
+      `Basic ${Buffer.from("user@example.com:fake-api-token").toString("base64")}`,
+    );
   });
 });
