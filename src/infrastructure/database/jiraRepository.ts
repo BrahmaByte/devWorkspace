@@ -90,6 +90,21 @@ export class JiraRepository {
     await this.database.persist();
   }
 
+  public getFilter(): string {
+    const value = this.database.getScalar(
+      "SELECT jql_filter FROM jira_board_preferences WHERE id=1;",
+    );
+    return typeof value === "string" ? value : "";
+  }
+
+  public async saveFilter(filter: string): Promise<void> {
+    this.database.run(
+      "INSERT INTO jira_board_preferences(id,jql_filter) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET jql_filter=excluded.jql_filter;",
+      [filter],
+    );
+    await this.database.persist();
+  }
+
   public listLocalCards(): readonly JiraLocalCard[] {
     return this.database
       .query("SELECT * FROM jira_local_cards ORDER BY created_at ASC;")

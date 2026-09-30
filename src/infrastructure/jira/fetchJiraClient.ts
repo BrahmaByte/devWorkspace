@@ -59,7 +59,19 @@ export class FetchJiraClient implements JiraClient {
       body: JSON.stringify({
         jql,
         maxResults: 50,
-        fields: ["summary", "status", "updated"],
+        fields: [
+          "summary",
+          "status",
+          "updated",
+          "description",
+          "issuetype",
+          "priority",
+          "assignee",
+          "reporter",
+          "parent",
+          "labels",
+          "created",
+        ],
       }),
     });
     if (!Array.isArray(data.issues)) throw new Error("Invalid Jira response.");
@@ -69,7 +81,7 @@ export class FetchJiraClient implements JiraClient {
   public async getIssue(issueKey: string): Promise<JiraIssue> {
     return toIssue(
       await this.request(
-        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description`,
+        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description,issuetype,priority,assignee,reporter,parent,labels,created`,
       ),
     );
   }
@@ -108,16 +120,61 @@ function toIssue(value: unknown): JiraIssue {
   if (!isRecord(value) || !isRecord(value.fields))
     throw new Error("Invalid Jira issue.");
   const status = value.fields.status;
+  const issueType = value.fields.issuetype;
+  const priority = value.fields.priority;
+  const assignee = value.fields.assignee;
+  const reporter = value.fields.reporter;
+  const parent = value.fields.parent;
+  const labels = value.fields.labels;
   return {
     id: requiredString(value.id),
     key: requiredString(value.key),
     summary: requiredString(value.fields.summary),
     status: isRecord(status) ? requiredString(status.name) : "Unknown",
     updatedAt: requiredString(value.fields.updated),
-    ...(typeof value.fields.description === "string"
-      ? { description: value.fields.description }
+    ...(descriptionText(value.fields.description)
+      ? { description: descriptionText(value.fields.description) }
+      : {}),
+    ...(isRecord(issueType) && typeof issueType.name === "string"
+      ? { issueType: issueType.name }
+      : {}),
+    ...(isRecord(priority) && typeof priority.name === "string"
+      ? { priority: priority.name }
+      : {}),
+    ...(isRecord(assignee) && typeof assignee.displayName === "string"
+      ? { assignee: assignee.displayName }
+      : {}),
+    ...(isRecord(reporter) && typeof reporter.displayName === "string"
+      ? { reporter: reporter.displayName }
+      : {}),
+    ...(isRecord(parent) && typeof parent.key === "string"
+      ? { parentKey: parent.key }
+      : {}),
+    ...(Array.isArray(labels) &&
+    labels.every((label) => typeof label === "string")
+      ? { labels }
+      : {}),
+    ...(typeof value.fields.created === "string"
+      ? { createdAt: value.fields.created }
       : {}),
   };
+}
+
+function descriptionText(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (!isRecord(value) && !Array.isArray(value)) return undefined;
+  const parts: string[] = [];
+  const visit = (node: unknown): void => {
+    if (isRecord(node)) {
+      if (typeof node.text === "string") parts.push(node.text);
+      if (Array.isArray(node.content)) node.content.forEach(visit);
+      if (node.type === "paragraph" || node.type === "heading")
+        parts.push("\n");
+    } else if (Array.isArray(node)) node.forEach(visit);
+  };
+  visit(value);
+  const result = parts.join("").trim();
+  return result || undefined;
 }
 
 function isRecord(value: unknown): value is JsonRecord {

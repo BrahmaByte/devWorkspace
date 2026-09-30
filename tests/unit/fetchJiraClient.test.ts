@@ -43,7 +43,10 @@ void describe("Jira REST provider", () => {
     assert.equal((await client.getCurrentUser()).displayName, "User");
     assert.equal((await client.getAssignedIssues())[0]?.key, "DEV-1");
     assert.equal((await client.searchIssues("workflow"))[0]?.key, "DEV-1");
-    assert.equal((await client.getIssue("DEV-1")).description, "Details");
+    const detail = await client.getIssue("DEV-1");
+    assert.equal(detail.description, "Details");
+    assert.equal(detail.issueType, "Task");
+    assert.equal(detail.assignee, "Developer");
     assert.equal(
       requests[0]?.url,
       "https://jira.example.test/rest/api/2/myself",
@@ -111,6 +114,13 @@ function issueJson() {
       summary: "Test",
       status: { name: "Open" },
       updated: "2026-09-29T00:00:00Z",
+      created: "2026-09-28T00:00:00Z",
+      issuetype: { name: "Task" },
+      priority: { name: "High" },
+      assignee: { displayName: "Developer" },
+      reporter: { displayName: "Reporter" },
+      parent: { key: "DEV-0" },
+      labels: ["local-first"],
     },
   };
 }

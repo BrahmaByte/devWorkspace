@@ -250,12 +250,12 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: value.type } }
       : { ok: false, error: `${value.type} is invalid.` };
   }
-  if (value.type === "jira.issue") {
+  if (value.type === "jira.issue" || value.type === "jira.open") {
     return hasOnlyKeys(value, ["type", "issueKey"]) &&
       typeof value.issueKey === "string" &&
       /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey)
-      ? { ok: true, value: { type: "jira.issue", issueKey: value.issueKey } }
-      : { ok: false, error: "jira.issue is invalid." };
+      ? { ok: true, value: { type: value.type, issueKey: value.issueKey } }
+      : { ok: false, error: `${value.type} is invalid.` };
   }
   if (value.type === "jira.search") {
     return hasOnlyKeys(value, ["type", "query"]) &&

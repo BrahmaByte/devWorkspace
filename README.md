@@ -208,8 +208,12 @@ offline display, and issue details are loaded on demand. Integration connection
 details are configured from the dedicated Settings page; credential entry
 remains in native VS Code prompts. Jira work is shown in fixed To Do, In
 Progress, and Done columns with a bounded custom JQL filter. Local-only cards
-are stored separately
-in SQLite and are never sent to Jira. An issue can be associated with a local
+are stored separately in SQLite and are never sent to Jira. The last successful
+custom JQL filter is persisted locally, restored at startup, and reapplied after
+board interactions. Selected issues show status, type, priority, people, parent,
+labels, timestamps, and a plain-text description. Issue links are constructed
+and opened by the Extension Host through VS Code's external-browser API. An
+issue can be associated with a local
 project and opened in a VS Code terminal; optional Git branch changes use fixed
 Git arguments and require explicit confirmation. Confluence Cloud site roots
 are normalized to the product's `/wiki` path. Knowledge search fetches at most

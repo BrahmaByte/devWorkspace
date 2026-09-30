@@ -70,6 +70,7 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.refresh" | "jira.disconnect" }
   | { readonly type: "jira.issue"; readonly issueKey: string }
+  | { readonly type: "jira.open"; readonly issueKey: string }
   | { readonly type: "jira.search"; readonly query: string }
   | {
       readonly type: "jira.local.create";

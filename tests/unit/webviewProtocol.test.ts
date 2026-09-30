@@ -66,6 +66,10 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({ type: "jira.open", issueKey: "DEV-7" }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({ type: "jira.search", query: "login failure" }).ok,
       true,
     );

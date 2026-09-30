@@ -192,6 +192,9 @@ void describe("Webview shell", () => {
     assert.match(html, /type:"jira\.search"/);
     assert.match(html, /type:"jira\.associate"/);
     assert.match(html, /type:"jira\.startWork"/);
+    assert.match(html, /type:"jira\.open"/);
+    assert.match(html, /jira-detail-grid/);
+    assert.match(html, /message\.state\?\.filter/);
     assert.match(html, /Optional branch name/);
     assert.doesNotMatch(html, /type:"jira\.startWork"[^\n]*command:/);
   });

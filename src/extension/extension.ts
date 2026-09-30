@@ -399,6 +399,11 @@ export async function activate(
                 issue: await jiraService.getIssue(request.issueKey),
               } satisfies ExtensionResponse);
               return;
+            case "jira.open":
+              await vscode.env.openExternal(
+                vscode.Uri.parse(jiraService.getIssueUrl(request.issueKey)),
+              );
+              return;
             case "jira.search":
               await panel.webview.postMessage({
                 type: "jira.state",

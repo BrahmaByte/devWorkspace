@@ -149,4 +149,15 @@ export const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 4,
+    name: "jira_board_preferences",
+    sql: `
+      CREATE TABLE jira_board_preferences (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        jql_filter TEXT NOT NULL DEFAULT ''
+      );
+      INSERT INTO jira_board_preferences(id, jql_filter) VALUES(1, '');
+    `,
+  },
 ];

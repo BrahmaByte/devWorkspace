@@ -19,6 +19,13 @@ export interface JiraIssue {
   readonly status: string;
   readonly updatedAt: string;
   readonly description?: string;
+  readonly issueType?: string;
+  readonly priority?: string;
+  readonly assignee?: string;
+  readonly reporter?: string;
+  readonly parentKey?: string;
+  readonly labels?: readonly string[];
+  readonly createdAt?: string;
 }
 
 export const jiraBoardStatuses = ["todo", "in_progress", "done"] as const;
@@ -39,4 +46,5 @@ export interface JiraState {
   readonly localCards: readonly JiraLocalCard[];
   readonly status: "disconnected" | "connected" | "expired" | "error";
   readonly message?: string;
+  readonly filter: string;
 }

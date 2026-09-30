@@ -46,6 +46,7 @@ class FakeClient implements JiraClient {
   public constructor(
     private readonly fail = false,
     private readonly issueFailure?: Error,
+    private readonly queries: string[] = [],
   ) {}
   public getCurrentUser() {
     return this.fail
@@ -58,7 +59,8 @@ class FakeClient implements JiraClient {
       ? Promise.reject(new Error("offline"))
       : Promise.resolve([issue]);
   }
-  public searchIssues() {
+  public searchIssues(query: string) {
+    this.queries.push(query);
     return this.getAssignedIssues();
   }
   public getIssue() {
@@ -70,9 +72,10 @@ class FakeFactory implements JiraClientFactory {
   public fail = false;
   public issueFailure: Error | undefined;
   public credentials: AtlassianCredential[] = [];
+  public queries: string[] = [];
   public create(_baseUrl: string, credential: AtlassianCredential) {
     this.credentials.push(credential);
-    return new FakeClient(this.fail, this.issueFailure);
+    return new FakeClient(this.fail, this.issueFailure, this.queries);
   }
 }
 
@@ -217,5 +220,32 @@ void describe("Jira integration", () => {
     assert.equal((await service.refresh()).localCards.length, 0);
     assert.equal(factory.credentials.length, 0);
     database.close();
+  });
+
+  void it("persists and reapplies the last custom JQL after local changes", async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), "devworkspace-jira-filter-"),
+    );
+    directories.push(directory);
+    const databasePath = getDatabasePath(directory);
+    const database = await LocalDatabase.open(databasePath);
+    const repository = new JiraRepository(database);
+    const secrets = new MemorySecrets();
+    const factory = new FakeFactory();
+    const service = new JiraService(repository, secrets, factory);
+    await service.connect("Jira", "https://jira.example.test", "fake");
+    const filter = "project = DEV ORDER BY Rank ASC";
+    assert.equal((await service.search(filter)).filter, filter);
+    await service.createLocalCard("Local follow-up", "todo");
+    assert.equal((await service.refresh()).filter, filter);
+    assert.deepEqual(factory.queries, [filter, filter]);
+    database.close();
+
+    const reopened = await LocalDatabase.open(databasePath);
+    const restoredRepository = new JiraRepository(reopened);
+    const restored = new JiraService(restoredRepository, secrets, factory);
+    assert.equal((await restored.refresh()).filter, filter);
+    assert.equal(factory.queries.at(-1), filter);
+    reopened.close();
   });
 });

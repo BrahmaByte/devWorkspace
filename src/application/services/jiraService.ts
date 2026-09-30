@@ -57,12 +57,15 @@ export class JiraService {
     const client = this.clients.create(normalizedUrl, credential);
     const currentUser = await client.getCurrentUser();
     const existing = this.repository.getConnection();
+    const filter = this.repository.getFilter();
     let issues = existing
       ? this.repository.listIssues(existing.id)
       : ([] as readonly JiraIssue[]);
     let issueWarning: string | undefined;
     try {
-      issues = await client.getAssignedIssues();
+      issues = filter
+        ? await client.searchIssues(filter)
+        : await client.getAssignedIssues();
     } catch (error) {
       const denied = hasStatus(error, 401, 403);
       issueWarning = denied
@@ -96,13 +99,16 @@ export class JiraService {
       localCards: this.repository.listLocalCards(),
       status: "connected",
       ...(issueWarning ? { message: issueWarning } : {}),
+      filter,
     };
   }
 
   public async refresh(): Promise<JiraState> {
     const connection = this.repository.getConnection();
     const localCards = this.repository.listLocalCards();
-    if (!connection) return { issues: [], localCards, status: "disconnected" };
+    const filter = this.repository.getFilter();
+    if (!connection)
+      return { issues: [], localCards, status: "disconnected", filter };
     const storedCredential = await this.secrets.get(secretKey(connection.id));
     if (!storedCredential)
       return {
@@ -111,6 +117,7 @@ export class JiraService {
         localCards,
         status: "expired",
         message: "The Jira credential is unavailable.",
+        filter,
       };
     try {
       const client = this.clients.create(
@@ -119,7 +126,7 @@ export class JiraService {
       );
       const [currentUser, issues] = await Promise.all([
         client.getCurrentUser(),
-        client.getAssignedIssues(),
+        filter ? client.searchIssues(filter) : client.getAssignedIssues(),
       ]);
       await this.repository.replaceIssues(connection.id, issues);
       return {
@@ -128,6 +135,7 @@ export class JiraService {
         issues,
         localCards,
         status: "connected",
+        filter,
       };
     } catch (error) {
       const authenticationFailed =
@@ -143,6 +151,7 @@ export class JiraService {
         message: authenticationFailed
           ? "The Jira credential was rejected or has expired."
           : "Jira could not be reached. Showing locally cached issues.",
+        filter,
       };
     }
   }
@@ -187,12 +196,15 @@ export class JiraService {
       client.getCurrentUser(),
       client.searchIssues(normalized),
     ]);
+    await this.repository.saveFilter(normalized);
+    await this.repository.replaceIssues(connection.id, issues);
     return {
       connection,
       currentUser,
       issues,
       localCards: this.repository.listLocalCards(),
       status: "connected",
+      filter: normalized,
     };
   }
 
