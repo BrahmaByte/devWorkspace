@@ -124,6 +124,26 @@ Extension Host
 
 The Webview does not receive credentials and does not directly access filesystem, terminal or network capabilities.
 
+## Architecture and privacy
+
+DevWorkspace is local-first and has no product backend or telemetry. Notes,
+projects, commands, layouts, URL groups, relationships, and bounded Jira and
+Confluence metadata remain in the VS Code extension global-storage directory.
+Environment profiles store variable names, never values. Confluence page bodies
+are not cached.
+
+```text
+Untrusted Webview
+  -> exact, schema-validated messages
+  -> trusted Extension Host services
+  -> SQLite / SecretStorage / VS Code APIs / Jira / Confluence
+```
+
+The Webview cannot access SecretStorage, local files, terminals, or the network
+directly. External URLs and filesystem paths are resolved and authorized by the
+Extension Host. See the repository-local architecture and security documents for
+the full trust model and residual risks.
+
 ## Local data
 
 SQLite is used for application state such as:
@@ -152,6 +172,51 @@ Every milestone must be tested, documented and committed.
 - Node.js 22
 - npm 10 or later
 - VS Code 1.95 or later
+
+## Installation
+
+DevWorkspace `0.1.0-rc.1` is a release candidate distributed as a VSIX; it is
+not published to the VS Code Marketplace.
+
+1. Download or build `devworkspace.vsix`.
+2. In VS Code, run **Extensions: Install from VSIX…** and select the file.
+3. Reload VS Code when prompted.
+4. Run **DevWorkspace: Open DevWorkspace** from the Command Palette.
+
+For command-line installation:
+
+```sh
+code --install-extension devworkspace.vsix --force
+```
+
+To build the candidate from source, run `npm ci` followed by
+`npm run validate`. The latter produces and verifies `devworkspace.vsix`.
+
+## Jira and Confluence setup
+
+Configuration lives under the settings icon at the bottom of the DevWorkspace
+navigation rail. Use the product root URL, not a board, project, space, or page
+URL. HTTPS is required except for loopback development endpoints.
+
+For Atlassian Cloud (`*.atlassian.net`):
+
+1. Enter the Cloud product root URL; DevWorkspace selects Cloud authentication
+   from the hostname.
+2. Enter the Atlassian account email in VS Code's native prompt.
+3. Enter an Atlassian API token in the following masked prompt.
+
+For Jira or Confluence Data Center:
+
+1. Enter the Data Center product root URL; DevWorkspace selects bearer-token
+   authentication for non-Cloud hosts.
+2. Enter the PAT in VS Code's masked native prompt.
+
+Jira credentials need permission to read the current user and browse the issues
+selected by the board filter. Confluence credentials need permission to search
+and view the intended pages. Credentials are stored only in VS Code
+SecretStorage; connection metadata and bounded issue/page metadata caches are
+stored locally in SQLite. Disconnecting removes the credential and provider
+cache.
 
 ### Validate the scaffold
 
@@ -274,6 +339,45 @@ and release security checks.
 
 See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 
+## Troubleshooting
+
+- **The command is missing:** run it in the Extension Development Host or ensure
+  the VSIX is installed and VS Code has been reloaded. The command is named
+  **DevWorkspace: Open DevWorkspace**.
+- **The extension host times out under F5:** use `npm run dev:host` or VS Code's
+  **Run Without Debugging** action. A debugger paused on entry can produce the
+  ten-second timeout before activation runs.
+- **The panel is unresponsive:** reload the VS Code window and inspect
+  **Developer: Toggle Developer Tools** for a Webview script or CSP error. The
+  automated suite parses the emitted Webview script to prevent syntax regressions.
+- **Jira or Confluence rejects authentication:** Cloud requires account email plus
+  API token; Data Center uses a PAT. Verify the product root URL and required
+  browse/view permissions. Raw server errors and credentials are intentionally
+  not displayed.
+- **A project or command folder is rejected:** select it with the provided VS Code
+  folder button. Typed filesystem paths are not trusted.
+- **A command does not run:** commands must be saved first, contain no newlines or
+  NUL characters, and pass the native confirmation step.
+- **Cached integration data looks stale:** refresh the provider or reconnect from
+  Settings. Offline metadata is deliberately retained for local continuity.
+
+## Known limitations
+
+- This is an `0.1.0-rc.1` release candidate, not a Marketplace release.
+- OAuth 2.0 registered-app authentication is not implemented; Cloud API tokens
+  and Data Center PATs are supported.
+- Jira status values are mapped into a fixed To Do, In Progress, and Done view;
+  the app is not a complete Jira client.
+- Confluence stores and searches bounded page metadata only. It does not cache or
+  render page bodies and does not bulk synchronize spaces.
+- Commands run in a visible VS Code terminal after confirmation; DevWorkspace is
+  not a shell sandbox and cannot prove that an approved command is harmless.
+- Local SQLite data relies on device and VS Code profile protection and is not
+  separately encrypted by the extension.
+- There is no cloud sync, multi-device synchronization, telemetry, or AI layer.
+- The package is `UNLICENSED` and intended for evaluation until a distribution
+  license is selected.
+
 ## Non-goals for the initial release
 
 - AI assistant
@@ -286,4 +390,4 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
 
 ## License
 
-To be decided.
+UNLICENSED. No redistribution grant is provided with this release candidate.

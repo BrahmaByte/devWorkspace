@@ -2,7 +2,7 @@
   "name": "devworkspace",
   "displayName": "DevWorkspace",
   "description": "A local-first developer command center inside VS Code.",
-  "version": "0.0.1",
+  "version": "0.1.0-rc.1",
   "publisher": "devworkspace",
   "private": true,
   "license": "UNLICENSED",
@@ -53,7 +53,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
     "package:vsix": "npm run build && vsce package --allow-missing-repository --skip-license --out devworkspace.vsix",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run package:vsix"
+    "verify:vsix": "node scripts/verify-vsix.mjs devworkspace.vsix",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run package:vsix && npm run verify:vsix"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
