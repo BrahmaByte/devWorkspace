@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 
 interface ExtensionManifest {
   readonly activationEvents?: readonly string[];
+  readonly icon?: string;
   readonly contributes?: {
     readonly commands?: ReadonlyArray<{
       readonly command?: string;
@@ -25,6 +26,10 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("uses the packaged DevDashboard Marketplace icon", () => {
+    assert.equal(readManifest().icon, "assets/devdashboard-icon.png");
+  });
+
   void it("registers the DevDashboard open command", () => {
     const manifest = readManifest();
 

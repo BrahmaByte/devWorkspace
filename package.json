@@ -2,6 +2,7 @@
   "name": "devdashboard",
   "displayName": "DevDashboard",
   "description": "A local-first developer command center inside VS Code.",
+  "icon": "assets/devdashboard-icon.png",
   "version": "0.1.0",
   "publisher": "BrahmaByte",
   "private": true,
