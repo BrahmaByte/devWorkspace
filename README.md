@@ -4,395 +4,126 @@
   <img src="assets/devdashboardv1-icon.png" width="128" height="128" alt="DevDashboardV1 logo" />
 </p>
 
-> A local-first developer command center inside VS Code.
+A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
 
-## Vision
+## Install and open
 
-DevDashboardV1 brings the everyday developer workflow into one workspace:
+1. In VS Code, run **Extensions: Install from VSIX…**.
+2. Select `devdashboardv1.vsix` and reload VS Code when prompted.
+3. Open the Command Palette and run **DevDashboardV1: Open DevDashboardV1**.
 
-- Jira work
-- local projects
-- IDEs
-- terminals
-- commands
-- environments
-- notes
-- sticky notes
-- Confluence knowledge
-- unified search
+You can reopen the dashboard at any time with the same command.
 
-The product is designed to feel like a native developer workspace rather than a collection of unrelated VS Code extension panels.
+## Home
 
-## Supported platforms
+Home contains:
 
-- Windows
-- macOS
-- Linux
+- **Sticky notes:** create a note with the plus icon, then click a sticky to view,
+  edit, recolor, or delete it.
+- **Current Jira task:** opens the Jira board when selected.
+- **URL groups:** save a named set of frequently used HTTPS links.
 
-The release-validation matrix targets:
-- Windows x64
-- macOS Intel
-- macOS Apple Silicon
-- Linux x64
+Hover over or focus a URL-group name to show its URLs. Select an individual URL
+to open it, or use the open-all icon to launch the complete group in your default
+browser. Every icon includes a hover description.
 
-## Product principles
+## Jira
 
-### Local-first
+The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
-The first version does not require a DevDashboardV1 cloud backend.
+- Enter JQL in the filter field and apply it with the check icon. The last
+  successful filter is restored automatically.
+- Select an issue to view its details and open it in your default browser.
+- Associate an issue with a saved local project and optionally start work on a
+  Git branch.
+- Add local-only cards at the bottom of the board. These cards stay on your
+  computer and are never sent to Jira.
 
-Corporate and personal data stays on the user's machine unless the user explicitly connects to an external service such as Jira or Confluence.
+## Workspace
 
-### Security-first
+Use Workspace to manage local development tools:
 
-- Jira and Confluence credentials use VS Code SecretStorage.
-- Credentials are never stored in SQLite.
-- Credentials are never exposed to the Webview.
-- No source-code upload.
-- No corporate-data telemetry by default.
-- Webview operations use a typed message protocol.
-- Shell commands go through a controlled execution service.
+- **Projects:** select folders with the VS Code folder picker, view the current
+  Git branch, and open a VS Code terminal in a project.
+- **Command shortcuts:** save a command with an optional terminal folder. Running
+  it opens a visible VS Code terminal and requires confirmation when appropriate.
+- **Environment profiles:** save environment-variable names for reference. Secret
+  values are not stored.
 
-### AI is future scope
+Command text is preserved exactly, including repeated spaces.
 
-AI is deliberately not part of the initial implementation.
+## Notes
 
-The architecture should provide a clean context/search layer so AI can be added later without changing the trust model.
+Notes are stored locally and save automatically while you type.
 
-## Main areas
+- Use the plus icon above the notes list to create a note.
+- Search notes from the left column.
+- Select a note to view or edit it.
+- Use the delete icon in the editor header to remove the selected note.
 
-### Home
+Confluence bookmarks appear as structured reference cards with actions to open
+the page in Focus Reader or your default browser.
 
-Developer command center with:
-- current task
-- favourite projects
-- sticky notes
-- quick actions
-- recent resources
-- search
+## Knowledge
 
-### Jira
+Knowledge provides a two-column Confluence browser:
 
-- PAT connection
-- current/assigned issues
-- issue details
-- Kanban-style board
-- search
-- Start Work workflow
+1. Search for a Confluence page in the left column.
+2. Select a result to show its details.
+3. Use the reader icon for a full-screen, distraction-free view with a generated
+   table of contents.
+4. Use the bookmark icon to save the page as a local note reference.
+5. Use the external-open icon to open the original page in your default browser.
 
-### Workspace
+Confluence page bodies are loaded only when Focus Reader is opened and are not
+cached locally.
 
-- terminal
-- one-click commands
-- environment profiles
-- Git context
+## Global search
 
-### Notes
+Use the search icon in the header or:
 
-Developer-oriented local notes:
-- Markdown/rich content
-- sticky notes
-- search
-- autosave
-- structured Confluence reference bookmarks
+- `Ctrl+Alt+K` on Windows and Linux
+- `Cmd+Alt+K` on macOS
 
-### Knowledge
+Search covers local notes, projects, command shortcuts, cached Jira issues, and
+cached Confluence page metadata.
 
-Confluence integration:
-- PAT connection
-- search
-- page metadata
-- open page
-- two-pane page browsing and details
-- distraction-free, full-screen focus reader with a generated table of contents
-- save a selected page as a dedicated local reference note
+## Settings and Atlassian connections
 
-## Security boundary
+Open Settings with the icon at the bottom of the navigation rail. Enter the Jira
+or Confluence product root URL, not a board, project, space, or page URL.
 
-```text
-Webview UI
-    |
-    | typed messages only
-    v
-Extension Host
-    |
-    +--> SQLite
-    |
-    +--> VS Code APIs
-    |
-    +--> Jira API
-    |
-    +--> Confluence API
-    |
-    +--> SecretStorage
-```
+For Atlassian Cloud:
 
-The Webview does not receive credentials and does not directly access filesystem, terminal or network capabilities.
-
-## Architecture and privacy
-
-DevDashboardV1 is local-first and has no product backend or telemetry. Notes,
-projects, commands, layouts, URL groups, relationships, and bounded Jira and
-Confluence metadata remain in the VS Code extension global-storage directory.
-Environment profiles store variable names, never values. Confluence page bodies
-are not cached.
-
-```text
-Untrusted Webview
-  -> exact, schema-validated messages
-  -> trusted Extension Host services
-  -> SQLite / SecretStorage / VS Code APIs / Jira / Confluence
-```
-
-The Webview cannot access SecretStorage, local files, terminals, or the network
-directly. External URLs and filesystem paths are resolved and authorized by the
-Extension Host. See the repository-local architecture and security documents for
-the full trust model and residual risks.
-
-## Local data
-
-SQLite is used for application state such as:
-- notes
-- sticky notes
-- projects
-- commands
-- environment metadata
-- relationships
-- cached integration metadata
-
-Credentials are not stored in SQLite.
-
-## Development
-
-Read these files before contributing:
-
-- `AGENTS.md`
-- `SKILL.md`
-- `PROJECT_TRACKING.md`
-
-Every milestone must be tested, documented and committed.
-
-### Prerequisites
-
-- Node.js 22
-- npm 10 or later
-- VS Code 1.95 or later
-
-## Installation
-
-DevDashboardV1 `0.1.0` is distributed as a VSIX and is prepared for publication
-to the VS Code Marketplace.
-
-1. Download or build `devdashboardv1.vsix`.
-2. In VS Code, run **Extensions: Install from VSIX…** and select the file.
-3. Reload VS Code when prompted.
-4. Run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
-
-For command-line installation:
-
-```sh
-code --install-extension devdashboardv1.vsix --force
-```
-
-To build the candidate from source, run `npm ci` followed by
-`npm run validate`. The latter produces and verifies `devdashboardv1.vsix`.
-
-## Jira and Confluence setup
-
-Configuration lives under the settings icon at the bottom of the DevDashboardV1
-navigation rail. Use the product root URL, not a board, project, space, or page
-URL. HTTPS is required except for loopback development endpoints.
-
-For Atlassian Cloud (`*.atlassian.net`):
-
-1. Enter the Cloud product root URL; DevDashboardV1 selects Cloud authentication
-   from the hostname.
-2. Enter the Atlassian account email in VS Code's native prompt.
-3. Enter an Atlassian API token in the following masked prompt.
+1. Enter the `atlassian.net` product URL.
+2. Enter your Atlassian account email in the VS Code prompt.
+3. Enter an Atlassian API token in the masked prompt.
 
 For Jira or Confluence Data Center:
 
-1. Enter the Data Center product root URL; DevDashboardV1 selects bearer-token
-   authentication for non-Cloud hosts.
-2. Enter the PAT in VS Code's masked native prompt.
+1. Enter the HTTPS product root URL.
+2. Enter a personal access token in the masked VS Code prompt.
 
-Jira credentials need permission to read the current user and browse the issues
-selected by the board filter. Confluence credentials need permission to search
-and view the intended pages. Credentials are stored only in VS Code
-SecretStorage; connection metadata and bounded issue/page metadata caches are
-stored locally in SQLite. Disconnecting removes the credential and provider
-cache.
+Credentials are stored in VS Code SecretStorage and are never sent to the
+dashboard Webview or written to the local database. Disconnecting removes the
+stored credential and cached provider metadata.
 
-### Validate the scaffold
+## Appearance and layout
 
-```sh
-npm install
-npm run validate
-```
-
-The validation command checks formatting, lint, type safety, unit tests,
-compilation and VSIX packaging. The generated `devdashboardv1.vsix` is ignored by
-Git.
-
-### Run the extension
-
-Open the repository in VS Code, press `F5`, and run **DevDashboardV1: Open
-DevDashboardV1** in the Extension Development Host. See `docs/MANUAL_TESTING.md`
-for the complete Milestone 0 manual check.
-
-## Current implementation
-
-Milestones 0 through 12 provide the npm/TypeScript toolchain, VS Code extension
-manifest, a full editor shell with Home/Jira/Workspace/Notes/Knowledge
-navigation, a typed and runtime-validated Webview protocol, restrictive CSP,
-error boundary, platform abstraction, and a migration-backed local SQLite data
-layer. The database is stored under VS Code's extension global-storage directory,
-not inside the extension or a project. New and existing notes support debounced
-autosave, plus create, delete, pin/archive, and local text search. Sticky notes use
-a centered editor dialog for viewing and editing. Saved content is rendered
-as plain text inside the network-isolated Webview. A shared header provides a
-live local clock and persistent light/dark appearance toggle. Home includes a
-desktop sticky-note card, while Notes uses a familiar three-pane notes layout.
-The shared enterprise visual system uses layered color gradients, elevated
-content panels, and a foreground navigation rail across both themes.
-Workspace management adds folder-picker-based local project CRUD, Git branch
-metadata, VS Code terminal launching, stored platform-specific commands with
-confirmation policies, and environment profiles
-that retain variable names but never secret values.
-Commands can only be launched after they have passed host-side validation and
-been stored locally. Command shortcuts can run in the default VS Code terminal
-directory or an optional folder explicitly chosen with the native folder picker;
-they do not require a project association. The shortcut form exposes only its
-name, stored command, and optional terminal folder. Platform, shell, and
-confirmation defaults remain controlled by the Extension Host. Tests, packaging,
-and a Windows/macOS/Linux CI matrix are included. Home provides fixed-size
-sticky-note previews, the current Jira task, and locally saved groups of
-frequently used HTTPS URLs. Hovering or focusing a URL group expands a detailed
-panel with its URL count, domain-labelled link rows, and prominent open-all and
-delete actions. Individual links or the whole bounded group open through VS
-Code's external-browser API.
-Page cards can be resized and rearranged, with layout retained in VS Code
-Webview state. Jira and Confluence automatically select the
-direct authentication scheme from the site URL: Atlassian Cloud uses an account
-email plus API token over HTTP Basic authentication, while Data Center uses a
-personal access token (PAT) as a bearer token. VS Code collects emails and
-tokens in native prompts and stores the complete credential only in
-SecretStorage; the Webview receives only connection,
-current-user, and issue data. Assigned unresolved issues are cached locally for
-offline display, and issue details are loaded on demand. Integration connection
-details are configured from the dedicated Settings page; credential entry
-remains in native VS Code prompts. Jira work is shown in fixed To Do, In
-Progress, and Done columns with a bounded custom JQL filter. Local-only cards
-are stored separately in SQLite and are never sent to Jira. The last successful
-custom JQL filter is persisted locally, restored at startup, and reapplied after
-board interactions. Selected issues show status, type, priority, people, parent,
-labels, timestamps, and a plain-text description. Issue links are constructed
-and opened by the Extension Host through VS Code's external-browser API. An
-issue can be associated with a local
-project and opened in a VS Code terminal; optional Git branch changes use fixed
-Git arguments and require explicit confirmation. Confluence Cloud site roots
-are normalized to the product's `/wiki` path. Knowledge search fetches at most
-25 page-metadata results and caches no page bodies. Focus Reader fetches a
-selected page on demand, strips active and unsupported markup in the Extension
-Host, filters it again while constructing the reader DOM, and generates a local
-table of contents. Page bodies are discarded when the reader closes. Knowledge
-can create a dedicated local reference note with host-validated Focus Reader and
-external-browser actions. External URLs open only through VS Code's API after a
-same-origin provider check. AI remains intentionally unimplemented.
-Jira and Confluence connection attempts show progress and sanitized, actionable
-errors in Settings for invalid URLs, rejected credentials, missing API endpoints, HTTP
-failures, DNS, connection refusal, timeout, and TLS failures. Raw server errors
-and credentials remain host-only; TLS verification is never bypassed.
-Jira validates identity before loading assigned issues. If identity succeeds but
-issue access is denied, the valid connection is retained and the UI requests the
-required Browse Projects and issue permissions instead of mislabeling the PAT.
-The dedicated Global Search page searches local notes, projects, and stored
-commands together with locally cached Jira issues and Confluence page metadata.
-An empty query shows recent resources, while unavailable providers are reported
-without hiding results from healthy providers. Results are rendered only through
-DOM text nodes and open through host-side, type-specific handlers. Use
-`Ctrl+Alt+K` (`Cmd+Alt+K` on macOS) or the header search icon to open it.
-Security hardening adds a documented threat model, strict plain-object protocol
-validation, one-use native folder-picker authorization for new project paths,
-and dedicated regression coverage for hostile messages, XSS sinks, command
-controls, path traversal, URLs, and credential boundaries.
-Cross-platform release validation runs the same format, lint, typecheck, test,
-build, and VSIX packaging gate on pinned Windows x64, macOS Intel, macOS Apple
-Silicon, and Linux x64 runners. Each job verifies its actual runtime architecture
-before testing and retains its validated VSIX as a CI artifact.
-
-See `docs/ARCHITECTURE.md` for the source boundaries.
-See `docs/SECURITY.md` for the threat model, privacy behavior, residual risks,
-and release security checks.
-
-## Roadmap
-
-1. Repository/scaffolding
-2. Cross-platform shell
-3. SQLite
-4. Notes
-5. Workspace/projects
-6. Home
-7. Jira
-8. Jira Start Work
-9. Confluence
-10. Knowledge relationships
-11. Search
-12. Security hardening
-13. Cross-platform release validation
-14. Release candidate
-
-See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
+- Use the header theme icon to switch between light and dark mode.
+- Resize cards from their lower-right edge.
+- Drag cards with the grip icon, or focus the grip and use the arrow keys, to
+  rearrange them.
+- Theme and card layout are restored when the dashboard is reopened.
 
 ## Troubleshooting
 
-- **The command is missing:** run it in the Extension Development Host or ensure
-  the VSIX is installed and VS Code has been reloaded. The command is named
-  **DevDashboardV1: Open DevDashboardV1**.
-- **The extension host times out under F5:** use `npm run dev:host` or VS Code's
-  **Run Without Debugging** action. A debugger paused on entry can produce the
-  ten-second timeout before activation runs.
-- **The panel is unresponsive:** reload the VS Code window and inspect
-  **Developer: Toggle Developer Tools** for a Webview script or CSP error. The
-  automated suite parses the emitted Webview script to prevent syntax regressions.
-- **Jira or Confluence rejects authentication:** Cloud requires account email plus
-  API token; Data Center uses a PAT. Verify the product root URL and required
-  browse/view permissions. Raw server errors and credentials are intentionally
-  not displayed.
-- **A project or command folder is rejected:** select it with the provided VS Code
-  folder button. Typed filesystem paths are not trusted.
-- **A command does not run:** commands must be saved first, contain no newlines or
-  NUL characters, and pass the native confirmation step.
-- **Cached integration data looks stale:** refresh the provider or reconnect from
-  Settings. Offline metadata is deliberately retained for local continuity.
-
-## Known limitations
-
-- Marketplace publication and automatic updates depend on the publisher's
-  release process.
-- OAuth 2.0 registered-app authentication is not implemented; Cloud API tokens
-  and Data Center PATs are supported.
-- Jira status values are mapped into a fixed To Do, In Progress, and Done view;
-  the app is not a complete Jira client.
-- Confluence stores only bounded page metadata. Focus Reader renders common
-  headings, text styles, lists, quotes, code, and tables on demand; unsupported
-  macros and remote media are omitted, and spaces are not bulk synchronized.
-- Commands run in a visible VS Code terminal after confirmation; DevDashboardV1 is
-  not a shell sandbox and cannot prove that an approved command is harmless.
-- Local SQLite data relies on device and VS Code profile protection and is not
-  separately encrypted by the extension.
-- There is no cloud sync, multi-device synchronization, telemetry, or AI layer.
-
-## Non-goals for the initial release
-
-- AI assistant
-- DevDashboardV1 cloud sync
-- centralized corporate data ingestion
-- full Jira replacement
-- full Confluence replacement
-- arbitrary remote code execution
-- automatic destructive Git operations
-
-## License
-
-Licensed under the [Apache License 2.0](LICENSE).
+- **Open command is missing:** confirm the VSIX is installed, then reload VS Code.
+- **Jira or Confluence authentication fails:** confirm the product root URL,
+  token type, and browse/view permissions.
+- **A project or terminal folder is rejected:** select it with the provided VS
+  Code folder picker instead of typing a path.
+- **A command does not run:** save it first and approve the VS Code confirmation
+  prompt. Multiline commands are rejected.
+- **The dashboard stops responding:** run **Developer: Reload Window** and reopen
+  DevDashboardV1.
