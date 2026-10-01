@@ -355,6 +355,33 @@ export async function activate(
                 vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
               );
               return;
+            case "confluence.reader":
+              await panel.webview.postMessage({
+                type: "confluence.reader",
+                document: await confluenceService.readPage(request.id),
+              } satisfies ExtensionResponse);
+              return;
+            case "confluence.bookmark": {
+              const page = confluenceService.getPage(request.id);
+              const content = [
+                "CONFLUENCE REFERENCE BOOKMARK",
+                "",
+                "This note is a local reference bookmark to a Confluence page.",
+                "",
+                `Document ID: ${page.id}`,
+                ...(page.spaceName ? [`Space: ${page.spaceName}`] : []),
+                `URL: ${page.webUrl}`,
+              ].join("\n");
+              const noteId = await noteService.createNote(page.title, content);
+              activePage = "notes";
+              await panel.webview.postMessage({
+                type: "confluence.bookmarked",
+                noteId,
+              } satisfies ExtensionResponse);
+              await sendState();
+              await sendNotes();
+              return;
+            }
             case "knowledge.list":
               await sendKnowledge(request.noteId);
               return;

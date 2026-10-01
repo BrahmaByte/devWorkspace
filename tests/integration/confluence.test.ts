@@ -50,6 +50,15 @@ class FakeClient implements ConfluenceClient {
       ? Promise.reject(new Error("offline"))
       : Promise.resolve([page]);
   }
+  public readPage() {
+    return this.fail
+      ? Promise.reject(new Error("offline"))
+      : Promise.resolve({
+          page,
+          html: '<h1 data-reader-id="reader-section-1">Runbook</h1>',
+          headings: [{ id: "reader-section-1", level: 1, text: "Runbook" }],
+        });
+  }
 }
 class FakeFactory implements ConfluenceClientFactory {
   public fail = false;
@@ -88,6 +97,8 @@ void describe("Confluence integration", () => {
       service.getPageUrl("42"),
       "https://confluence.example.test/display/ENG/Runbook",
     );
+    const reader = await service.readPage("42");
+    assert.equal(reader.headings[0]?.text, "Runbook");
     assert.equal(
       (await readFile(databasePath)).includes(
         Buffer.from("fake-confluence-pat"),

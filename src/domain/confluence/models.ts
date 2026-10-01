@@ -14,6 +14,18 @@ export interface ConfluencePage {
   readonly updatedAt: string;
 }
 
+export interface ConfluenceReaderHeading {
+  readonly id: string;
+  readonly level: number;
+  readonly text: string;
+}
+
+export interface ConfluenceReaderDocument {
+  readonly page: ConfluencePage;
+  readonly html: string;
+  readonly headings: readonly ConfluenceReaderHeading[];
+}
+
 export interface ConfluenceState {
   readonly connection?: ConfluenceConnection;
   readonly pages: readonly ConfluencePage[];

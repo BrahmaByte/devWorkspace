@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type {
   ConfluenceConnection,
   ConfluencePage,
+  ConfluenceReaderDocument,
   ConfluenceState,
 } from "../../domain/confluence/models";
 import type { ConfluenceRepository } from "../../infrastructure/database/confluenceRepository";
@@ -18,6 +19,7 @@ import {
 export interface ConfluenceClient {
   testConnection(): Promise<void>;
   searchPages(query: string): Promise<readonly ConfluencePage[]>;
+  readPage(id: string): Promise<ConfluenceReaderDocument>;
 }
 export interface ConfluenceClientFactory {
   create(baseUrl: string, credential: AtlassianCredential): ConfluenceClient;
@@ -124,6 +126,10 @@ export class ConfluenceService {
   }
 
   public getPageUrl(id: string): string {
+    return this.getPage(id).webUrl;
+  }
+
+  public getPage(id: string): ConfluencePage {
     const connection = this.repository.getConnection();
     const page = connection
       ? this.repository.listPages(connection.id).find((item) => item.id === id)
@@ -132,7 +138,28 @@ export class ConfluenceService {
     const url = new URL(page.webUrl, connection.baseUrl);
     if (url.origin !== new URL(connection.baseUrl).origin)
       throw new Error("Confluence page URL is not trusted.");
-    return url.toString();
+    return { ...page, webUrl: url.toString() };
+  }
+
+  public async readPage(id: string): Promise<ConfluenceReaderDocument> {
+    const page = this.getPage(id);
+    const connection = this.repository.getConnection();
+    if (!connection) throw new Error("Confluence is not connected.");
+    const storedCredential = await this.secrets.get(secretKey(connection.id));
+    if (!storedCredential)
+      throw new Error("Confluence credentials are unavailable.");
+    const document = await this.clients
+      .create(connection.baseUrl, deserializeCredential(storedCredential))
+      .readPage(id);
+    if (document.page.id !== page.id)
+      throw new Error("Confluence returned an unexpected page.");
+    const webUrl = new URL(document.page.webUrl, connection.baseUrl);
+    if (webUrl.origin !== new URL(connection.baseUrl).origin)
+      throw new Error("Confluence page URL is not trusted.");
+    return {
+      ...document,
+      page: { ...document.page, webUrl: webUrl.toString() },
+    };
   }
 
   public async disconnect(): Promise<void> {

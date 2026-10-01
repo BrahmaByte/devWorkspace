@@ -218,7 +218,7 @@ void describe("Webview shell", () => {
     assert.match(html, /Connecting…/);
   });
 
-  void it("keeps Confluence configuration in Settings and renders metadata-only search", () => {
+  void it("keeps Confluence configuration in Settings and provides a focus reader", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /id="confluence-form"/);
     assert.match(html, /id="confluence-search"/);
@@ -230,9 +230,12 @@ void describe("Webview shell", () => {
     assert.match(html, /id="confluence-settings-message"/);
     assert.match(html, /class="knowledge-app"/);
     assert.match(html, /id="confluence-detail"/);
-    assert.match(html, /id="confluence-note-target"/);
-    assert.match(html, /targetType:"confluence_page"/);
-    assert.match(html, /Reference saved to note/);
+    assert.match(html, /id="confluence-reader"/);
+    assert.match(html, /type:"confluence\.reader"/);
+    assert.match(html, /type:"confluence\.bookmark"/);
+    assert.match(html, /new DOMParser\(\)/);
+    assert.match(html, /safeReaderTags/);
+    assert.match(html, /id="reader-toc"/);
   });
 
   void it("provides a Kanban board and constrained Start Work controls", () => {
@@ -255,15 +258,13 @@ void describe("Webview shell", () => {
     assert.doesNotMatch(html, /type:"jira\.startWork"[^\n]*command:/);
   });
 
-  void it("provides host-validated linked context for notes", () => {
+  void it("removes linked context and renders Confluence bookmarks in notes", () => {
     const html = createWebviewHtml("vscode-webview://test");
-    assert.match(html, /id="knowledge-links"/);
-    assert.match(html, /id="knowledge-candidate"/);
-    assert.match(html, /type:"knowledge\.list"/);
-    assert.match(html, /type:"knowledge\.attach"/);
-    assert.match(html, /type:"knowledge\.detach"/);
-    assert.match(html, /type:"knowledge\.open"/);
-    assert.doesNotMatch(html, /type:"knowledge\.open"[^\n]*url:/);
+    assert.doesNotMatch(html, /Linked context|id="knowledge-links"/);
+    assert.doesNotMatch(html, /id="note-pin"|id="note-archive"/);
+    assert.match(html, /id="note-bookmark"/);
+    assert.match(html, /Confluence reference bookmark/);
+    assert.match(html, /id="note-delete"/);
   });
 
   void it("provides a dedicated global search page with safe result rendering", () => {

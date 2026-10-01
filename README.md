@@ -93,8 +93,8 @@ Developer-oriented local notes:
 - Markdown/rich content
 - sticky notes
 - search
-- pin/archive
-- relationships to Jira/projects/Confluence
+- autosave
+- structured Confluence reference bookmarks
 
 ### Knowledge
 
@@ -104,7 +104,8 @@ Confluence integration:
 - page metadata
 - open page
 - two-pane page browsing and details
-- attach a selected page to an existing note
+- distraction-free, full-screen focus reader with a generated table of contents
+- save a selected page as a dedicated local reference note
 
 ## Security boundary
 
@@ -289,15 +290,13 @@ issue can be associated with a local
 project and opened in a VS Code terminal; optional Git branch changes use fixed
 Git arguments and require explicit confirmation. Confluence Cloud site roots
 are normalized to the product's `/wiki` path. Knowledge search fetches at most
-25 page-metadata results, caches
-no page bodies, and opens same-origin page URLs through VS Code. The two-pane
-Knowledge view can save a selected cached page as persistent linked context on
-an existing local note. AI remains
-intentionally unimplemented. Notes can attach cached Jira issues, Confluence
-pages, and local projects as persistent linked context. External links open only
-through host-validated provider services; unavailable external resources remain
-visible as stale context, while deleting a note or project removes its local
-relationships.
+25 page-metadata results and caches no page bodies. Focus Reader fetches a
+selected page on demand, strips active and unsupported markup in the Extension
+Host, filters it again while constructing the reader DOM, and generates a local
+table of contents. Page bodies are discarded when the reader closes. Knowledge
+can create a dedicated local reference note with host-validated Focus Reader and
+external-browser actions. External URLs open only through VS Code's API after a
+same-origin provider check. AI remains intentionally unimplemented.
 Jira and Confluence connection attempts show progress and sanitized, actionable
 errors in Settings for invalid URLs, rejected credentials, missing API endpoints, HTTP
 failures, DNS, connection refusal, timeout, and TLS failures. Raw server errors
@@ -373,8 +372,9 @@ See `PROJECT_TRACKING.md` for acceptance criteria and milestone gates.
   and Data Center PATs are supported.
 - Jira status values are mapped into a fixed To Do, In Progress, and Done view;
   the app is not a complete Jira client.
-- Confluence stores and searches bounded page metadata only. It does not cache or
-  render page bodies and does not bulk synchronize spaces.
+- Confluence stores only bounded page metadata. Focus Reader renders common
+  headings, text styles, lists, quotes, code, and tables on demand; unsupported
+  macros and remote media are omitted, and spaces are not bulk synchronized.
 - Commands run in a visible VS Code terminal after confirmation; DevDashboardV1 is
   not a shell sandbox and cannot prove that an approved command is harmless.
 - Local SQLite data relies on device and VS Code profile protection and is not

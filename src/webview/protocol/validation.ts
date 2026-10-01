@@ -206,12 +206,16 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "confluence.search", query: value.query } }
       : { ok: false, error: "confluence.search is invalid." };
   }
-  if (value.type === "confluence.open") {
+  if (
+    value.type === "confluence.open" ||
+    value.type === "confluence.reader" ||
+    value.type === "confluence.bookmark"
+  ) {
     return hasOnlyKeys(value, ["type", "id"]) &&
       typeof value.id === "string" &&
       /^[0-9A-Za-z_-]{1,100}$/u.test(value.id)
-      ? { ok: true, value: { type: "confluence.open", id: value.id } }
-      : { ok: false, error: "confluence.open is invalid." };
+      ? { ok: true, value: { type: value.type, id: value.id } }
+      : { ok: false, error: `${value.type} is invalid.` };
   }
   if (value.type === "knowledge.list") {
     return hasOnlyKeys(value, ["type", "noteId"]) && isId(value.noteId)

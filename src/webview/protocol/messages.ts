@@ -1,6 +1,9 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
 import type { HomeState } from "../../domain/home/models";
-import type { ConfluenceState } from "../../domain/confluence/models";
+import type {
+  ConfluenceReaderDocument,
+  ConfluenceState,
+} from "../../domain/confluence/models";
 import type {
   KnowledgeState,
   RelationshipTargetType,
@@ -52,7 +55,11 @@ export type WebviewRequest =
     }
   | { readonly type: "confluence.refresh" | "confluence.disconnect" }
   | { readonly type: "confluence.search"; readonly query: string }
-  | { readonly type: "confluence.open"; readonly id: string }
+  | {
+      readonly type:
+        "confluence.open" | "confluence.reader" | "confluence.bookmark";
+      readonly id: string;
+    }
   | { readonly type: "knowledge.list"; readonly noteId: string }
   | {
       readonly type: "knowledge.attach";
@@ -183,6 +190,11 @@ export type ExtensionResponse =
     }
   | { readonly type: "jira.state"; readonly state: JiraState }
   | { readonly type: "confluence.state"; readonly state: ConfluenceState }
+  | {
+      readonly type: "confluence.reader";
+      readonly document: ConfluenceReaderDocument;
+    }
+  | { readonly type: "confluence.bookmarked"; readonly noteId: string }
   | { readonly type: "knowledge.state"; readonly state: KnowledgeState }
   | { readonly type: "search.state"; readonly state: SearchState }
   | { readonly type: "search.note"; readonly id: string }

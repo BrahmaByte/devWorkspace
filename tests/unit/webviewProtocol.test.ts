@@ -34,6 +34,14 @@ void describe("Webview protocol validation", () => {
       true,
     );
     assert.equal(
+      parseWebviewRequest({ type: "confluence.reader", id: "42" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "confluence.bookmark", id: "42" }).ok,
+      true,
+    );
+    assert.equal(
       parseWebviewRequest({
         type: "knowledge.list",
         noteId: "00000000-0000-4000-8000-000000000001",
@@ -154,6 +162,8 @@ void describe("Webview protocol validation", () => {
       { type: "jira.local.delete", id: "not-an-id" },
       { type: "confluence.search", query: "bad\nquery" },
       { type: "confluence.open", id: "https://evil.test" },
+      { type: "confluence.reader", id: "../42" },
+      { type: "confluence.bookmark", id: "https://evil.test" },
       {
         type: "knowledge.attach",
         noteId: "../../etc/passwd",

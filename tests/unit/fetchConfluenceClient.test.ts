@@ -72,6 +72,38 @@ void describe("Confluence REST provider", () => {
     });
   });
 
+  void it("sanitizes reader content and builds a table of contents", async () => {
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: "42",
+            title: "Runbook",
+            space: { name: "Engineering" },
+            version: { when: "2026-09-29T00:00:00Z" },
+            _links: { webui: "/display/ENG/Runbook" },
+            body: {
+              view: {
+                value:
+                  '<h1 onclick="steal()">Recovery</h1><p><strong>Safe</strong></p><script>steal()</script><img src="https://evil.test/x">',
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new FetchConfluenceClient(
+      "https://confluence.example.test",
+      { type: "bearer", token: "fake-token" },
+    );
+    const document = await client.readPage("42");
+    assert.deepEqual(document.headings, [
+      { id: "reader-section-1", level: 1, text: "Recovery" },
+    ]);
+    assert.match(document.html, /<h1 data-reader-id="reader-section-1">/u);
+    assert.doesNotMatch(document.html, /onclick|script|steal|img|evil/iu);
+  });
+
   void it("uses Cloud email and API token with basic authentication", async () => {
     let authorization = "";
     globalThis.fetch = (_input, init) => {
