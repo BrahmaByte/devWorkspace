@@ -267,8 +267,10 @@ name, stored command, and optional terminal folder. Platform, shell, and
 confirmation defaults remain controlled by the Extension Host. Tests, packaging,
 and a Windows/macOS/Linux CI matrix are included. Home provides fixed-size
 sticky-note previews, the current Jira task, and locally saved groups of
-frequently used HTTPS URLs. Hovering a URL group reveals its links; individual
-links or the whole bounded group open through VS Code's external-browser API.
+frequently used HTTPS URLs. Hovering or focusing a URL group expands a detailed
+panel with its URL count, domain-labelled link rows, and prominent open-all and
+delete actions. Individual links or the whole bounded group open through VS
+Code's external-browser API.
 Page cards can be resized and rearranged, with layout retained in VS Code
 Webview state. Jira and Confluence automatically select the
 direct authentication scheme from the site URL: Atlassian Cloud uses an account

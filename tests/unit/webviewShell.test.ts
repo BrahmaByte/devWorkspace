@@ -87,6 +87,12 @@ void describe("Webview shell", () => {
     assert.match(html, /URL groups/);
     assert.match(html, /type:"urls\.openAll"/);
     assert.match(html, /type:"urls\.open"/);
+    assert.match(html, /className="url-group-detail"/);
+    assert.match(html, /className="url-group-count"/);
+    assert.match(html, /Open one link or launch the full group/);
+    assert.match(html, /\.url-group:hover \.url-group-detail/);
+    assert.match(html, /<symbol id="i-link"/);
+    assert.match(html, /<symbol id="i-external"/);
     assert.match(html, /initializeCardLayouts/);
     assert.match(html, /ResizeObserver/);
     assert.match(html, /cardLayouts/);

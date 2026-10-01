@@ -7,6 +7,10 @@ const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
   readonly scripts: Readonly<Record<string, string>>;
   readonly version: string;
 };
+const lockfile = JSON.parse(readFileSync("package-lock.json", "utf8")) as {
+  readonly version: string;
+  readonly packages: Readonly<Record<string, { readonly version?: string }>>;
+};
 
 void describe("Release validation configuration", () => {
   void it("pins all supported operating-system and architecture targets", () => {
@@ -31,7 +35,8 @@ void describe("Release validation configuration", () => {
 
   void it("identifies a Marketplace-compatible release and verifies the packaged archive", () => {
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/u);
-    assert.equal(manifest.version, "0.1.0");
+    assert.equal(lockfile.version, manifest.version);
+    assert.equal(lockfile.packages[""]?.version, manifest.version);
     assert.match(manifest.scripts.validate ?? "", /npm run verify:vsix/u);
     assert.match(
       manifest.scripts["verify:vsix"] ?? "",
