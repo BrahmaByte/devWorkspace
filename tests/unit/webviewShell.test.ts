@@ -244,7 +244,7 @@ void describe("Webview shell", () => {
     assert.match(html, /id="reader-toc"/);
   });
 
-  void it("provides a Kanban board and constrained Start Work controls", () => {
+  void it("provides a Kanban board, ad-hoc sync, and refined issue details", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /id="jira-search"/);
@@ -255,13 +255,19 @@ void describe("Webview shell", () => {
     assert.match(html, /id="jira-local-form"/);
     assert.match(html, /type:"jira\.local\.create"/);
     assert.match(html, /type:"jira\.search"/);
-    assert.match(html, /type:"jira\.associate"/);
-    assert.match(html, /type:"jira\.startWork"/);
+    assert.match(html, /id="jira-sync"/);
+    assert.match(html, /aria-label="Sync Jira now"/);
+    assert.match(html, /classList\.add\("is-syncing"\)/);
+    assert.match(html, /type:"jira\.refresh"/);
     assert.match(html, /type:"jira\.open"/);
     assert.match(html, /jira-detail-grid/);
+    assert.match(html, /jira-detail-description/);
     assert.match(html, /message\.state\?\.filter/);
-    assert.match(html, /Optional branch name/);
-    assert.doesNotMatch(html, /type:"jira\.startWork"[^\n]*command:/);
+    assert.doesNotMatch(html, /type:"jira\.(?:associate|startWork)"/);
+    assert.doesNotMatch(
+      html,
+      /Optional branch name|Associated local project|jira-work-form/,
+    );
   });
 
   void it("removes linked context and renders Confluence bookmarks in notes", () => {

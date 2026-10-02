@@ -33,9 +33,8 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
+- Use the sync icon to refresh Jira on demand while retaining the saved filter.
 - Select an issue to view its details and open it in your default browser.
-- Associate an issue with a saved local project and optionally start work on a
-  Git branch.
 - Add local-only cards at the bottom of the board. These cards stay on your
   computer and are never sent to Jira.
 
