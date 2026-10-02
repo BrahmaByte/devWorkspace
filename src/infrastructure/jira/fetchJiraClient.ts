@@ -7,12 +7,17 @@ import {
   authorizationHeader,
   type AtlassianCredential,
 } from "../../application/services/atlassianAuth";
+import { VscodeHttpTransport } from "../http/vscodeHttpTransport";
 
 type JsonRecord = Record<string, unknown>;
 
 export class FetchJiraClientFactory implements JiraClientFactory {
+  public constructor(
+    private readonly transport: VscodeHttpTransport = new VscodeHttpTransport(),
+  ) {}
+
   public create(baseUrl: string, credential: AtlassianCredential): JiraClient {
-    return new FetchJiraClient(baseUrl, credential);
+    return new FetchJiraClient(baseUrl, credential, this.transport);
   }
 }
 
@@ -26,6 +31,7 @@ export class FetchJiraClient implements JiraClient {
   public constructor(
     private readonly baseUrl: string,
     private readonly credential: AtlassianCredential,
+    private readonly transport: VscodeHttpTransport = new VscodeHttpTransport(),
   ) {}
 
   public async getCurrentUser(): Promise<JiraUser> {
@@ -94,15 +100,13 @@ export class FetchJiraClient implements JiraClient {
     path: string,
     init: RequestInit = {},
   ): Promise<JsonRecord> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
         Accept: "application/json",
         Authorization: authorizationHeader(this.credential),
         ...(init.body ? { "Content-Type": "application/json" } : {}),
       },
-      redirect: "error",
-      signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) throw new JiraRequestError(response.status);
     const declaredLength = Number(response.headers.get("content-length") ?? 0);

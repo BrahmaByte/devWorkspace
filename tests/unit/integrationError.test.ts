@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { connectionErrorMessage } from "../../src/application/services/integrationError";
+import {
+  connectionErrorMessage,
+  shouldOfferProxySettings,
+} from "../../src/application/services/integrationError";
 
 void describe("Integration connection errors", () => {
   void it("maps authentication and endpoint failures to actionable messages", () => {
@@ -11,6 +14,7 @@ void describe("Integration connection errors", () => {
       /permissions/u,
     );
     assert.match(connectionErrorMessage("jira", { status: 404 }), /base URL/u);
+    assert.match(connectionErrorMessage("jira", { status: 407 }), /proxy/u);
   });
 
   void it("never exposes raw network errors or credentials", () => {
@@ -38,6 +42,10 @@ void describe("Integration connection errors", () => {
       /timed out/u,
     );
     assert.match(
+      connectionErrorMessage("jira", failure("ERR_TUNNEL_CONNECTION_FAILED")),
+      /proxy/u,
+    );
+    assert.match(
       connectionErrorMessage(
         "jira",
         failure("UNABLE_TO_VERIFY_LEAF_SIGNATURE"),
@@ -50,6 +58,19 @@ void describe("Integration connection errors", () => {
     assert.match(connectionErrorMessage("jira", { status: 429 }), /rate/u);
     assert.match(connectionErrorMessage("jira", { status: 503 }), /HTTP 503/u);
     assert.match(connectionErrorMessage("jira", { status: 400 }), /HTTP 400/u);
+  });
+
+  void it("offers proxy settings only for transport failures", () => {
+    assert.equal(shouldOfferProxySettings({ status: 401 }), false);
+    assert.equal(shouldOfferProxySettings({ status: 407 }), true);
+    assert.equal(
+      shouldOfferProxySettings(
+        Object.assign(new TypeError("fetch failed"), {
+          cause: { code: "ERR_PROXY_CONNECTION_FAILED" },
+        }),
+      ),
+      true,
+    );
   });
 
   void it("explains invalid URL and missing-token configuration", () => {

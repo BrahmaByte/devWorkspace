@@ -11,6 +11,7 @@ import {
   authorizationHeader,
   type AtlassianCredential,
 } from "../../application/services/atlassianAuth";
+import { VscodeHttpTransport } from "../http/vscodeHttpTransport";
 
 type JsonRecord = Record<string, unknown>;
 export class ConfluenceRequestError extends Error {
@@ -19,17 +20,22 @@ export class ConfluenceRequestError extends Error {
   }
 }
 export class FetchConfluenceClientFactory implements ConfluenceClientFactory {
+  public constructor(
+    private readonly transport: VscodeHttpTransport = new VscodeHttpTransport(),
+  ) {}
+
   public create(
     baseUrl: string,
     credential: AtlassianCredential,
   ): ConfluenceClient {
-    return new FetchConfluenceClient(baseUrl, credential);
+    return new FetchConfluenceClient(baseUrl, credential, this.transport);
   }
 }
 export class FetchConfluenceClient implements ConfluenceClient {
   public constructor(
     private readonly baseUrl: string,
     private readonly credential: AtlassianCredential,
+    private readonly transport: VscodeHttpTransport = new VscodeHttpTransport(),
   ) {}
   public async testConnection(): Promise<void> {
     await this.request("/rest/api/user/current");
@@ -62,13 +68,11 @@ export class FetchConfluenceClient implements ConfluenceClient {
     return { page: toPage(data), ...sanitized };
   }
   private async request(path: string): Promise<JsonRecord> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
       headers: {
         Accept: "application/json",
         Authorization: authorizationHeader(this.credential),
       },
-      redirect: "error",
-      signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) throw new ConfluenceRequestError(response.status);
     const declared = Number(response.headers.get("content-length") ?? 0);

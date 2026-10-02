@@ -14,7 +14,10 @@ import {
   SearchService,
 } from "../application/services/searchService";
 import { SelectedPathAuthorizer } from "../application/services/pathAuthorizationService";
-import { connectionErrorMessage } from "../application/services/integrationError";
+import {
+  connectionErrorMessage,
+  shouldOfferProxySettings,
+} from "../application/services/integrationError";
 import { JiraService } from "../application/services/jiraService";
 import { isAtlassianCloud } from "../application/services/atlassianAuth";
 import {
@@ -23,7 +26,7 @@ import {
 } from "../application/services/startWorkService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { UrlGroupService } from "../application/services/urlGroupService";
-import { getDatabasePath } from "../infrastructure/database/location";
+import { prepareDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { ConfluenceRepository } from "../infrastructure/database/confluenceRepository";
@@ -35,6 +38,7 @@ import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
+import { VscodeHttpTransport } from "../infrastructure/http/vscodeHttpTransport";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
@@ -60,7 +64,7 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   const database = await LocalDatabase.open(
-    getDatabasePath(context.globalStorageUri.fsPath),
+    await prepareDatabasePath(context.globalStorageUri.fsPath),
   );
   const noteRepository = new NoteRepository(database);
   const noteService = new NoteService(noteRepository);
@@ -80,15 +84,18 @@ export async function activate(
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
   const relationshipRepository = new RelationshipRepository(database);
+  const httpTransport = new VscodeHttpTransport(
+    globalThis.fetch.bind(globalThis),
+  );
   const jiraService = new JiraService(
     jiraRepository,
     context.secrets,
-    new FetchJiraClientFactory(),
+    new FetchJiraClientFactory(httpTransport),
   );
   const confluenceService = new ConfluenceService(
     confluenceRepository,
     context.secrets,
-    new FetchConfluenceClientFactory(),
+    new FetchConfluenceClientFactory(httpTransport),
   );
   const knowledgeService = new KnowledgeService(
     relationshipRepository,
@@ -703,11 +710,23 @@ export async function activate(
             const provider = request.type.startsWith("jira")
               ? "jira"
               : "confluence";
+            const message = connectionErrorMessage(provider, error);
             await panel.webview.postMessage({
               type: "integration.error",
               provider,
-              message: connectionErrorMessage(provider, error),
+              message,
             } satisfies ExtensionResponse);
+            if (shouldOfferProxySettings(error)) {
+              const action = await vscode.window.showErrorMessage(
+                message,
+                "Open Proxy Settings",
+              );
+              if (action === "Open Proxy Settings")
+                await vscode.commands.executeCommand(
+                  "workbench.action.openSettings",
+                  "proxy",
+                );
+            }
             return;
           }
           await panel.webview.postMessage({

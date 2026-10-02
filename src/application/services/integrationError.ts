@@ -1,5 +1,28 @@
 export type IntegrationProvider = "jira" | "confluence";
 
+export function shouldOfferProxySettings(error: unknown): boolean {
+  const status =
+    typeof error === "object" && error !== null && "status" in error
+      ? error.status
+      : undefined;
+  if (typeof status === "number") return status === 407;
+  const code = errorCode(error);
+  if (
+    code === "ENOTFOUND" ||
+    code === "EAI_AGAIN" ||
+    code === "ECONNREFUSED" ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT" ||
+    code === "UND_ERR_CONNECT_TIMEOUT" ||
+    code === "ERR_PROXY_CONNECTION_FAILED" ||
+    code === "ERR_TUNNEL_CONNECTION_FAILED" ||
+    (code !== undefined &&
+      /CERT|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_SSL/iu.test(code))
+  )
+    return true;
+  return error instanceof TypeError && /fetch failed/iu.test(error.message);
+}
+
 export function connectionErrorMessage(
   provider: IntegrationProvider,
   error: unknown,
@@ -13,6 +36,8 @@ export function connectionErrorMessage(
     return `${name} rejected the credential. For Atlassian Cloud, check the account email and API token; for Data Center, check the personal access token and permissions.`;
   if (status === 404)
     return `${name} could not find the expected API endpoint. Check the base URL.`;
+  if (status === 407)
+    return `${name} could not authenticate with the corporate proxy. Open VS Code Proxy Settings, verify the proxy configuration, then reload VS Code.`;
   if (status === 429)
     return `${name} temporarily rate-limited the connection test. Wait and try again.`;
   if (typeof status === "number" && status >= 500)
@@ -31,17 +56,26 @@ export function connectionErrorMessage(
     return `A valid Atlassian account email is required for ${name} Cloud.`;
   const code = errorCode(error);
   if (code === "ENOTFOUND" || code === "EAI_AGAIN")
-    return `${name} host name could not be resolved. Check the base URL, DNS, and VPN connection.`;
+    return `${name} host name could not be resolved by DNS. Check the base URL, VPN, and VS Code proxy settings.`;
   if (code === "ECONNREFUSED")
     return `${name} refused the connection. Check the base URL, port, VPN, and server availability.`;
   if (
     code === "UND_ERR_CONNECT_TIMEOUT" ||
+    code === "ETIMEDOUT" ||
     (error instanceof Error && error.name === "TimeoutError")
   )
-    return `${name} connection timed out. Check the VPN, proxy, firewall, and server availability.`;
+    return `${name} connection timed out. Check the VPN, firewall, and VS Code proxy settings.`;
+  if (
+    code === "ERR_PROXY_CONNECTION_FAILED" ||
+    code === "ERR_TUNNEL_CONNECTION_FAILED" ||
+    code === "ECONNRESET"
+  )
+    return `${name} could not pass through the configured proxy. Check the VS Code proxy settings, corporate sign-in, VPN, and firewall.`;
   if (code && /CERT|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_SSL/iu.test(code))
-    return `${name} TLS certificate could not be verified. Ask an administrator to configure a trusted certificate or CA; DevDashboardV1 will not bypass TLS verification.`;
-  return `${name} could not be reached. Check the base URL, VPN, proxy, firewall, and server availability.`;
+    return `${name} TLS certificate could not be verified. Install the corporate CA in the operating-system trust store and enable VS Code system certificates; DevDashboardV1 will not bypass TLS verification.`;
+  if (/outside its trusted origin|too many redirects/iu.test(detail))
+    return `${name} redirected the API request unexpectedly. Use the canonical ${name} base URL and verify the corporate proxy or SSO configuration.`;
+  return `${name} could not be reached. Check the base URL, VPN, firewall, and VS Code proxy settings.`;
 }
 
 function errorCode(error: unknown): string | undefined {

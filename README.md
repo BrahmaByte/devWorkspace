@@ -121,6 +121,10 @@ stored credential and cached provider metadata.
 - **Open command is missing:** confirm the VSIX is installed, then reload VS Code.
 - **Jira or Confluence authentication fails:** confirm the product root URL,
   token type, and browse/view permissions.
+- **Jira or Confluence is blocked by a corporate network:** connect the required
+  VPN, then use **Open Proxy Settings** from the error message. DevDashboardV1
+  uses VS Code's proxy, proxy authentication, and trusted system certificates;
+  reload VS Code after changing managed proxy settings.
 - **A project or terminal folder is rejected:** select it with the provided VS
   Code folder picker instead of typing a path.
 - **A command does not run:** save it first and approve the VS Code confirmation

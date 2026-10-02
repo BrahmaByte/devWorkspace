@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, it } from "node:test";
 
-import { getDatabasePath } from "../../src/infrastructure/database/location";
+import {
+  getDatabasePath,
+  prepareDatabasePath,
+} from "../../src/infrastructure/database/location";
 import {
   DatabaseInitializationError,
   LocalDatabase,
@@ -32,6 +35,41 @@ void afterEach(async () => {
 });
 
 void describe("Local SQLite database", () => {
+  void it("uses a generic filename and migrates legacy extension storage", async () => {
+    const storageRoot = await mkdtemp(join(tmpdir(), "devdashboard-storage-"));
+    temporaryDirectories.push(storageRoot);
+    const extensionStorage = join(storageRoot, "brahmabyte.devdashboardv1");
+    await mkdir(extensionStorage, { recursive: true });
+    await writeFile(join(extensionStorage, "devworkspace.sqlite"), "legacy");
+
+    const databasePath = await prepareDatabasePath(extensionStorage);
+
+    assert.equal(
+      databasePath,
+      join(storageRoot, "brahmabyte.localdata", "workspace.sqlite"),
+    );
+    assert.equal(await readFile(databasePath, "utf8"), "legacy");
+    assert.equal(
+      getDatabasePath(extensionStorage).endsWith("workspace.sqlite"),
+      true,
+    );
+  });
+
+  void it("never overwrites an existing stable database during migration", async () => {
+    const storageRoot = await mkdtemp(join(tmpdir(), "devdashboard-storage-"));
+    temporaryDirectories.push(storageRoot);
+    const extensionStorage = join(storageRoot, "renamed.extension");
+    const stableStorage = join(storageRoot, "brahmabyte.localdata");
+    await mkdir(extensionStorage, { recursive: true });
+    await mkdir(stableStorage, { recursive: true });
+    await writeFile(join(extensionStorage, "devworkspace.sqlite"), "legacy");
+    await writeFile(join(stableStorage, "workspace.sqlite"), "current");
+
+    const databasePath = await prepareDatabasePath(extensionStorage);
+
+    assert.equal(await readFile(databasePath, "utf8"), "current");
+  });
+
   void it("initializes every Milestone 2 table and records migrations", async () => {
     const { database } = await createDatabase();
     const repository = new LocalStateRepository(database);
