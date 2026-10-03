@@ -6,7 +6,7 @@ import type { ManagedApplicationProcess } from "../application/services/develope
 const executeFile = promisify(execFile);
 
 // Fixed code, with the selected bundle path and process identity passed as argv.
-const applicationScript = `
+export const macApplicationScript = `
 ObjC.import('AppKit');
 function run(argv) {
   const path = argv[1];
@@ -29,7 +29,7 @@ function run(argv) {
   }
   const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(Number(argv[2]));
   const expectedDate = argv[3];
-  const matches = sameBundle(app) && String(identity(app).date) === expectedDate;
+  const matches = Boolean(sameBundle(app) && String(identity(app).date) === expectedDate);
   if (argv[0] === 'status') return JSON.stringify({running:matches});
   if (!matches) return JSON.stringify({running:false});
   if (!app.terminate) throw Error('Application refused to quit.');
@@ -59,7 +59,7 @@ const runApplicationCommand: MacApplicationCommand = async (
       "-l",
       "JavaScript",
       "-e",
-      applicationScript,
+      macApplicationScript,
       action,
       bundlePath,
       ...(identity ? [String(identity.pid), String(identity.date)] : []),

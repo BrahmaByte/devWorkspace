@@ -28,7 +28,8 @@ Home contains:
 
 On macOS, apps open through the system application launcher. An app already
 running is brought forward; its close action stays disabled to protect sessions
-opened outside the dashboard.
+opened outside the dashboard. Closing a dashboard-started app updates its tile
+to Stopped once it exits.
 
 Hover over or focus a URL-group name to show its URLs. Select an individual URL
 to open it, or use the open-all icon to launch the complete group in your default

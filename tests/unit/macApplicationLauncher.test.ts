@@ -1,12 +1,29 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { runInNewContext } from "node:vm";
 
 import {
   launchMacApplication,
+  macApplicationScript,
   type MacApplicationCommand,
 } from "../../src/platform/macApplicationLauncher";
 
 void describe("macOS bundle launches", () => {
+  void it("reports a terminated app as stopped instead of omitting its status", () => {
+    const result: unknown = runInNewContext(
+      `${macApplicationScript}\nrun(["status", "/Applications/Tool.app", "1234", "5678"]);`,
+      {
+        ObjC: { import: () => undefined },
+        $: {
+          NSWorkspace: { sharedWorkspace: {} },
+          NSRunningApplication: {
+            runningApplicationWithProcessIdentifier: () => undefined,
+          },
+        },
+      },
+    );
+    assert.equal(result, '{"running":false}');
+  });
   void it("tracks the app returned by Launch Services and closes that identity", async () => {
     const calls: string[] = [];
     const command: MacApplicationCommand = (action, path, identity) => {
