@@ -44,6 +44,10 @@ export class DeveloperApplicationService {
     }));
   }
 
+  public getIconSource(id: string): string {
+    return this.getApplication(id).executablePath;
+  }
+
   public async add(executablePath: string): Promise<string> {
     const inspected = await this.processGateway.inspect(executablePath);
     const normalizedPath = executablePath.trim();

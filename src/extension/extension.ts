@@ -51,6 +51,7 @@ import {
 } from "../infrastructure/vscode/vscodeStartWorkGateway";
 import { createPlatformService } from "../platform/platformService";
 import { NodeDeveloperApplicationProcessGateway } from "../platform/developerApplicationProcess";
+import { DeveloperApplicationIconProvider } from "../platform/developerApplicationIcon";
 import { createWebviewHtml } from "../webview/app/shell";
 import type {
   ExtensionResponse,
@@ -82,6 +83,9 @@ export async function activate(
   const developerApplicationService = new DeveloperApplicationService(
     new DeveloperApplicationRepository(database),
     new NodeDeveloperApplicationProcessGateway(platform.operatingSystem),
+  );
+  const developerApplicationIcons = new DeveloperApplicationIconProvider(
+    platform.operatingSystem,
   );
   const homeService = new HomeService(
     workspaceRepository,
@@ -209,6 +213,14 @@ export async function activate(
         type: "home.state",
         state: {
           ...state,
+          developerApplications: await Promise.all(
+            state.developerApplications.map(async (application) => ({
+              ...application,
+              iconDataUrl: await developerApplicationIcons.getIcon(
+                developerApplicationService.getIconSource(application.id),
+              ),
+            })),
+          ),
           currentProject: state.currentProject
             ? await withGitBranch(state.currentProject)
             : undefined,

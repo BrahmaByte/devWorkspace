@@ -24,7 +24,7 @@ Home contains:
 - **URL groups:** save a named set of frequently used HTTPS links.
 - **Developer apps:** add an application with the native picker, launch it, see
   whether a dashboard-started instance is running, and close that instance after
-  confirmation.
+  confirmation. Apps appear in a grid with their installed icon when available.
 
 Hover over or focus a URL-group name to show its URLs. Select an individual URL
 to open it, or use the open-all icon to launch the complete group in your default
