@@ -9,6 +9,7 @@ import type {
   ManagedApplicationProcess,
 } from "../application/services/developerApplicationService";
 import type { OperatingSystem } from "./platformService";
+import { launchMacApplication } from "./macApplicationLauncher";
 
 function displayName(executablePath: string): string {
   const name = basename(executablePath);
@@ -102,11 +103,13 @@ export class NodeDeveloperApplicationProcessGateway implements DeveloperApplicat
   ): Promise<ManagedApplicationProcess> {
     const selectedPath = resolve(executablePath);
     const selectedStat = await stat(selectedPath);
-    const launchPath =
-      this.operatingSystem === "macos" && selectedStat.isDirectory()
-        ? await macApplicationExecutable(selectedPath)
-        : selectedPath;
-    const child = spawn(launchPath, [], {
+    if (
+      this.operatingSystem === "macos" &&
+      selectedStat.isDirectory() &&
+      selectedPath.toLowerCase().endsWith(".app")
+    )
+      return launchMacApplication(selectedPath);
+    const child = spawn(selectedPath, [], {
       detached: false,
       shell: false,
       stdio: "ignore",

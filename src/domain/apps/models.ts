@@ -13,6 +13,7 @@ export interface DeveloperApplicationSummary {
   readonly id: string;
   readonly name: string;
   readonly iconDataUrl?: string;
+  readonly canClose?: boolean;
   readonly status: DeveloperApplicationStatus;
   readonly lastLaunchedAt?: string;
 }

@@ -26,6 +26,10 @@ Home contains:
   whether a dashboard-started instance is running, and close that instance after
   confirmation. Apps appear in a grid with their installed icon when available.
 
+On macOS, apps open through the system application launcher. An app already
+running is brought forward; its close action stays disabled to protect sessions
+opened outside the dashboard.
+
 Hover over or focus a URL-group name to show its URLs. Select an individual URL
 to open it, or use the open-all icon to launch the complete group in your default
 browser. Every icon includes a hover description.

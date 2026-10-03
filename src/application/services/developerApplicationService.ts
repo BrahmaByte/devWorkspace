@@ -8,6 +8,8 @@ import type { DeveloperApplicationRepository } from "../../infrastructure/databa
 
 export interface ManagedApplicationProcess {
   readonly exited: Promise<void>;
+  readonly canClose?: boolean;
+  dispose?(): void;
   close(): Promise<void>;
 }
 
@@ -40,6 +42,9 @@ export class DeveloperApplicationService {
       id: application.id,
       name: application.name,
       status: this.running.has(application.id) ? "running" : "stopped",
+      canClose:
+        this.running.has(application.id) &&
+        this.running.get(application.id)?.canClose !== false,
       lastLaunchedAt: application.lastLaunchedAt,
     }));
   }
@@ -107,6 +112,7 @@ export class DeveloperApplicationService {
 
   public dispose(): void {
     this.changeListeners.clear();
+    for (const process of this.running.values()) process.dispose?.();
     this.running.clear();
   }
 
