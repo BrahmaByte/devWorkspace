@@ -8,11 +8,37 @@ A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
 
 ## Install and open
 
-1. In VS Code, run **Extensions: Install from VSIX…**.
-2. Select `devdashboardv1.vsix` and reload VS Code when prompted.
+1. Open **Extensions** in VS Code and search for **DevDashboardV1** by **BrahmaByte**.
+2. Select **Install**, or visit the
+   [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
 3. Open the Command Palette and run **DevDashboardV1: Open DevDashboardV1**.
 
 You can reopen the dashboard at any time with the same command.
+
+For manual installation, run **Extensions: Install from VSIX…**, select
+`devdashboardv1.vsix`, and reload VS Code.
+
+## Version 0.1.5
+
+- Added the compact Developer apps launcher with installed icons and running status.
+- Fixed macOS app launching and false errors after successfully closing an app.
+- Improved Jira syncing and issue details, and corporate proxy connectivity.
+
+## Screenshots
+
+Current extension UI with illustrative sample data; no personal or corporate data.
+
+### Home — light mode
+
+![Home with sticky notes, developer apps and URL groups](assets/screenshots/home-light.png)
+
+### Home — dark mode
+
+![Home in dark mode](assets/screenshots/home-dark.png)
+
+### Notes
+
+![Notes browser and autosaving editor](assets/screenshots/notes.png)
 
 ## Home
 
@@ -129,7 +155,7 @@ stored credential and cached provider metadata.
 
 ## Troubleshooting
 
-- **Open command is missing:** confirm the VSIX is installed, then reload VS Code.
+- **Open command is missing:** confirm the extension is installed, then reload VS Code.
 - **Jira or Confluence authentication fails:** confirm the product root URL,
   token type, and browse/view permissions.
 - **Jira or Confluence is blocked by a corporate network:** connect the required
