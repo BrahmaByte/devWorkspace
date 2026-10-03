@@ -42,6 +42,11 @@ export type WebviewRequest =
     }
   | { readonly type: "urls.delete" | "urls.openAll"; readonly id: string }
   | { readonly type: "urls.open"; readonly id: string; readonly index: number }
+  | { readonly type: "apps.browse" }
+  | {
+      readonly type: "apps.launch" | "apps.close" | "apps.delete";
+      readonly id: string;
+    }
   | { readonly type: "search.query"; readonly query: string }
   | {
       readonly type: "search.open";

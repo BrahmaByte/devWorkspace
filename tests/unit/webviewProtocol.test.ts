@@ -141,6 +141,32 @@ void describe("Webview protocol validation", () => {
     );
   });
 
+  void it("allows only opaque IDs for developer application actions", () => {
+    assert.deepEqual(parseWebviewRequest({ type: "apps.browse" }), {
+      ok: true,
+      value: { type: "apps.browse" },
+    });
+    assert.equal(
+      parseWebviewRequest({
+        type: "apps.launch",
+        id: "00000000-0000-4000-8000-000000000000",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "apps.launch",
+        id: "not-an-id",
+        executablePath: "/tmp/untrusted",
+      }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "apps.browse", path: "/tmp/untrusted" }).ok,
+      false,
+    );
+  });
+
   void it("rejects unknown, malformed, and over-posted messages", () => {
     for (const message of [
       null,

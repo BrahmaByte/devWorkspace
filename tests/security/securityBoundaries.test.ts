@@ -15,6 +15,8 @@ void describe("security boundaries", () => {
       { type: "confluence.open", id: "https://attacker.invalid" },
       { type: "navigation.select", page: "home", __proto__: { admin: true } },
       { type: "jira.connect", displayName: "x", baseUrl: "x", pat: "fake" },
+      { type: "apps.launch", id: "x", executablePath: "/bin/sh" },
+      { type: "apps.browse", executablePath: "/bin/sh" },
     ];
     for (const payload of payloads)
       assert.equal(parseWebviewRequest(payload).ok, false);

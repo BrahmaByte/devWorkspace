@@ -173,4 +173,18 @@ export const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 6,
+    name: "developer_applications",
+    sql: `
+      CREATE TABLE developer_applications (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        executable_path TEXT NOT NULL UNIQUE,
+        last_launched_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

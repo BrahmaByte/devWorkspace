@@ -1,6 +1,7 @@
 import type { StickyNote } from "../notes/models";
 import type { Project, ProjectCommand } from "../workspace/models";
 import type { UrlGroup } from "./urlGroups";
+import type { DeveloperApplicationSummary } from "../apps/models";
 
 export interface RecentResource {
   readonly id: string;
@@ -17,5 +18,6 @@ export interface HomeState {
   readonly recentResources: readonly RecentResource[];
   readonly stickyNotes: readonly StickyNote[];
   readonly urlGroups: readonly UrlGroup[];
+  readonly developerApplications: readonly DeveloperApplicationSummary[];
   readonly jira: { readonly connected: false };
 }

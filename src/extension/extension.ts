@@ -26,6 +26,7 @@ import {
 } from "../application/services/startWorkService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { UrlGroupService } from "../application/services/urlGroupService";
+import { DeveloperApplicationService } from "../application/services/developerApplicationService";
 import { prepareDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
@@ -34,6 +35,7 @@ import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { RelationshipRepository } from "../infrastructure/database/relationshipRepository";
 import { UrlGroupRepository } from "../infrastructure/database/urlGroupRepository";
+import { DeveloperApplicationRepository } from "../infrastructure/database/developerApplicationRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
@@ -48,6 +50,7 @@ import {
   VscodeProjectWorkspaceGateway,
 } from "../infrastructure/vscode/vscodeStartWorkGateway";
 import { createPlatformService } from "../platform/platformService";
+import { NodeDeveloperApplicationProcessGateway } from "../platform/developerApplicationProcess";
 import { createWebviewHtml } from "../webview/app/shell";
 import type {
   ExtensionResponse,
@@ -76,10 +79,15 @@ export async function activate(
   );
   const urlGroupRepository = new UrlGroupRepository(database);
   const urlGroupService = new UrlGroupService(urlGroupRepository);
+  const developerApplicationService = new DeveloperApplicationService(
+    new DeveloperApplicationRepository(database),
+    new NodeDeveloperApplicationProcessGateway(platform.operatingSystem),
+  );
   const homeService = new HomeService(
     workspaceRepository,
     noteRepository,
     urlGroupRepository,
+    developerApplicationService,
   );
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
@@ -124,6 +132,7 @@ export async function activate(
   const gitBranchService = new GitBranchService(new NodeGitRunner());
   context.subscriptions.push({
     dispose: () => {
+      developerApplicationService.dispose();
       database.close();
     },
   });
@@ -209,6 +218,11 @@ export async function activate(
         },
       } satisfies ExtensionResponse);
     };
+    const appChangeSubscription = developerApplicationService.onDidChange(
+      () => {
+        void sendHome();
+      },
+    );
     const sendJira = async (): Promise<boolean> =>
       panel.webview.postMessage({
         type: "jira.state",
@@ -279,6 +293,39 @@ export async function activate(
             case "urls.openAll":
               for (const url of urlGroupService.getUrls(request.id))
                 await vscode.env.openExternal(vscode.Uri.parse(url));
+              return;
+            case "apps.browse": {
+              const selected = await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectFolders: platform.operatingSystem === "macos",
+                canSelectMany: false,
+                openLabel: "Add developer application",
+                title: "Select an application executable",
+              });
+              const application = selected?.[0];
+              if (!application) return;
+              await developerApplicationService.add(application.fsPath);
+              await sendHome();
+              return;
+            }
+            case "apps.launch":
+              await developerApplicationService.launch(request.id);
+              await sendHome();
+              return;
+            case "apps.close": {
+              const confirmed = await vscode.window.showWarningMessage(
+                "Close this application? Unsaved work in the application may be lost.",
+                { modal: true },
+                "Close application",
+              );
+              if (confirmed !== "Close application") return;
+              await developerApplicationService.close(request.id);
+              await sendHome();
+              return;
+            }
+            case "apps.delete":
+              await developerApplicationService.delete(request.id);
+              await sendHome();
               return;
             case "search.query":
               await sendSearch(request.query);
@@ -703,6 +750,23 @@ export async function activate(
           else await sendWorkspace();
           await sendHome();
         } catch (error) {
+          if (request.type.startsWith("apps.")) {
+            const message =
+              request.type === "apps.browse"
+                ? "DevDashboardV1 could not add that application. Select a local executable application that you are allowed to run."
+                : request.type === "apps.launch"
+                  ? "DevDashboardV1 could not launch that application. Confirm it still exists and is executable."
+                  : request.type === "apps.close"
+                    ? "DevDashboardV1 could not close that application. Save your work and close it from the application."
+                    : "DevDashboardV1 could not remove that application. Close it first if it is running.";
+            await vscode.window.showErrorMessage(message);
+            await panel.webview.postMessage({
+              type: "protocol.error",
+              code: "operation_failed",
+              message,
+            } satisfies ExtensionResponse);
+            return;
+          }
           if (
             request.type === "jira.connect" ||
             request.type === "confluence.connect"
@@ -741,6 +805,7 @@ export async function activate(
 
     panel.onDidDispose(() => {
       messageSubscription.dispose();
+      appChangeSubscription.dispose();
     });
   };
 

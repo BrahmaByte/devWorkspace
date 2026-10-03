@@ -22,10 +22,17 @@ Home contains:
   edit, recolor, or delete it.
 - **Current Jira task:** opens the Jira board when selected.
 - **URL groups:** save a named set of frequently used HTTPS links.
+- **Developer apps:** add an application with the native picker, launch it, see
+  whether a dashboard-started instance is running, and close that instance after
+  confirmation.
 
 Hover over or focus a URL-group name to show its URLs. Select an individual URL
 to open it, or use the open-all icon to launch the complete group in your default
 browser. Every icon includes a hover description.
+
+Application paths stay in the local database and are never sent to the dashboard
+Webview. DevDashboardV1 tracks and closes only instances that it launched; it does
+not scan for or terminate unrelated system processes.
 
 ## Jira
 

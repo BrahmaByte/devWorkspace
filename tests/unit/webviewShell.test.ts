@@ -59,13 +59,14 @@ void describe("Webview shell", () => {
     assert.match(html, /radial-gradient/);
   });
 
-  void it("keeps Home focused on sticky notes and current Jira work", () => {
+  void it("keeps Home focused on requested dashboard cards", () => {
     const html = createWebviewHtml("vscode-webview://test");
     const homeMarkup =
       html.match(/data-view="home">([\s\S]*?)<\/section>/u)?.[1] ?? "";
 
     assert.match(homeMarkup, /class="dashboard-card sticky-widget"/);
     assert.match(homeMarkup, /Current Jira task/);
+    assert.match(homeMarkup, /Developer apps/);
     assert.doesNotMatch(
       html,
       /Current project|Quick actions|Favourite projects|Recent resources/,
@@ -79,6 +80,19 @@ void describe("Webview shell", () => {
     );
     assert.match(html, /class="notes-browser"/);
     assert.match(html, /class="note-editor"/);
+  });
+
+  void it("provides secure developer application lifecycle controls", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+
+    assert.match(html, /id="developer-app-add"/);
+    assert.match(html, /type:"apps\.browse"/);
+    assert.match(html, /type:running\?"apps\.close":"apps\.launch"/);
+    assert.match(html, /type:"apps\.delete"/);
+    assert.match(html, /application\.status==="running"/);
+    assert.match(html, /<symbol id="i-play"/);
+    assert.match(html, /<symbol id="i-stop"/);
+    assert.doesNotMatch(html, /application\.executablePath|application\.pid/);
   });
 
   void it("provides fixed sticky previews, URL groups, and persistent card layouts", () => {

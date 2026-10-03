@@ -28,6 +28,9 @@
     "onCommand:devdashboardv1.search"
   ],
   "main": "./dist/src/extension/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
   "contributes": {
     "commands": [
       {

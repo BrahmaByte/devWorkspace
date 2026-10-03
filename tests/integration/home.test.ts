@@ -13,6 +13,24 @@ import { NoteRepository } from "../../src/infrastructure/database/noteRepository
 import { WorkspaceRepository } from "../../src/infrastructure/database/workspaceRepository";
 import { UrlGroupRepository } from "../../src/infrastructure/database/urlGroupRepository";
 import { UrlGroupService } from "../../src/application/services/urlGroupService";
+import {
+  DeveloperApplicationService,
+  type DeveloperApplicationProcessGateway,
+} from "../../src/application/services/developerApplicationService";
+import { DeveloperApplicationRepository } from "../../src/infrastructure/database/developerApplicationRepository";
+
+const inactiveApplications: DeveloperApplicationProcessGateway = {
+  inspect: () => Promise.resolve({ name: "Application" }),
+  launch: () => Promise.reject(new Error("Not used by this test.")),
+};
+
+const applicationService = (
+  database: LocalDatabase,
+): DeveloperApplicationService =>
+  new DeveloperApplicationService(
+    new DeveloperApplicationRepository(database),
+    inactiveApplications,
+  );
 
 const directories: string[] = [];
 
@@ -64,6 +82,7 @@ void describe("home dashboard", () => {
       new WorkspaceRepository(reopened),
       new NoteRepository(reopened),
       new UrlGroupRepository(reopened),
+      applicationService(reopened),
     ).getState();
     assert.equal(state.currentProject?.name, "Local API");
     assert.equal(state.favouriteProjects[0]?.id, projectId);
@@ -86,10 +105,12 @@ void describe("home dashboard", () => {
       new WorkspaceRepository(database),
       new NoteRepository(database),
       new UrlGroupRepository(database),
+      applicationService(database),
     ).getState();
     assert.equal(state.currentProject, undefined);
     assert.deepEqual(state.favouriteProjects, []);
     assert.deepEqual(state.recentResources, []);
+    assert.deepEqual(state.developerApplications, []);
     assert.equal(state.jira.connected, false);
     database.close();
   });

@@ -151,6 +151,20 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         }
       : { ok: false, error: "urls.open is invalid." };
   }
+  if (value.type === "apps.browse") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "apps.browse" } }
+      : { ok: false, error: "apps.browse is invalid." };
+  }
+  if (
+    value.type === "apps.launch" ||
+    value.type === "apps.close" ||
+    value.type === "apps.delete"
+  ) {
+    return hasOnlyKeys(value, ["type", "id"]) && isId(value.id)
+      ? { ok: true, value: { type: value.type, id: value.id } }
+      : { ok: false, error: `${value.type} is invalid.` };
+  }
   if (value.type === "search.query") {
     return hasOnlyKeys(value, ["type", "query"]) &&
       typeof value.query === "string" &&

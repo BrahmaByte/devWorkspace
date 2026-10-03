@@ -18,6 +18,7 @@ interface ExtensionManifest {
     }>;
   };
   readonly main?: string;
+  readonly extensionKind?: readonly string[];
 }
 
 function readManifest(): ExtensionManifest {
@@ -43,6 +44,10 @@ void describe("Extension manifest", () => {
           command === "devdashboardv1.open" && title === "Open DevDashboardV1",
       ),
     );
+  });
+
+  void it("runs on the local UI host for desktop application control", () => {
+    assert.deepEqual(readManifest().extensionKind, ["ui"]);
   });
   void it("registers the global search command and shortcut", () => {
     const manifest = readManifest();
