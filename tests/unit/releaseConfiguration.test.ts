@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { spawnSync } from "node:child_process";
 
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
 const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
   readonly scripts: Readonly<Record<string, string>>;
   readonly version: string;
@@ -13,6 +15,34 @@ const lockfile = JSON.parse(readFileSync("package-lock.json", "utf8")) as {
 };
 
 void describe("Release validation configuration", () => {
+  void it("accepts the exact release version and rejects invalid or mismatched tags", () => {
+    for (const tag of [
+      `v${manifest.version}`,
+      "main",
+      "v0.0.0",
+      "v1.2.3;echo unsafe",
+    ]) {
+      const result = spawnSync(
+        process.execPath,
+        ["scripts/verify-release.mjs", tag],
+        { encoding: "utf8" },
+      );
+      assert.equal(result.status === 0, tag === `v${manifest.version}`);
+    }
+  });
+
+  void it("gates releases on all validation targets and verifies exact publication artifacts", () => {
+    assert.match(releaseWorkflow, /uses: \.\/\.github\/workflows\/ci\.yml/u);
+    assert.match(releaseWorkflow, /needs: validate/u);
+    assert.match(releaseWorkflow, /--githubBranch/u);
+    assert.match(releaseWorkflow, /--check-public-images/u);
+    assert.match(releaseWorkflow, /sha256sum --check SHA256SUMS\.txt/u);
+    assert.match(releaseWorkflow, /--verify-tag/u);
+    assert.match(releaseWorkflow, /environment: marketplace/u);
+    assert.match(releaseWorkflow, /secrets\.VSCE_PAT/u);
+    assert.match(releaseWorkflow, /vsce publish --packagePath/u);
+    assert.doesNotMatch(releaseWorkflow, /pull_request_target/u);
+  });
   void it("pins all supported operating-system and architecture targets", () => {
     for (const target of [
       ["windows-2025", "win32", "x64"],

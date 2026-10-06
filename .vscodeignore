@@ -5,6 +5,7 @@
 artifacts/**
 docs/**
 scripts/**
+releases/**
 src/**
 tests/**
 dist/tests/**

@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish_marketplace:
+        description: Publish this tagged release to Marketplace
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate immutable release tag and version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          test "$REF_TYPE" = tag
+          node scripts/verify-release.mjs "$RELEASE_TAG"
+
+  validate:
+    needs: preflight
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Package verified release with tag-pinned documentation images
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node scripts/verify-release.mjs "$RELEASE_TAG"
+          npm run package:vsix -- --githubBranch "$RELEASE_TAG"
+          node scripts/verify-vsix.mjs devdashboardv1.vsix --check-public-images
+          mkdir release-assets
+          mv devdashboardv1.vsix "release-assets/devdashboardv1-${RELEASE_TAG#v}.vsix"
+          cd release-assets
+          sha256sum *.vsix > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+
+  github-release:
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Verify checksum
+        working-directory: release-assets
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Create GitHub release or retain existing release on retry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-assets/* --verify-tag --title "DevDashboardV1 ${RELEASE_TAG#v}" --notes-file "releases/${RELEASE_TAG#v}.txt"
+          fi
+
+  marketplace:
+    needs: github-release
+    if: vars.MARKETPLACE_PUBLISH_ENABLED == 'true' || (github.event_name == 'workflow_dispatch' && inputs.publish_marketplace)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: marketplace
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Verify checksum
+        working-directory: release-assets
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Publish the exact verified VSIX
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          test -n "$VSCE_PAT" || { echo "Configure VSCE_PAT in the marketplace environment."; exit 1; }
+          npx --no-install vsce publish --packagePath "release-assets/devdashboardv1-${RELEASE_TAG#v}.vsix" --skip-duplicate

@@ -13,11 +13,13 @@ Then run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
 
 You can reopen the dashboard at any time with the same command.
 
-## Version 0.1.6
+## Version 0.1.7
 
 - Added full-screen Jira details and comments, plus faster Confluence reopening.
 - Improved saved card layouts and Settings grid.
 - Added a personalized Jira greeting, larger clock, and dashboard zoom controls.
+- Refined sticky notes, floating zoom controls, and rearrangeable Settings cards.
+- Added cross-platform release validation and versioned extension packages.
 
 ## Screenshots
 

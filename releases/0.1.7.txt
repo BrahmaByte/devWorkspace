@@ -1,0 +1,14 @@
+DevDashboardV1 0.1.7
+
+- Full-screen Jira issue details with formatted descriptions, comments and on-demand sync.
+- Formatted Confluence reading, embedded media, page metadata and a bounded session cache.
+- Personalized header, floating collapsible zoom controls and refined sticky notes.
+- Rearrangeable Settings grids and stable saved dashboard card layouts.
+- Extension-only corporate proxy configuration with credentials kept in VS Code SecretStorage.
+- Refreshed documentation and screenshot carousel.
+- Automated Windows, Linux, Intel Mac and Apple Silicon validation before release.
+
+Install or update through the Visual Studio Marketplace:
+https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1
+
+The attached universal VSIX supports Windows, macOS and Linux. Its SHA-256 checksum is attached separately.
