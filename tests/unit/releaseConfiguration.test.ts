@@ -15,6 +15,13 @@ const lockfile = JSON.parse(readFileSync("package-lock.json", "utf8")) as {
 };
 
 void describe("Release validation configuration", () => {
+  void it("does not require ignored local documentation in a fresh checkout", () => {
+    assert.doesNotMatch(
+      manifest.scripts["format:check"] ?? "",
+      /docs\/\*\*\/\*\.md/u,
+    );
+    assert.doesNotMatch(manifest.scripts.format ?? "", /docs\/\*\*\/\*\.md/u);
+  });
   void it("accepts the exact release version and rejects invalid or mismatched tags", () => {
     for (const tag of [
       `v${manifest.version}`,

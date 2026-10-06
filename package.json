@@ -55,8 +55,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev:host": "npm run build && node scripts/run-extension-host.mjs",
-    "format": "prettier --write \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"docs/**/*.md\" \"scripts/**/*.mjs\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
-    "format:check": "prettier --check \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"docs/**/*.md\" \"scripts/**/*.mjs\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "format": "prettier --write \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"scripts/**/*.mjs\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "format:check": "prettier --check \".github/**/*.{yml,yaml}\" \".vscode/**/*.json\" \"scripts/**/*.mjs\" \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
