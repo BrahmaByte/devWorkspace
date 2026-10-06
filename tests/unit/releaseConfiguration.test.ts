@@ -15,6 +15,12 @@ const lockfile = JSON.parse(readFileSync("package-lock.json", "utf8")) as {
 };
 
 void describe("Release validation configuration", () => {
+  void it("keeps source line endings consistent in Windows checkouts", () => {
+    assert.match(
+      readFileSync(".gitattributes", "utf8"),
+      /^\* text=auto eol=lf/mu,
+    );
+  });
   void it("does not require ignored local documentation in a fresh checkout", () => {
     assert.doesNotMatch(
       manifest.scripts["format:check"] ?? "",
