@@ -45,6 +45,7 @@ const required = [
   "extension.vsixmanifest",
   "extension/LICENSE.txt",
   "extension/assets/devdashboardv1-icon.png",
+  "extension/assets/screenshots/carousel.gif",
   ...[
     "home-light",
     "home-dark",

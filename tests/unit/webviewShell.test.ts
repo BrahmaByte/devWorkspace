@@ -66,6 +66,14 @@ void describe("Webview shell", () => {
     assert.match(html, /id="zoom-in"/u);
     assert.match(html, /id="zoom-out"/u);
     assert.match(html, /id="zoom-reset"/u);
+    assert.match(html, /id="zoom-widget"/u);
+    assert.match(html, /id="zoom-minimize"/u);
+    assert.match(html, /position:fixed;right:1rem;z-index:50/u);
+    assert.match(html, /border:2px dotted/u);
+    assert.match(html, /\.sticky::before/u);
+    assert.match(html, /dashboard-grid>\.dashboard-card\{height:20rem/u);
+    assert.match(html, /settings-grid>\.jira-card\{height:22rem/u);
+    assert.match(html, /append\(networkCard\);initializeCardLayouts\(\)/u);
     assert.match(
       html,
       /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,22rem\),1fr\)\)/u,

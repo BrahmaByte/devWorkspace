@@ -8,15 +8,10 @@ A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
 
 ## Install and open
 
-1. Open **Extensions** in VS Code and search for **DevDashboardV1** by **BrahmaByte**.
-2. Select **Install**, or visit the
-   [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
-3. Open the Command Palette and run **DevDashboardV1: Open DevDashboardV1**.
+Install [DevDashboardV1 from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
+Then run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
 
 You can reopen the dashboard at any time with the same command.
-
-For manual installation, run **Extensions: Install from VSIX…**, select
-`devdashboardv1.vsix`, and reload VS Code.
 
 ## Version 0.1.6
 
@@ -26,31 +21,14 @@ For manual installation, run **Extensions: Install from VSIX…**, select
 
 ## Screenshots
 
-Current extension UI with illustrative sample data; no personal or corporate data.
+The carousel rotates through six views every five seconds, using sample data only.
 
-### Home — light mode
+![Dashboard screenshot carousel: Home light and dark, Notes, Jira, Confluence and Settings](assets/screenshots/carousel.gif)
 
-![Home with sticky notes, developer apps and URL groups](assets/screenshots/home-light.png)
-
-### Home — dark mode
-
-![Home in dark mode](assets/screenshots/home-dark.png)
-
-### Notes
-
-![Notes browser and autosaving editor](assets/screenshots/notes.png)
-
-### Jira issue viewer
-
-![Full-screen Jira details and comments](assets/screenshots/jira-reader.png)
-
-### Confluence
-
-![Formatted Confluence page and metadata](assets/screenshots/knowledge.png)
-
-### Settings
-
-![Settings connection cards in a responsive grid](assets/screenshots/settings.png)
+Still images: [Home light](assets/screenshots/home-light.png) ·
+[Home dark](assets/screenshots/home-dark.png) · [Notes](assets/screenshots/notes.png) ·
+[Jira](assets/screenshots/jira-reader.png) · [Confluence](assets/screenshots/knowledge.png) ·
+[Settings](assets/screenshots/settings.png).
 
 ## Home
 
@@ -177,11 +155,13 @@ to remove it. Other extensions and VS Code settings are unchanged.
 ## Appearance and layout
 
 - The header greets you using your connected Jira display name and shows local time.
-- Use the zoom icons to scale the dashboard from 80% to 150%; click the percentage
+- Use the floating bottom-right zoom widget to scale from 80% to 150%; minimize
+  it with the minus icon and expand with the plus icon. Click the percentage
   to reset. `Ctrl/Cmd` with `+`, `-`, or `0` and `Ctrl/Cmd` + wheel also work when
   the dashboard has focus. VS Code may handle its own global zoom shortcuts.
 - Use the header theme icon to switch between light and dark mode.
 - Resize cards from their lower-right edge.
+- Home and Settings cards start at consistent sizes unless you saved a manual resize.
 - Drag cards with the grip icon, or focus the grip and use the arrow keys, to
   rearrange them.
 - Theme, zoom, and card layout are restored when the dashboard is reopened.

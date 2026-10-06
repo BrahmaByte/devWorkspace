@@ -119,68 +119,70 @@ try {
   const logo =
     "data:image/png;base64," +
     (await readFile("assets/devdashboardv1-icon.png")).toString("base64");
-  for (const [name, view, theme] of [
-    ["home-light", "home", "light"],
-    ["home-dark", "home", "dark"],
-    ["notes", "notes", "light"],
-    ["settings", "settings", "light"],
-    ["jira-reader", "jira", "light"],
-    ["knowledge", "knowledge", "light"],
-  ]) {
-    let html = createWebviewHtml("file:", logo);
-    const nonce = html.match(/<script nonce="([^"]+)"/)[1];
-    const initial = [
-      { type: "shell.state", page: view, platform: "desktop" },
-      { type: "home.state", state: home },
-      { type: "notes.state", notes, stickyNotes, query: "" },
-      {
-        type: "jira.state",
-        state: {
-          connection,
-          currentUser: { accountId: "demo", displayName: "Demo Developer" },
-          issues: [issue],
-          localCards: [],
-          status: "connected",
-          filter: "",
+  await Promise.all(
+    [
+      ["home-light", "home", "light"],
+      ["home-dark", "home", "dark"],
+      ["notes", "notes", "light"],
+      ["settings", "settings", "light"],
+      ["jira-reader", "jira", "light"],
+      ["knowledge", "knowledge", "light"],
+    ].map(async ([name, view, theme]) => {
+      let html = createWebviewHtml("file:", logo);
+      const nonce = html.match(/<script nonce="([^"]+)"/)[1];
+      const initial = [
+        { type: "shell.state", page: view, platform: "desktop" },
+        { type: "home.state", state: home },
+        { type: "notes.state", notes, stickyNotes, query: "" },
+        {
+          type: "jira.state",
+          state: {
+            connection,
+            currentUser: { accountId: "demo", displayName: "Demo Developer" },
+            issues: [issue],
+            localCards: [],
+            status: "connected",
+            filter: "",
+          },
         },
-      },
-      {
-        type: "confluence.state",
-        state: { connection, pages: [page], status: "connected" },
-      },
-    ];
-    const stub = `const errors=[];window.addEventListener('error',e=>errors.push(e.message));const send=data=>window.dispatchEvent(new MessageEvent('message',{data}));window.acquireVsCodeApi=()=>({getState:()=>({theme:${JSON.stringify(theme)}}),setState:()=>{},postMessage:m=>{if(m.type==='shell.ready')setTimeout(()=>{${JSON.stringify(initial)}.forEach(send);if(${JSON.stringify(view)}==='notes')document.querySelector('.note-row')?.click();if(${JSON.stringify(view)}==='jira')document.querySelector('.jira-issue').click();if(${JSON.stringify(view)}==='knowledge')document.querySelector('.knowledge-page-row').click();},0);if(m.type==='jira.issue')setTimeout(()=>send({type:'jira.issue',issue:${JSON.stringify(issue)}}),0);if(m.type==='jira.comments')setTimeout(()=>send({type:'jira.comments',issueKey:m.issueKey,startAt:0,page:{comments:[{id:'1',author:'Documentation team',createdAt:${JSON.stringify(createdAt)},html:'<p>The setup checklist is ready for review.</p>'}]}}),0);if(m.type==='confluence.preview')setTimeout(()=>send({type:'confluence.preview',document:${JSON.stringify(documentData)}}),0)}});setTimeout(()=>{document.body.dataset.qa=errors.length?'failed':'passed';document.body.dataset.qaErrors=JSON.stringify(errors);},1000);`;
-    html = html.replace(
-      `<script nonce="${nonce}">`,
-      `<script nonce="${nonce}">${stub}</script><script nonce="${nonce}">`,
-    );
-    const source = join(temporary, name + ".html");
-    await writeFile(source, html);
-    const { stdout } = await execute(
-      browser,
-      [
-        "--headless",
-        "--disable-gpu",
-        "--hide-scrollbars",
-        "--no-proxy-server",
-        `--user-data-dir=${join(temporary, name + "-profile")}`,
-        "--window-size=1440,1100",
-        "--force-device-scale-factor=1",
-        "--virtual-time-budget=2500",
-        `--screenshot=${join(output, name + ".png")}`,
-        "--dump-dom",
-        "file://" + source,
-      ],
-      { timeout: 45000, maxBuffer: 2_000_000 },
-    );
-    if (!stdout.includes('data-qa="passed"'))
-      throw new Error(
-        name +
-          " screenshot failed: " +
-          stdout.match(/data-qa-errors="[^"]*"/)?.[0],
+        {
+          type: "confluence.state",
+          state: { connection, pages: [page], status: "connected" },
+        },
+      ];
+      const stub = `const errors=[];window.addEventListener('error',e=>errors.push(e.message));const send=data=>window.dispatchEvent(new MessageEvent('message',{data}));window.acquireVsCodeApi=()=>({getState:()=>({theme:${JSON.stringify(theme)}}),setState:()=>{},postMessage:m=>{if(m.type==='shell.ready')setTimeout(()=>{${JSON.stringify(initial)}.forEach(send);if(${JSON.stringify(view)}==='notes')document.querySelector('.note-row')?.click();if(${JSON.stringify(view)}==='jira')document.querySelector('.jira-issue').click();if(${JSON.stringify(view)}==='knowledge')document.querySelector('.knowledge-page-row').click();},0);if(m.type==='jira.issue')setTimeout(()=>send({type:'jira.issue',issue:${JSON.stringify(issue)}}),0);if(m.type==='jira.comments')setTimeout(()=>send({type:'jira.comments',issueKey:m.issueKey,startAt:0,page:{comments:[{id:'1',author:'Documentation team',createdAt:${JSON.stringify(createdAt)},html:'<p>The setup checklist is ready for review.</p>'}]}}),0);if(m.type==='confluence.preview')setTimeout(()=>send({type:'confluence.preview',document:${JSON.stringify(documentData)}}),0)}});setTimeout(()=>{document.body.dataset.qa=errors.length?'failed':'passed';document.body.dataset.qaErrors=JSON.stringify(errors);},1000);`;
+      html = html.replace(
+        `<script nonce="${nonce}">`,
+        `<script nonce="${nonce}">${stub}</script><script nonce="${nonce}">`,
       );
-    process.stdout.write("Captured " + name + ".png\n");
-  }
+      const source = join(temporary, name + ".html");
+      await writeFile(source, html);
+      const { stdout } = await execute(
+        browser,
+        [
+          "--headless",
+          "--disable-gpu",
+          "--hide-scrollbars",
+          "--no-proxy-server",
+          `--user-data-dir=${join(temporary, name + "-profile")}`,
+          "--window-size=1440,1100",
+          "--force-device-scale-factor=1",
+          "--virtual-time-budget=2500",
+          `--screenshot=${join(output, name + ".png")}`,
+          "--dump-dom",
+          "file://" + source,
+        ],
+        { timeout: 45000, maxBuffer: 2_000_000 },
+      );
+      if (!stdout.includes('data-qa="passed"'))
+        throw new Error(
+          name +
+            " screenshot failed: " +
+            stdout.match(/data-qa-errors="[^"]*"/)?.[0],
+        );
+      process.stdout.write("Captured " + name + ".png\n");
+    }),
+  );
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

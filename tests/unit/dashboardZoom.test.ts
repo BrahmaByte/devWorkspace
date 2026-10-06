@@ -12,13 +12,27 @@ void describe("Dashboard zoom", () => {
       {
         textContent: string;
         disabled: boolean;
+        hidden: boolean;
+        classList: { toggle: () => void };
+        setAttribute: () => void;
         addEventListener: (type: string, listener: () => void) => void;
       }
     >();
-    for (const id of ["zoom-in", "zoom-out", "zoom-reset"])
+    for (const id of [
+      "zoom-in",
+      "zoom-out",
+      "zoom-reset",
+      "zoom-minimize",
+      "zoom-widget",
+      "zoom-panel",
+      "zoom-toggle-path",
+    ])
       controls.set("#" + id, {
         textContent: "",
         disabled: false,
+        hidden: false,
+        classList: { toggle: () => {} },
+        setAttribute: () => {},
         addEventListener: (_type, listener) => {
           listeners.set(id, listener);
         },
@@ -55,6 +69,10 @@ void describe("Dashboard zoom", () => {
     assert.equal(controls.get("#zoom-out")!.disabled, true);
     listeners.get("zoom-reset")!();
     assert.equal(state.zoom, 100);
+    listeners.get("zoom-minimize")!();
+    assert.equal(controls.get("#zoom-panel")!.hidden, true);
+    listeners.get("zoom-minimize")!();
+    assert.equal(controls.get("#zoom-panel")!.hidden, false);
     let prevented = false;
     events.get("keydown")!({
       ctrlKey: true,
