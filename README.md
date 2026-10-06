@@ -23,8 +23,6 @@ You can reopen the dashboard at any time with the same command.
 
 ## Screenshots
 
-The carousel rotates through six views every five seconds, using sample data only.
-
 ![Dashboard screenshot carousel: Home light and dark, Notes, Jira, Confluence and Settings](assets/screenshots/carousel.gif)
 
 Still images: [Home light](assets/screenshots/home-light.png) ·
@@ -149,8 +147,10 @@ dashboard Webview or written to the local database. Disconnecting removes the
 stored credential and cached provider metadata.
 
 If VS Code's proxy does not work, use **Settings → Network proxy** to configure
-an extension-only HTTP/HTTPS proxy. Optional Basic proxy credentials are entered
-in VS Code prompts and stored in SecretStorage. You can select an IT-approved
+an extension-only HTTP/HTTPS proxy. For Basic authentication, enter your
+IT-provided proxy username and password in the VS Code prompts, not your Jira
+or Confluence credentials. Leave the username empty if authentication is not
+required. Credentials are stored in SecretStorage. You can select an IT-approved
 PEM CA bundle for corporate TLS certificates. Certificate verification stays on.
 The override affects only Jira and Confluence, takes effect on the next request,
 and never falls back to a direct connection. Select **Use VS Code proxy (default)**

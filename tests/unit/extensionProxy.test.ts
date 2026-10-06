@@ -54,6 +54,20 @@ async function testTlsCertificate(): Promise<{ key: string; cert: string }> {
 }
 
 void describe("Extension-only proxy", () => {
+  void it("explains proxy credentials and keeps the password prompt masked", async () => {
+    const source = await readFile(
+      "src/infrastructure/vscode/vscodeExtensionProxy.ts",
+      "utf8",
+    );
+    assert.match(source, /IT-provided proxy username for Basic authentication/);
+    assert.match(source, /not your Jira or Confluence credentials/);
+    assert.match(source, /Leave empty if authentication is not required/);
+    assert.match(
+      source,
+      /title: "Proxy password",\s+prompt:\s+"Enter the password for your proxy account\. Input is hidden; proxy credentials are saved securely in VS Code SecretStorage\.",\s+password: true/,
+    );
+  });
+
   void it("validates endpoints without allowing embedded credentials", () => {
     assert.equal(
       validateProxyUrl("http://proxy.example.test:8080"),

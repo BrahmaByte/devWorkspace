@@ -49,7 +49,8 @@ export class VscodeExtensionProxy {
     if (url === undefined) return;
     const username = await vscode.window.showInputBox({
       title: "Proxy username (optional)",
-      prompt: "Leave empty for a proxy without Basic authentication.",
+      prompt:
+        "Enter your IT-provided proxy username for Basic authentication, not your Jira or Confluence credentials. Leave empty if authentication is not required.",
       ignoreFocusOut: true,
       validateInput: (value) =>
         /[:\r\n\0]/u.test(value)
@@ -60,6 +61,8 @@ export class VscodeExtensionProxy {
     const password = username
       ? await vscode.window.showInputBox({
           title: "Proxy password",
+          prompt:
+            "Enter the password for your proxy account. Input is hidden; proxy credentials are saved securely in VS Code SecretStorage.",
           password: true,
           ignoreFocusOut: true,
         })
