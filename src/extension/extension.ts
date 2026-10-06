@@ -262,6 +262,7 @@ export async function activate(
         state: searchService.search(query),
       } satisfies ExtensionResponse);
 
+    const pendingCommentConfirmations = new Set<string>();
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
         const parsed = parseWebviewRequest(message);
@@ -413,6 +414,7 @@ export async function activate(
               return;
             }
             case "confluence.refresh":
+              confluenceService.clearReaderCache();
               await sendConfluence();
               return;
             case "confluence.disconnect":
@@ -551,11 +553,81 @@ export async function activate(
               await sendJira();
               return;
             case "jira.issue":
-              await panel.webview.postMessage({
-                type: "jira.issue",
-                issue: await jiraService.getIssue(request.issueKey),
-              } satisfies ExtensionResponse);
+              try {
+                await panel.webview.postMessage({
+                  type: "jira.issue",
+                  issue: await jiraService.getIssue(request.issueKey),
+                } satisfies ExtensionResponse);
+              } catch {
+                await panel.webview.postMessage({
+                  type: "jira.viewer.error",
+                  issueKey: request.issueKey,
+                  target: "issue",
+                  message:
+                    "Could not load this issue. Check Jira connection and Browse Projects permissions.",
+                } satisfies ExtensionResponse);
+              }
               return;
+            case "jira.comments":
+              try {
+                await panel.webview.postMessage({
+                  type: "jira.comments",
+                  issueKey: request.issueKey,
+                  startAt: request.startAt,
+                  page: await jiraService.getComments(
+                    request.issueKey,
+                    request.startAt,
+                  ),
+                } satisfies ExtensionResponse);
+              } catch {
+                await panel.webview.postMessage({
+                  type: "jira.viewer.error",
+                  issueKey: request.issueKey,
+                  target: "comments",
+                  message:
+                    "Could not load comments. Check the connection and issue permissions.",
+                } satisfies ExtensionResponse);
+              }
+              return;
+            case "jira.comment.add": {
+              if (pendingCommentConfirmations.has(request.issueKey)) return;
+              pendingCommentConfirmations.add(request.issueKey);
+              try {
+                const confirmed = await vscode.window.showInformationMessage(
+                  `Post a comment to ${request.issueKey}? It will be visible to people with access to this Jira issue.`,
+                  { modal: true },
+                  "Post comment",
+                );
+                if (confirmed !== "Post comment") {
+                  await panel.webview.postMessage({
+                    type: "jira.comment.result",
+                    issueKey: request.issueKey,
+                    message: "Posting cancelled.",
+                  } satisfies ExtensionResponse);
+                  return;
+                }
+                try {
+                  await panel.webview.postMessage({
+                    type: "jira.comment.result",
+                    issueKey: request.issueKey,
+                    comment: await jiraService.addComment(
+                      request.issueKey,
+                      request.body,
+                    ),
+                  } satisfies ExtensionResponse);
+                } catch {
+                  await panel.webview.postMessage({
+                    type: "jira.comment.result",
+                    issueKey: request.issueKey,
+                    message:
+                      "Could not confirm posting. Check the Jira thread before retrying, and verify Add Comments permissions.",
+                  } satisfies ExtensionResponse);
+                }
+                return;
+              } finally {
+                pendingCommentConfirmations.delete(request.issueKey);
+              }
+            }
             case "jira.open":
               await vscode.env.openExternal(
                 vscode.Uri.parse(jiraService.getIssueUrl(request.issueKey)),

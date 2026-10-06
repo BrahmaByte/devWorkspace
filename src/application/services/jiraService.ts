@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import type {
   JiraConnection,
+  JiraComment,
+  JiraCommentPage,
   JiraBoardStatus,
   JiraIssue,
   JiraState,
@@ -20,6 +22,8 @@ export interface JiraClient {
   getAssignedIssues(): Promise<readonly JiraIssue[]>;
   searchIssues(query: string): Promise<readonly JiraIssue[]>;
   getIssue(issueKey: string): Promise<JiraIssue>;
+  getComments(issueKey: string, startAt: number): Promise<JiraCommentPage>;
+  addComment(issueKey: string, body: string): Promise<JiraComment>;
 }
 
 export interface JiraClientFactory {
@@ -38,6 +42,43 @@ const secretKey = (connectionId: string) =>
   `devworkspace.jira.${connectionId}.pat`;
 
 export class JiraService {
+  private readonly posting = new Set<string>();
+  private async commentClient(issueKey: string): Promise<JiraClient> {
+    this.getIssueUrl(issueKey);
+    const connection = this.repository.getConnection();
+    if (!connection) throw new Error("Jira is not connected.");
+    const stored = await this.secrets.get(secretKey(connection.id));
+    if (!stored) throw new Error("Jira credentials are unavailable.");
+    return this.clients.create(
+      connection.baseUrl,
+      deserializeCredential(stored),
+    );
+  }
+  public async getComments(
+    issueKey: string,
+    startAt = 0,
+  ): Promise<JiraCommentPage> {
+    if (!Number.isInteger(startAt) || startAt < 0 || startAt > 1_000_000)
+      throw new Error("Comment offset is invalid.");
+    return (await this.commentClient(issueKey)).getComments(issueKey, startAt);
+  }
+  public async addComment(
+    issueKey: string,
+    body: string,
+  ): Promise<JiraComment> {
+    if (!body.trim() || body.length > 10_000 || body.includes("\0"))
+      throw new Error("Comment is invalid.");
+    if (this.posting.has(issueKey))
+      throw new Error("A comment is already being posted.");
+    this.posting.add(issueKey);
+    try {
+      return await (
+        await this.commentClient(issueKey)
+      ).addComment(issueKey, body);
+    } finally {
+      this.posting.delete(issueKey);
+    }
+  }
   public constructor(
     private readonly repository: JiraRepository,
     private readonly secrets: SecretStore,

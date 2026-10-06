@@ -77,6 +77,60 @@ void afterEach(async () => {
 });
 
 void describe("Confluence integration", () => {
+  void it("evicts least-recently-used documents and rejects invalidated in-flight reads", async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), "devworkspace-reader-cache-"),
+    );
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new ConfluenceRepository(database);
+    const pages = Array.from({ length: 6 }, (_, index) => ({
+      ...page,
+      id: String(index + 1),
+    }));
+    let reads = 0;
+    let release: (() => void) | undefined;
+    let block = false;
+    const service = new ConfluenceService(repository, new MemorySecrets(), {
+      create: () => ({
+        testConnection: () => Promise.resolve(),
+        searchPages: () => Promise.resolve(pages),
+        readPage: async (id) => {
+          reads++;
+          if (block)
+            await new Promise<void>((resolve) => {
+              release = resolve;
+            });
+          return {
+            page: pages.find((item) => item.id === id)!,
+            html: "<p>Private test body</p>",
+            headings: [],
+          };
+        },
+      }),
+    });
+    await service.connect(
+      "Docs",
+      "https://confluence.example.test",
+      "fake-token",
+    );
+    await service.search("runbook");
+    for (const item of pages.slice(0, 5)) await service.readPage(item.id);
+    await service.readPage("1");
+    await service.readPage("6");
+    await service.readPage("1");
+    assert.equal(reads, 6);
+    await service.readPage("2");
+    assert.equal(reads, 7);
+    service.clearReaderCache();
+    block = true;
+    const pending = service.readPage("1");
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    service.clearReaderCache();
+    release!();
+    await assert.rejects(pending, /changed/u);
+    database.close();
+  });
   void it("stores PAT only in SecretStorage and caches bounded page metadata", async () => {
     const directory = await mkdtemp(join(tmpdir(), "devworkspace-confluence-"));
     directories.push(directory);
@@ -85,7 +139,13 @@ void describe("Confluence integration", () => {
     const repository = new ConfluenceRepository(database);
     const secrets = new MemorySecrets();
     const factory = new FakeFactory();
-    const service = new ConfluenceService(repository, secrets, factory);
+    let now = 1000;
+    const service = new ConfluenceService(
+      repository,
+      secrets,
+      factory,
+      () => now,
+    );
     await service.connect(
       "Docs",
       "https://confluence.example.test/",
@@ -99,6 +159,21 @@ void describe("Confluence integration", () => {
     );
     const reader = await service.readPage("42");
     assert.equal(reader.headings[0]?.text, "Runbook");
+    const requests = factory.credentials.length;
+    await Promise.all([service.readPage("42"), service.readPage("42")]);
+    assert.equal(factory.credentials.length, requests);
+    service.clearReaderCache();
+    await Promise.all([service.readPage("42"), service.readPage("42")]);
+    assert.equal(factory.credentials.length, requests + 1);
+    now += 300_001;
+    await service.readPage("42");
+    assert.equal(factory.credentials.length, requests + 2);
+    secrets.values.clear();
+    await assert.rejects(service.readPage("42"), /credentials/u);
+    await secrets.store(
+      "devworkspace.confluence." + state.connection!.id + ".pat",
+      "fake-confluence-pat",
+    );
     assert.equal(
       (await readFile(databasePath)).includes(
         Buffer.from("fake-confluence-pat"),

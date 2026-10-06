@@ -13,6 +13,60 @@ void afterEach(() => {
 });
 
 void describe("Jira REST provider", () => {
+  void it("paginates sanitized comments and uses Cloud ADF versus Data Center text", async () => {
+    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    const comment = {
+      id: "7",
+      created: "2026-10-06T00:00:00Z",
+      author: { displayName: "Tester" },
+      body: "Reply",
+      renderedBody: "<p><strong>Reply</strong></p><script>bad()</script>",
+    };
+    globalThis.fetch = (input, init) => {
+      requests.push({
+        url:
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url,
+        init,
+      });
+      return Promise.resolve(
+        new Response(
+          JSON.stringify(
+            init?.method === "POST"
+              ? comment
+              : { comments: [comment], total: 2 },
+          ),
+        ),
+      );
+    };
+    const cloud = new FetchJiraClient("https://team.atlassian.net", {
+      type: "basic",
+      email: "test@example.test",
+      token: "fake-token",
+    });
+    const page = await cloud.getComments("DEV-1", 0);
+    assert.equal(page.nextStartAt, 1);
+    assert.match(page.comments[0]!.html, /<strong>Reply/u);
+    assert.doesNotMatch(page.comments[0]!.html, /script|bad/u);
+    await cloud.addComment("DEV-1", "first  line\n\nlast");
+    const payload = JSON.parse(requests[1]!.init!.body as string) as {
+      body: { content: Array<{ content: Array<{ text: string }> }> };
+    };
+    assert.equal(payload.body.content[0]!.content[0]!.text, "first  line");
+    assert.deepEqual(payload.body.content[1]!.content, []);
+    const dc = new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    });
+    await dc.addComment("DEV-1", "first  line\nlast");
+    assert.deepEqual(JSON.parse(requests[2]!.init!.body as string), {
+      body: "first  line\nlast",
+    });
+    assert.match(requests[2]!.url, /rest\/api\/2/u);
+  });
   void it("requests and sanitizes rendered issue descriptions", async () => {
     let requestUrl = "";
     globalThis.fetch = (input) => {

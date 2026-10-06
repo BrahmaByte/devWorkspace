@@ -115,7 +115,7 @@ void describe("Webview shell", () => {
     assert.match(html, /<symbol id="i-link"/);
     assert.match(html, /<symbol id="i-external"/);
     assert.match(html, /initializeCardLayouts/);
-    assert.match(html, /ResizeObserver/);
+    assert.match(html, /card.addEventListener\("pointerdown"/);
     assert.match(html, /cardLayouts/);
     assert.match(
       html,
@@ -280,6 +280,12 @@ void describe("Webview shell", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /id="jira-search"/);
+    assert.match(html, /id="jira-reader" class="reader-dialog/u);
+    assert.match(html, /id="jira-comment-form"/u);
+    assert.match(html, /type:"jira.comment.add"/u);
+    assert.doesNotMatch(html, /new ResizeObserver/u);
+    assert.match(html, /window.addEventListener\("pointerup",finish/u);
+    assert.match(html, /max-width:100%;min-width:0!important/u);
     assert.match(html, /class="jira-board"/);
     assert.match(html, /className="jira-column"/);
     assert.match(html, /To Do|In Progress|Done/);

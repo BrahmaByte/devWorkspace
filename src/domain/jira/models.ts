@@ -29,6 +29,17 @@ export interface JiraIssue {
   readonly createdAt?: string;
 }
 
+export interface JiraComment {
+  readonly id: string;
+  readonly author: string;
+  readonly createdAt: string;
+  readonly html: string;
+}
+export interface JiraCommentPage {
+  readonly comments: readonly JiraComment[];
+  readonly nextStartAt?: number;
+}
+
 export const jiraBoardStatuses = ["todo", "in_progress", "done"] as const;
 export type JiraBoardStatus = (typeof jiraBoardStatuses)[number];
 

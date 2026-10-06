@@ -4,6 +4,32 @@ import { describe, it } from "node:test";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
 void describe("Webview protocol validation", () => {
+  void it("strictly bounds comment bodies and pagination", () => {
+    const valid = {
+      type: "jira.comment.add",
+      issueKey: "DEV-1",
+      body: "Hello  world\nSecond line",
+    };
+    assert.deepEqual(parseWebviewRequest(valid), { ok: true, value: valid });
+    for (const request of [
+      { ...valid, body: " " },
+      { ...valid, body: "x".repeat(10001) },
+      { ...valid, body: "bad\0" },
+      { ...valid, issueKey: "../bad" },
+      { ...valid, url: "https://evil.test" },
+      { type: "jira.comments", issueKey: "DEV-1", startAt: -1 },
+      { type: "jira.comments", issueKey: "DEV-1", startAt: 0.5 },
+    ])
+      assert.equal(parseWebviewRequest(request).ok, false);
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.comments",
+        issueKey: "DEV-1",
+        startAt: 50,
+      }).ok,
+      true,
+    );
+  });
   void it("validates Confluence preview identifiers and rejects additional fields", () => {
     assert.equal(
       parseWebviewRequest({ type: "confluence.preview", id: "42" }).ok,

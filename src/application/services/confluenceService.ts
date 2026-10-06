@@ -28,10 +28,25 @@ export const confluenceLimits = { name: 100, url: 2_000, search: 200 } as const;
 const secretKey = (id: string) => `devworkspace.confluence.${id}.pat`;
 
 export class ConfluenceService {
+  private readonly readerCache = new Map<
+    string,
+    { document: ConfluenceReaderDocument; expires: number; bytes: number }
+  >();
+  private readonly pendingReads = new Map<
+    string,
+    Promise<ConfluenceReaderDocument>
+  >();
+  private cacheGeneration = 0;
+  public clearReaderCache(): void {
+    this.cacheGeneration++;
+    this.readerCache.clear();
+    this.pendingReads.clear();
+  }
   public constructor(
     private readonly repository: ConfluenceRepository,
     private readonly secrets: SecretStore,
     private readonly clients: ConfluenceClientFactory,
+    private readonly now: () => number = Date.now,
   ) {}
 
   public async connect(
@@ -44,6 +59,7 @@ export class ConfluenceService {
     if (!displayName.trim() || displayName.length > confluenceLimits.name)
       throw new Error("Connection name is invalid.");
     const credential = createAtlassianCredential(normalizedUrl, token, email);
+    this.clearReaderCache();
     await this.clients.create(normalizedUrl, credential).testConnection();
     const existing = this.repository.getConnection();
     const now = new Date().toISOString();
@@ -64,6 +80,7 @@ export class ConfluenceService {
       await this.secrets.delete(secretKey(connection.id));
       throw error;
     }
+    this.clearReaderCache();
     return {
       connection,
       pages: this.repository.listPages(connection.id),
@@ -142,31 +159,86 @@ export class ConfluenceService {
   }
 
   public async readPage(id: string): Promise<ConfluenceReaderDocument> {
+    const generation = this.cacheGeneration;
     const page = this.getPage(id);
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Confluence is not connected.");
     const storedCredential = await this.secrets.get(secretKey(connection.id));
     if (!storedCredential)
       throw new Error("Confluence credentials are unavailable.");
-    const document = await this.clients
-      .create(connection.baseUrl, deserializeCredential(storedCredential))
-      .readPage(id);
-    if (document.page.id !== page.id)
-      throw new Error("Confluence returned an unexpected page.");
-    const webUrl = new URL(document.page.webUrl, connection.baseUrl);
-    if (webUrl.origin !== new URL(connection.baseUrl).origin)
-      throw new Error("Confluence page URL is not trusted.");
-    return {
-      ...document,
-      page: { ...document.page, webUrl: webUrl.toString() },
+    if (generation !== this.cacheGeneration)
+      throw new Error("Confluence connection changed. Select the page again.");
+    const cacheKey = JSON.stringify([
+      connection.id,
+      connection.updatedAt,
+      connection.baseUrl,
+      id,
+      page.updatedAt,
+    ]);
+    const cached = this.readerCache.get(cacheKey);
+    if (cached && cached.expires > this.now()) {
+      this.readerCache.delete(cacheKey);
+      this.readerCache.set(cacheKey, cached);
+      return cached.document;
+    }
+    this.readerCache.delete(cacheKey);
+    const pending = this.pendingReads.get(cacheKey);
+    if (pending) return pending;
+    const load = async (): Promise<ConfluenceReaderDocument> => {
+      const document = await this.clients
+        .create(connection.baseUrl, deserializeCredential(storedCredential))
+        .readPage(id);
+      if (document.page.id !== page.id)
+        throw new Error("Confluence returned an unexpected page.");
+      const webUrl = new URL(document.page.webUrl, connection.baseUrl);
+      if (webUrl.origin !== new URL(connection.baseUrl).origin)
+        throw new Error("Confluence page URL is not trusted.");
+      const result = {
+        ...document,
+        page: { ...document.page, webUrl: webUrl.toString() },
+      };
+      if (generation !== this.cacheGeneration)
+        throw new Error(
+          "Confluence connection or cache changed. Select the page again.",
+        );
+      const bytes = Buffer.byteLength(JSON.stringify(result), "utf8");
+      if (generation === this.cacheGeneration && bytes <= 24_000_000) {
+        this.readerCache.set(cacheKey, {
+          document: result,
+          expires: this.now() + 300_000,
+          bytes,
+        });
+        while (
+          this.readerCache.size > 5 ||
+          [...this.readerCache.values()].reduce(
+            (sum, item) => sum + item.bytes,
+            0,
+          ) > 24_000_000
+        ) {
+          const oldest = this.readerCache.keys().next().value;
+          if (oldest === undefined) break;
+          this.readerCache.delete(oldest);
+        }
+      }
+      return result;
     };
+    const promise = load();
+    this.pendingReads.set(cacheKey, promise);
+    try {
+      return await promise;
+    } finally {
+      if (this.pendingReads.get(cacheKey) === promise)
+        this.pendingReads.delete(cacheKey);
+    }
   }
 
   public async disconnect(): Promise<void> {
+    this.clearReaderCache();
     const connection = this.repository.getConnection();
     if (!connection) return;
     await this.secrets.delete(secretKey(connection.id));
     await this.repository.deleteConnection(connection.id);
+    this.clearReaderCache();
   }
 
   private validateUrl(value: string): string {

@@ -305,6 +305,45 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: value.type } }
       : { ok: false, error: `${value.type} is invalid.` };
   }
+  if (value.type === "jira.comments" || value.type === "jira.comment.add") {
+    const key =
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey);
+    if (!key) return { ok: false, error: "Invalid issue key." };
+    if (
+      value.type === "jira.comments" &&
+      hasOnlyKeys(value, ["type", "issueKey", "startAt"]) &&
+      typeof value.startAt === "number" &&
+      Number.isInteger(value.startAt) &&
+      value.startAt >= 0 &&
+      value.startAt <= 1_000_000
+    )
+      return {
+        ok: true,
+        value: {
+          type: value.type,
+          issueKey: value.issueKey as string,
+          startAt: value.startAt,
+        },
+      };
+    if (
+      value.type === "jira.comment.add" &&
+      hasOnlyKeys(value, ["type", "issueKey", "body"]) &&
+      typeof value.body === "string" &&
+      value.body.trim().length > 0 &&
+      value.body.length <= 10_000 &&
+      !value.body.includes("\0")
+    )
+      return {
+        ok: true,
+        value: {
+          type: value.type,
+          issueKey: value.issueKey as string,
+          body: value.body,
+        },
+      };
+    return { ok: false, error: "Invalid Jira comment request." };
+  }
   if (value.type === "jira.issue" || value.type === "jira.open") {
     return hasOnlyKeys(value, ["type", "issueKey"]) &&
       typeof value.issueKey === "string" &&

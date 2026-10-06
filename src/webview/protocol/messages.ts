@@ -11,6 +11,8 @@ import type {
 import type { SearchResultType, SearchState } from "../../domain/search/models";
 import type {
   JiraBoardStatus,
+  JiraComment,
+  JiraCommentPage,
   JiraIssue,
   JiraState,
 } from "../../domain/jira/models";
@@ -93,6 +95,16 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.refresh" | "jira.disconnect" }
   | { readonly type: "jira.issue"; readonly issueKey: string }
+  | {
+      readonly type: "jira.comments";
+      readonly issueKey: string;
+      readonly startAt: number;
+    }
+  | {
+      readonly type: "jira.comment.add";
+      readonly issueKey: string;
+      readonly body: string;
+    }
   | { readonly type: "jira.open"; readonly issueKey: string }
   | { readonly type: "jira.search"; readonly query: string }
   | {
@@ -219,6 +231,24 @@ export type ExtensionResponse =
       readonly message: string;
     }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
+  | {
+      readonly type: "jira.comments";
+      readonly issueKey: string;
+      readonly startAt: number;
+      readonly page: JiraCommentPage;
+    }
+  | {
+      readonly type: "jira.comment.result";
+      readonly issueKey: string;
+      readonly comment?: JiraComment;
+      readonly message?: string;
+    }
+  | {
+      readonly type: "jira.viewer.error";
+      readonly issueKey: string;
+      readonly target: "issue" | "comments";
+      readonly message: string;
+    }
   | {
       readonly type: "jira.workStarted";
       readonly projectName: string;

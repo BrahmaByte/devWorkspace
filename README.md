@@ -72,8 +72,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
 - Use the sync icon to refresh Jira on demand while retaining the saved filter.
-- Select an issue to view unified metadata and a formatted description, or open
-  it in your default browser.
+- Select an issue for a full-screen viewer with formatted details and comments.
+  Load more comments, refresh the thread, or open it in your default browser.
+  New comments require confirmation in VS Code and Jira Add Comments permission.
 - Add local-only cards at the bottom of the board. These cards stay on your
   computer and are never sent to Jira.
 
@@ -105,6 +106,10 @@ the page in Focus Reader or your default browser.
 ## Knowledge
 
 Knowledge provides a two-column Confluence browser:
+
+Previously opened pages load from a five-minute session cache (up to five pages,
+24 MB). Refresh Confluence in Settings to discard it and retrieve fresh content.
+Page bodies and images are never cached on disk.
 
 1. Search for a Confluence page in the left column.
 2. Select a result to read its formatted content in the right pane. The header
@@ -164,6 +169,7 @@ to remove it. Other extensions and VS Code settings are unchanged.
 - Drag cards with the grip icon, or focus the grip and use the arrow keys, to
   rearrange them.
 - Theme and card layout are restored when the dashboard is reopened.
+- Window resizing temporarily constrains cards without replacing saved sizes.
 
 ## Troubleshooting
 

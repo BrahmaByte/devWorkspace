@@ -66,6 +66,17 @@ class FakeClient implements JiraClient {
   public getIssue() {
     return Promise.resolve(issue);
   }
+  public getComments() {
+    return Promise.resolve({ comments: [] });
+  }
+  public addComment() {
+    return Promise.resolve({
+      id: "1",
+      author: "Test User",
+      createdAt: issue.updatedAt,
+      html: "<p>Test</p>",
+    });
+  }
 }
 
 class FakeFactory implements JiraClientFactory {
@@ -109,6 +120,11 @@ void describe("Jira integration", () => {
       "https://jira.example.test",
     );
     assert.equal(secrets.values.size, 1);
+    assert.deepEqual(await service.getComments("DEV-7"), { comments: [] });
+    assert.equal((await service.addComment("DEV-7", "Hello")).id, "1");
+    await assert.rejects(service.addComment("DEV-7", " "), /invalid/u);
+    await assert.rejects(service.getComments("DEV-7", -1), /invalid/u);
+    await assert.rejects(service.getComments("../bad"), /invalid/u);
     assert.equal(
       (await readFile(databasePath)).includes(Buffer.from("fake-pat-value")),
       false,

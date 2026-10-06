@@ -2,7 +2,12 @@ import type {
   JiraClient,
   JiraClientFactory,
 } from "../../application/services/jiraService";
-import type { JiraIssue, JiraUser } from "../../domain/jira/models";
+import type {
+  JiraIssue,
+  JiraUser,
+  JiraComment,
+  JiraCommentPage,
+} from "../../domain/jira/models";
 import {
   authorizationHeader,
   type AtlassianCredential,
@@ -98,6 +103,46 @@ export class FetchJiraClient implements JiraClient {
     return this.credential.type === "basic" ? 3 : 2;
   }
 
+  public async getComments(
+    issueKey: string,
+    startAt: number,
+  ): Promise<JiraCommentPage> {
+    const data = await this.request(
+      `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}/comment?startAt=${startAt}&maxResults=50&orderBy=created&expand=renderedBody`,
+    );
+    if (!Array.isArray(data.comments) || data.comments.length > 50)
+      throw new Error("Invalid Jira comments.");
+    const next = startAt + data.comments.length;
+    return {
+      comments: data.comments.map(toComment),
+      ...(typeof data.total === "number" && next < data.total && next > startAt
+        ? { nextStartAt: next }
+        : {}),
+    };
+  }
+  public async addComment(
+    issueKey: string,
+    text: string,
+  ): Promise<JiraComment> {
+    const body =
+      this.apiVersion === 3
+        ? {
+            type: "doc",
+            version: 1,
+            content: text.split(/\r\n|\n|\r/u).map((line) => ({
+              type: "paragraph",
+              content: line ? [{ type: "text", text: line }] : [],
+            })),
+          }
+        : text;
+    return toComment(
+      await this.request(
+        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}/comment?expand=renderedBody`,
+        { method: "POST", body: JSON.stringify({ body }) },
+      ),
+    );
+  }
+
   private async request(
     path: string,
     init: RequestInit = {},
@@ -120,6 +165,23 @@ export class FetchJiraClient implements JiraClient {
     if (!isRecord(parsed)) throw new Error("Invalid Jira response.");
     return parsed;
   }
+}
+
+function toComment(value: unknown): JiraComment {
+  if (!isRecord(value)) throw new Error("Invalid Jira comment.");
+  return {
+    id: requiredString(value.id),
+    author:
+      isRecord(value.author) && typeof value.author.displayName === "string"
+        ? value.author.displayName
+        : "Unknown",
+    createdAt: requiredString(value.created),
+    html: sanitizeConfluenceHtml(
+      typeof value.renderedBody === "string"
+        ? value.renderedBody
+        : formatJiraDescription(value.body),
+    ).html,
+  };
 }
 
 function toIssue(value: unknown): JiraIssue {
