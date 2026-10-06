@@ -181,6 +181,11 @@ to remove it. Other extensions and VS Code settings are unchanged.
   uses VS Code's proxy, proxy authentication, and trusted system certificates;
   reload VS Code after changing managed proxy settings.
   Alternatively, configure **Settings → Network proxy** for this extension only.
+- **Proxy connection diagnostics:** open **View → Output**, select
+  **DevDashboardV1 Network**, then retry connecting, syncing Jira, or refreshing
+  Confluence. Logs show network mode, HTTP status, elapsed time and safe
+  DNS/TLS/proxy/timeout hints. URLs, credentials, headers and page content are
+  omitted. Cached pages do not trigger network logs.
 - **A project or terminal folder is rejected:** select it with the provided VS
   Code folder picker instead of typing a path.
 - **A command does not run:** save it first and approve the VS Code confirmation

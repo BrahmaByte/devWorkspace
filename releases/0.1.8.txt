@@ -1,0 +1,11 @@
+DevDashboardV1 0.1.8
+
+Network troubleshooting
+- Added the DevDashboardV1 Network channel in VS Code's Output panel.
+- Retry Jira connection/sync or Confluence connection/refresh to see request
+  timing, HTTP status, network mode and DNS, TLS, proxy or timeout guidance.
+- Diagnostic logs omit URLs, credentials, headers, content and raw errors.
+- Improved guidance for entering optional Basic proxy credentials securely.
+
+TLS verification remains enabled and extension-only proxy requests never fall
+back to direct connections. No publication is performed by this change.

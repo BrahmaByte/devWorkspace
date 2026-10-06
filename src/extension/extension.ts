@@ -87,10 +87,19 @@ export async function activate(
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
   const extensionProxy = new VscodeExtensionProxy(context.secrets);
+  const networkOutput = vscode.window.createOutputChannel(
+    "DevDashboardV1 Network",
+  );
+  context.subscriptions.push(networkOutput);
+  networkOutput.appendLine(
+    "Network diagnostics: retry Jira connection/sync or Confluence connection/refresh. URLs, headers, credentials, content and raw errors are never logged.",
+  );
   const httpTransport = new VscodeHttpTransport(
     createExtensionProxyFetch(
       () => extensionProxy.load(),
       globalThis.fetch.bind(globalThis),
+      (message) =>
+        networkOutput.appendLine(`${new Date().toISOString()} ${message}`),
     ),
   );
   const jiraService = new JiraService(

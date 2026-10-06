@@ -16,6 +16,7 @@ import {
 } from "../../src/infrastructure/http/extensionProxy";
 import { VscodeHttpTransport } from "../../src/infrastructure/http/vscodeHttpTransport";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
+import { networkDiagnosticHint } from "../../src/infrastructure/http/networkDiagnostics";
 
 // Generate ephemeral test credentials; no private key is stored in the repository.
 async function testTlsCertificate(): Promise<{ key: string; cert: string }> {
@@ -54,6 +55,66 @@ async function testTlsCertificate(): Promise<{ key: string; cert: string }> {
 }
 
 void describe("Extension-only proxy", () => {
+  void it("logs status and nested network failures without exposing request or error data", async () => {
+    const logs: string[] = [];
+    const failure = new Error("fake-secret-error", {
+      cause: Object.assign(new Error("fake-secret-cause"), {
+        code: "ENOTFOUND",
+      }),
+    });
+    let fail = false;
+    const fetch = createExtensionProxyFetch(
+      () => Promise.resolve(undefined),
+      () =>
+        fail
+          ? Promise.reject(failure)
+          : Promise.resolve(new Response("fake-secret-body", { status: 401 })),
+      (message) => logs.push(message),
+    );
+    const url = "https://fake-secret-host.test/private?token=fake-secret-query";
+    const init = {
+      headers: { Authorization: "Bearer fake-secret-header" },
+      body: "fake-secret-request",
+      method: "POST",
+    };
+    assert.equal((await fetch(url, init)).status, 401);
+    fail = true;
+    await assert.rejects(
+      fetch(url, init),
+      (error: unknown) => error === failure,
+    );
+    const output = logs.join("\n");
+    assert.match(output, /request 1.*HTTP 401; elapsed \d+ ms/);
+    assert.match(output, /Provider authentication\/permission rejected/);
+    assert.match(output, /request 2.*ENOTFOUND: DNS lookup failed/);
+    assert.match(output, /delegated to VS Code/);
+    assert.doesNotMatch(output, /fake-secret|Authorization|Bearer/);
+    for (const code of [
+      "ECONNREFUSED",
+      "ECONNRESET",
+      "ETIMEDOUT",
+      "ERR_PROXY_CONNECTION_FAILED",
+      "SELF_SIGNED_CERT_IN_CHAIN",
+      "CERT_HAS_EXPIRED",
+    ])
+      assert.match(
+        networkDiagnosticHint({ cause: { code } }),
+        new RegExp(code),
+      );
+    assert.match(
+      networkDiagnosticHint({ status: 407 }),
+      /Proxy authentication rejected/,
+    );
+    assert.match(
+      networkDiagnosticHint(new DOMException("fake-secret", "TimeoutError")),
+      /timed out/,
+    );
+    assert.doesNotMatch(
+      networkDiagnosticHint({ code: "fake-secret", message: "fake-secret" }),
+      /fake-secret/,
+    );
+  });
+
   void it("explains proxy credentials and keeps the password prompt masked", async () => {
     const source = await readFile(
       "src/infrastructure/vscode/vscodeExtensionProxy.ts",
@@ -121,6 +182,7 @@ void describe("Extension-only proxy", () => {
     assert.equal(calls, 1);
   });
   void it("sends only proxy credentials to CONNECT and never falls back on rejection", async () => {
+    const logs: string[] = [];
     const proxy = createServer();
     let calls = 0;
     let proxyAuth: string | undefined;
@@ -149,6 +211,7 @@ void describe("Extension-only proxy", () => {
             calls++;
             return Promise.resolve(new Response());
           },
+          (message) => logs.push(message),
         ),
       );
       await assert.rejects(
@@ -163,6 +226,15 @@ void describe("Extension-only proxy", () => {
       );
       assert.equal(destinationAuth, undefined);
       assert.equal(calls, 0);
+      assert.match(
+        logs.join("\n"),
+        /extension-only HTTP proxy; Basic authentication=true; custom CA=false/,
+      );
+      assert.match(logs.join("\n"), /HTTP 407: Proxy authentication rejected/);
+      assert.doesNotMatch(
+        logs.join("\n"),
+        /fake-user|fake-password|fake-token|127\.0\.0\.1|jira\.example/,
+      );
     } finally {
       proxy.close();
     }
