@@ -7,6 +7,7 @@ DevDashboardV1 0.1.7
 - Extension-only corporate proxy configuration with credentials kept in VS Code SecretStorage.
 - Refreshed documentation and screenshot carousel.
 - Automated Windows, Linux, Intel Mac and Apple Silicon validation before release.
+- Consistent cross-platform source checkout and platform-specific path validation.
 
 Install or update through the Visual Studio Marketplace:
 https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1

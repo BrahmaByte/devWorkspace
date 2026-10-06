@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { isAbsolute, normalize, win32 } from "node:path";
+import { posix, win32 } from "node:path";
 
 import {
   confirmationPolicies,
@@ -166,7 +166,7 @@ export class WorkspaceService {
     const absolute =
       this.operatingSystem === "windows"
         ? win32.isAbsolute(value)
-        : isAbsolute(value);
+        : posix.isAbsolute(value);
     if (
       value.length === 0 ||
       value.length > workspaceLimits.path ||
@@ -177,7 +177,7 @@ export class WorkspaceService {
     const normalized =
       this.operatingSystem === "windows"
         ? win32.normalize(value)
-        : normalize(value);
+        : posix.normalize(value);
     const comparable = value.length > 1 ? value.replace(/[\\/]$/u, "") : value;
     if (normalized !== comparable) throw new Error("Path must be normalized.");
   }

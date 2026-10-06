@@ -57,6 +57,18 @@ void afterEach(async () => {
 });
 
 void describe("workspace management", () => {
+  void it("validates paths for the configured platform independently of the test host", async () => {
+    const { database, repository } = await setup();
+    for (const operatingSystem of ["linux", "macos"] as const) {
+      const service = new WorkspaceService(repository, operatingSystem);
+      await service.createProject(operatingSystem, `/work/${operatingSystem}`);
+      await assert.rejects(
+        service.createProject("Traversal", "/work/../escape"),
+      );
+      await assert.rejects(service.createProject("Windows", "C:\\work\\api"));
+    }
+    database.close();
+  });
   void it("manages projects, favourites, IDEs, commands, and environment metadata", async () => {
     const { database, service } = await setup();
     const projectId = await service.createProject("API", "/work/api", "vscode");
