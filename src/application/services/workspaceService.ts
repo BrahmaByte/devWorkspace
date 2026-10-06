@@ -3,9 +3,7 @@ import { posix, win32 } from "node:path";
 
 import {
   confirmationPolicies,
-  preferredIdes,
   type ConfirmationPolicy,
-  type PreferredIde,
 } from "../../domain/workspace/models";
 import type { WorkspaceRepository } from "../../infrastructure/database/workspaceRepository";
 import type { OperatingSystem } from "../../platform/platformService";
@@ -27,46 +25,26 @@ export class WorkspaceService {
     return this.repository.getState();
   }
 
-  public async createProject(
-    name: string,
-    localPath: string,
-    preferredIde?: PreferredIde,
-  ): Promise<string> {
-    this.validateProject(name, localPath, preferredIde);
+  public async createProject(name: string, localPath: string): Promise<string> {
+    this.validateProject(name, localPath);
     const id = randomUUID();
     const now = new Date().toISOString();
     await this.repository.createProject({
       id,
       name: name.trim(),
       localPath,
-      preferredIde,
-      isFavourite: false,
       createdAt: now,
       updatedAt: now,
     });
     return id;
   }
-  public updateProject(
-    id: string,
-    name: string,
-    localPath: string,
-    preferredIde?: PreferredIde,
-  ) {
+  public updateProject(id: string, name: string, localPath: string) {
     this.requireId(id);
-    this.validateProject(name, localPath, preferredIde);
+    this.validateProject(name, localPath);
     return this.repository.updateProject(
       id,
       name.trim(),
       localPath,
-      preferredIde,
-      new Date().toISOString(),
-    );
-  }
-  public setFavourite(id: string, favourite: boolean) {
-    this.requireId(id);
-    return this.repository.setFavourite(
-      id,
-      favourite,
       new Date().toISOString(),
     );
   }
@@ -74,17 +52,6 @@ export class WorkspaceService {
     this.requireId(id);
     return this.repository.deleteProject(id);
   }
-  public associateJiraProject(id: string, jiraProjectKey: string) {
-    this.requireId(id);
-    if (!/^[A-Z][A-Z0-9_]{0,19}$/u.test(jiraProjectKey))
-      throw new Error("Jira project key is invalid.");
-    return this.repository.associateJiraProject(
-      id,
-      jiraProjectKey,
-      new Date().toISOString(),
-    );
-  }
-
   public async createCommand(
     projectId: string | undefined,
     name: string,
@@ -152,15 +119,9 @@ export class WorkspaceService {
     return this.repository.deleteEnvironment(id);
   }
 
-  private validateProject(
-    name: string,
-    localPath: string,
-    preferredIde?: PreferredIde,
-  ): void {
+  private validateProject(name: string, localPath: string): void {
     this.requireText(name, workspaceLimits.name);
     this.validatePath(localPath);
-    if (preferredIde && !preferredIdes.includes(preferredIde))
-      throw new Error("Invalid IDE.");
   }
   private validatePath(value: string): void {
     const absolute =

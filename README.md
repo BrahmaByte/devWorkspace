@@ -87,6 +87,8 @@ Command text is preserved exactly, including repeated spaces.
 
 Notes are stored locally and save automatically while you type.
 
+Updating the extension preserves your saved notes, bookmarks, and project folders.
+
 - Use the plus icon above the notes list to create a note.
 - Search notes from the left column.
 - Select a note to view or edit it.

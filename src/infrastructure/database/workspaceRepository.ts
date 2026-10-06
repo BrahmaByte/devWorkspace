@@ -1,7 +1,6 @@
 import type {
   ConfirmationPolicy,
   EnvironmentProfile,
-  PreferredIde,
   Project,
   ProjectCommand,
   WorkspaceState,
@@ -31,15 +30,11 @@ export class WorkspaceRepository {
   public getState(): WorkspaceState {
     return {
       projects: this.database
-        .query("SELECT * FROM projects ORDER BY is_favourite DESC, name;")
+        .query("SELECT * FROM projects ORDER BY name;")
         .map((row): Project => ({
           id: text(row, "id"),
           name: text(row, "name"),
           localPath: text(row, "local_path"),
-          preferredIde: optionalText(row, "preferred_ide") as
-            PreferredIde | undefined,
-          jiraProjectKey: optionalText(row, "jira_project_key"),
-          isFavourite: row.is_favourite === 1,
           createdAt: text(row, "created_at"),
           updatedAt: text(row, "updated_at"),
         })),
@@ -74,13 +69,11 @@ export class WorkspaceRepository {
 
   public async createProject(project: Project): Promise<void> {
     this.database.run(
-      "INSERT INTO projects(id,name,local_path,preferred_ide,is_favourite,created_at,updated_at) VALUES(?,?,?,?,?,?,?);",
+      "INSERT INTO projects(id,name,local_path,created_at,updated_at) VALUES(?,?,?,?,?);",
       [
         project.id,
         project.name,
         project.localPath,
-        project.preferredIde ?? null,
-        project.isFavourite ? 1 : 0,
         project.createdAt,
         project.updatedAt,
       ],
@@ -92,26 +85,12 @@ export class WorkspaceRepository {
     id: string,
     name: string,
     localPath: string,
-    preferredIde: PreferredIde | undefined,
     now: string,
   ): Promise<void> {
     this.requireProject(id);
     this.database.run(
-      "UPDATE projects SET name=?,local_path=?,preferred_ide=?,updated_at=? WHERE id=?;",
-      [name, localPath, preferredIde ?? null, now, id],
-    );
-    await this.database.persist();
-  }
-
-  public async setFavourite(
-    id: string,
-    favourite: boolean,
-    now: string,
-  ): Promise<void> {
-    this.requireProject(id);
-    this.database.run(
-      "UPDATE projects SET is_favourite=?,updated_at=? WHERE id=?;",
-      [favourite ? 1 : 0, now, id],
+      "UPDATE projects SET name=?,local_path=?,updated_at=? WHERE id=?;",
+      [name, localPath, now, id],
     );
     await this.database.persist();
   }
@@ -124,27 +103,6 @@ export class WorkspaceRepository {
 
   public getProject(id: string): Project | undefined {
     return this.getState().projects.find((project) => project.id === id);
-  }
-  public getProjectByJiraKey(jiraProjectKey: string): Project | undefined {
-    return this.getState().projects.find(
-      (project) => project.jiraProjectKey === jiraProjectKey,
-    );
-  }
-  public async associateJiraProject(
-    id: string,
-    jiraProjectKey: string,
-    now: string,
-  ): Promise<void> {
-    this.requireProject(id);
-    this.database.run(
-      "UPDATE projects SET jira_project_key=NULL WHERE jira_project_key=? AND id<>?;",
-      [jiraProjectKey, id],
-    );
-    this.database.run(
-      "UPDATE projects SET jira_project_key=?,updated_at=? WHERE id=?;",
-      [jiraProjectKey, now, id],
-    );
-    await this.database.persist();
   }
   public getCommand(id: string): ProjectCommand | undefined {
     return this.getState().commands.find((command) => command.id === id);

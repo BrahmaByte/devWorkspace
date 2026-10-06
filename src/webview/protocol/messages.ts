@@ -4,10 +4,6 @@ import type {
   ConfluenceReaderDocument,
   ConfluenceState,
 } from "../../domain/confluence/models";
-import type {
-  KnowledgeState,
-  RelationshipTargetType,
-} from "../../domain/knowledge/models";
 import type { SearchResultType, SearchState } from "../../domain/search/models";
 import type {
   JiraBoardStatus,
@@ -16,10 +12,7 @@ import type {
   JiraIssue,
   JiraState,
 } from "../../domain/jira/models";
-import type {
-  PreferredIde,
-  WorkspaceState,
-} from "../../domain/workspace/models";
+import type { WorkspaceState } from "../../domain/workspace/models";
 
 export const shellPages = [
   "home",
@@ -71,23 +64,6 @@ export type WebviewRequest =
         | "confluence.bookmark";
       readonly id: string;
     }
-  | { readonly type: "knowledge.list"; readonly noteId: string }
-  | {
-      readonly type: "knowledge.attach";
-      readonly noteId: string;
-      readonly targetType: RelationshipTargetType;
-      readonly targetId: string;
-    }
-  | {
-      readonly type: "knowledge.detach";
-      readonly noteId: string;
-      readonly relationshipId: string;
-    }
-  | {
-      readonly type: "knowledge.open";
-      readonly targetType: RelationshipTargetType;
-      readonly targetId: string;
-    }
   | {
       readonly type: "jira.connect";
       readonly displayName: string;
@@ -118,16 +94,6 @@ export type WebviewRequest =
       readonly status: JiraBoardStatus;
     }
   | { readonly type: "jira.local.delete"; readonly id: string }
-  | {
-      readonly type: "jira.associate";
-      readonly issueKey: string;
-      readonly projectId: string;
-    }
-  | {
-      readonly type: "jira.startWork";
-      readonly issueKey: string;
-      readonly branchName?: string;
-    }
   | { readonly type: "navigation.select"; readonly page: ShellPage }
   | { readonly type: "notes.refresh"; readonly query: string }
   | {
@@ -140,16 +106,6 @@ export type WebviewRequest =
       readonly id: string;
       readonly title: string;
       readonly content: string;
-    }
-  | {
-      readonly type: "notes.pin";
-      readonly id: string;
-      readonly pinned: boolean;
-    }
-  | {
-      readonly type: "notes.archive";
-      readonly id: string;
-      readonly archived: boolean;
     }
   | { readonly type: "notes.delete"; readonly id: string }
   | {
@@ -174,16 +130,10 @@ export type WebviewRequest =
       readonly id?: string;
       readonly name: string;
       readonly localPath: string;
-      readonly preferredIde?: PreferredIde;
     }
   | {
       readonly type: "projects.delete" | "projects.terminal";
       readonly id: string;
-    }
-  | {
-      readonly type: "projects.favourite";
-      readonly id: string;
-      readonly favourite: boolean;
     }
   | {
       readonly type: "commands.create";
@@ -222,7 +172,6 @@ export type ExtensionResponse =
       readonly message: string;
     }
   | { readonly type: "confluence.bookmarked"; readonly noteId: string }
-  | { readonly type: "knowledge.state"; readonly state: KnowledgeState }
   | { readonly type: "search.state"; readonly state: SearchState }
   | { readonly type: "search.note"; readonly id: string }
   | {
@@ -248,13 +197,6 @@ export type ExtensionResponse =
       readonly issueKey: string;
       readonly target: "issue" | "comments";
       readonly message: string;
-    }
-  | {
-      readonly type: "jira.workStarted";
-      readonly projectName: string;
-      readonly branchName?: string;
-      readonly branchChanged: boolean;
-      readonly started: boolean;
     }
   | {
       readonly type: "shell.state";

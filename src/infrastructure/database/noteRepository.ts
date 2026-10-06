@@ -96,32 +96,6 @@ export class NoteRepository {
     await this.database.persist();
   }
 
-  public async setPinned(
-    id: string,
-    pinned: boolean,
-    now: string,
-  ): Promise<void> {
-    this.requireNote(id);
-    this.database.run(
-      "UPDATE notes SET is_pinned = ?, updated_at = ? WHERE id = ?;",
-      [pinned ? 1 : 0, now, id],
-    );
-    await this.database.persist();
-  }
-
-  public async setArchived(
-    id: string,
-    archived: boolean,
-    now: string,
-  ): Promise<void> {
-    this.requireNote(id);
-    this.database.run(
-      "UPDATE notes SET is_archived = ?, updated_at = ? WHERE id = ?;",
-      [archived ? 1 : 0, now, id],
-    );
-    await this.database.persist();
-  }
-
   public async delete(id: string): Promise<void> {
     this.requireNote(id);
     this.database.run("DELETE FROM notes WHERE id = ?;", [id]);

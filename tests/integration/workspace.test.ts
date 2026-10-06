@@ -57,6 +57,44 @@ void afterEach(async () => {
 });
 
 void describe("workspace management", () => {
+  void it("preserves legacy project metadata and relationships across edits and restart", async () => {
+    const { database, service } = await setup();
+    const projectId = await service.createProject("API", "/work/api");
+    database.run(
+      "UPDATE projects SET preferred_ide='idea', is_favourite=1, jira_project_key='DEV' WHERE id=?;",
+      [projectId],
+    );
+    database.run(
+      "INSERT INTO relationships(id,source_type,source_id,target_type,target_id,created_at) VALUES('legacy-link','note','legacy-note','project',?,'2026-01-01');",
+      [projectId],
+    );
+    await service.updateProject(projectId, "Renamed API", "/work/api");
+    assert.deepEqual(Object.keys(service.getState().projects[0] ?? {}).sort(), [
+      "createdAt",
+      "id",
+      "localPath",
+      "name",
+      "updatedAt",
+    ]);
+    database.close();
+    const restored = await LocalDatabase.open(
+      getDatabasePath(directories[directories.length - 1] as string),
+    );
+    assert.deepEqual(
+      restored.query(
+        "SELECT preferred_ide,is_favourite,jira_project_key FROM projects WHERE id=?;",
+        [projectId],
+      ),
+      [{ preferred_ide: "idea", is_favourite: 1, jira_project_key: "DEV" }],
+    );
+    assert.equal(
+      restored.getScalar(
+        "SELECT COUNT(*) FROM relationships WHERE id='legacy-link';",
+      ),
+      1,
+    );
+    restored.close();
+  });
   void it("validates paths for the configured platform independently of the test host", async () => {
     const { database, repository } = await setup();
     for (const operatingSystem of ["linux", "macos"] as const) {
@@ -69,10 +107,9 @@ void describe("workspace management", () => {
     }
     database.close();
   });
-  void it("manages projects, favourites, IDEs, commands, and environment metadata", async () => {
+  void it("manages projects, commands, and environment metadata", async () => {
     const { database, service } = await setup();
-    const projectId = await service.createProject("API", "/work/api", "vscode");
-    await service.setFavourite(projectId, true);
+    const projectId = await service.createProject("API", "/work/api");
     const commandId = await service.createCommand(
       projectId,
       "Test",
@@ -89,8 +126,6 @@ void describe("workspace management", () => {
       ["API_URL", "LOG_LEVEL"],
     );
     const state = service.getState();
-    assert.equal(state.projects[0]?.isFavourite, true);
-    assert.equal(state.projects[0]?.preferredIde, "vscode");
     assert.equal(state.commands[0]?.id, commandId);
     assert.deepEqual(state.environmentProfiles[0]?.variableNames, [
       "API_URL",

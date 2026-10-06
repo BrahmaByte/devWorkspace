@@ -1,12 +1,5 @@
 import type { OperatingSystem } from "../../platform/platformService";
 
-export const preferredIdes = [
-  "vscode",
-  "visual-studio",
-  "idea",
-  "pycharm",
-] as const;
-export type PreferredIde = (typeof preferredIdes)[number];
 export const confirmationPolicies = ["always", "dangerous", "never"] as const;
 export type ConfirmationPolicy = (typeof confirmationPolicies)[number];
 
@@ -14,9 +7,6 @@ export interface Project {
   readonly id: string;
   readonly name: string;
   readonly localPath: string;
-  readonly preferredIde?: PreferredIde;
-  readonly jiraProjectKey?: string;
-  readonly isFavourite: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly gitBranch?: string;

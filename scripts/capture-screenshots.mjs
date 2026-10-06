@@ -88,9 +88,6 @@ const stickyNotes = [
   },
 ];
 const home = {
-  favouriteProjects: [],
-  quickCommands: [],
-  recentResources: [],
   stickyNotes,
   developerApplications: [
     "Editor",
@@ -112,7 +109,6 @@ const home = {
       updatedAt: createdAt,
     },
   ],
-  jira: { connected: true },
 };
 try {
   await mkdir(output, { recursive: true });

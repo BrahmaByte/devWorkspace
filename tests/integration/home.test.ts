@@ -6,11 +6,9 @@ import { afterEach, describe, it } from "node:test";
 
 import { HomeService } from "../../src/application/services/homeService";
 import { NoteService } from "../../src/application/services/noteService";
-import { WorkspaceService } from "../../src/application/services/workspaceService";
 import { getDatabasePath } from "../../src/infrastructure/database/location";
 import { LocalDatabase } from "../../src/infrastructure/database/localDatabase";
 import { NoteRepository } from "../../src/infrastructure/database/noteRepository";
-import { WorkspaceRepository } from "../../src/infrastructure/database/workspaceRepository";
 import { UrlGroupRepository } from "../../src/infrastructure/database/urlGroupRepository";
 import { UrlGroupService } from "../../src/application/services/urlGroupService";
 import {
@@ -48,21 +46,7 @@ void describe("home dashboard", () => {
     directories.push(directory);
     const databasePath = getDatabasePath(directory);
     const database = await LocalDatabase.open(databasePath);
-    const workspaceRepository = new WorkspaceRepository(database);
-    const noteRepository = new NoteRepository(database);
-    const workspace = new WorkspaceService(workspaceRepository, "linux");
-    const notes = new NoteService(noteRepository);
-    const projectId = await workspace.createProject("Local API", "/work/api");
-    await workspace.setFavourite(projectId, true);
-    await workspace.createCommand(
-      undefined,
-      "Test",
-      "npm test",
-      "linux",
-      "/bin/sh",
-      undefined,
-      "always",
-    );
+    const notes = new NoteService(new NoteRepository(database));
     await notes.createNote("Runbook", "Local recovery steps");
     await notes.createStickyNote("Review logs", "yellow", 0);
     await new UrlGroupService(new UrlGroupRepository(database)).create(
@@ -79,21 +63,12 @@ void describe("home dashboard", () => {
 
     const reopened = await LocalDatabase.open(databasePath);
     const state = new HomeService(
-      new WorkspaceRepository(reopened),
       new NoteRepository(reopened),
       new UrlGroupRepository(reopened),
       applicationService(reopened),
     ).getState();
-    assert.equal(state.currentProject?.name, "Local API");
-    assert.equal(state.favouriteProjects[0]?.id, projectId);
-    assert.equal(state.quickCommands[0]?.name, "Test");
     assert.equal(state.stickyNotes[0]?.content, "Review logs");
     assert.equal(state.urlGroups[0]?.name, "Daily tools");
-    assert.deepEqual(state.jira, { connected: false });
-    assert.deepEqual(
-      new Set(state.recentResources.map((resource) => resource.type)),
-      new Set(["project", "note"]),
-    );
     reopened.close();
   });
 
@@ -102,16 +77,18 @@ void describe("home dashboard", () => {
     directories.push(directory);
     const database = await LocalDatabase.open(getDatabasePath(directory));
     const state = new HomeService(
-      new WorkspaceRepository(database),
       new NoteRepository(database),
       new UrlGroupRepository(database),
       applicationService(database),
     ).getState();
-    assert.equal(state.currentProject, undefined);
-    assert.deepEqual(state.favouriteProjects, []);
-    assert.deepEqual(state.recentResources, []);
     assert.deepEqual(state.developerApplications, []);
-    assert.equal(state.jira.connected, false);
+    assert.deepEqual(Object.keys(state).sort(), [
+      "developerApplications",
+      "stickyNotes",
+      "urlGroups",
+    ]);
+    assert.deepEqual(state.stickyNotes, []);
+    assert.deepEqual(state.urlGroups, []);
     database.close();
   });
 });

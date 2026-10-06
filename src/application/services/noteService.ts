@@ -44,16 +44,6 @@ export class NoteService {
     );
   }
 
-  public setPinned(id: string, pinned: boolean): Promise<void> {
-    this.requireId(id);
-    return this.repository.setPinned(id, pinned, new Date().toISOString());
-  }
-
-  public setArchived(id: string, archived: boolean): Promise<void> {
-    this.requireId(id);
-    return this.repository.setArchived(id, archived, new Date().toISOString());
-  }
-
   public deleteNote(id: string): Promise<void> {
     this.requireId(id);
     return this.repository.delete(id);

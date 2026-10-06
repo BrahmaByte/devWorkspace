@@ -5,6 +5,19 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("accepts the slim Home payload and preserves the separate current Jira task", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.ok(
+      html.includes(
+        "Array.isArray(message.state.stickyNotes)&&Array.isArray(message.state.urlGroups)&&Array.isArray(message.state.developerApplications)",
+      ),
+    );
+    assert.doesNotMatch(
+      html,
+      /message\.state\.(favouriteProjects|recentResources|quickCommands|currentProject)/u,
+    );
+    assert.match(html, /Current Jira task/u);
+  });
   void it("offers extension-only network configuration without credential fields", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /Network proxy/u);

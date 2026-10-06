@@ -1,10 +1,6 @@
 import { shellPages, type ShellPage, type WebviewRequest } from "./messages";
 import { noteLimits } from "../../application/services/noteService";
 import { stickyColors, type StickyColor } from "../../domain/notes/models";
-import {
-  preferredIdes,
-  type PreferredIde,
-} from "../../domain/workspace/models";
 import { workspaceLimits } from "../../application/services/workspaceService";
 import { jiraLimits } from "../../application/services/jiraService";
 import { confluenceLimits } from "../../application/services/confluenceService";
@@ -13,10 +9,6 @@ import {
   jiraBoardStatuses,
   type JiraBoardStatus,
 } from "../../domain/jira/models";
-import {
-  relationshipTargetTypes,
-  type RelationshipTargetType,
-} from "../../domain/knowledge/models";
 import { searchLimit } from "../../application/services/searchService";
 import { urlGroupLimits } from "../../application/services/urlGroupService";
 import {
@@ -70,25 +62,10 @@ function isOptionalString(
 ): value is string | undefined {
   return value === undefined || isString(value, maximum);
 }
-function isPreferredIde(value: unknown): value is PreferredIde | undefined {
-  return (
-    value === undefined ||
-    (typeof value === "string" &&
-      (preferredIdes as readonly string[]).includes(value))
-  );
-}
 function isJiraBoardStatus(value: unknown): value is JiraBoardStatus {
   return (
     typeof value === "string" &&
     (jiraBoardStatuses as readonly string[]).includes(value)
-  );
-}
-function isRelationshipTargetType(
-  value: unknown,
-): value is RelationshipTargetType {
-  return (
-    typeof value === "string" &&
-    (relationshipTargetTypes as readonly string[]).includes(value)
   );
 }
 function isSearchResultType(value: unknown): value is SearchResultType {
@@ -233,59 +210,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: value.type, id: value.id } }
       : { ok: false, error: `${value.type} is invalid.` };
   }
-  if (value.type === "knowledge.list") {
-    return hasOnlyKeys(value, ["type", "noteId"]) && isId(value.noteId)
-      ? { ok: true, value: { type: "knowledge.list", noteId: value.noteId } }
-      : { ok: false, error: "knowledge.list is invalid." };
-  }
-  if (value.type === "knowledge.attach" || value.type === "knowledge.open") {
-    const noteValid = value.type === "knowledge.open" || isId(value.noteId);
-    const allowed =
-      value.type === "knowledge.open"
-        ? ["type", "targetType", "targetId"]
-        : ["type", "noteId", "targetType", "targetId"];
-    if (
-      !hasOnlyKeys(value, allowed) ||
-      !noteValid ||
-      !isRelationshipTargetType(value.targetType) ||
-      typeof value.targetId !== "string" ||
-      value.targetId.length < 1 ||
-      value.targetId.length > 100
-    )
-      return { ok: false, error: `${value.type} is invalid.` };
-    return value.type === "knowledge.open"
-      ? {
-          ok: true,
-          value: {
-            type: "knowledge.open",
-            targetType: value.targetType,
-            targetId: value.targetId,
-          },
-        }
-      : {
-          ok: true,
-          value: {
-            type: "knowledge.attach",
-            noteId: value.noteId as string,
-            targetType: value.targetType,
-            targetId: value.targetId,
-          },
-        };
-  }
-  if (value.type === "knowledge.detach") {
-    return hasOnlyKeys(value, ["type", "noteId", "relationshipId"]) &&
-      isId(value.noteId) &&
-      isId(value.relationshipId)
-      ? {
-          ok: true,
-          value: {
-            type: "knowledge.detach",
-            noteId: value.noteId,
-            relationshipId: value.relationshipId,
-          },
-        }
-      : { ok: false, error: "knowledge.detach is invalid." };
-  }
   if (value.type === "jira.connect") {
     return hasOnlyKeys(value, ["type", "displayName", "baseUrl"]) &&
       isString(value.displayName, jiraLimits.name) &&
@@ -395,38 +319,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "jira.local.delete", id: value.id } }
       : { ok: false, error: "jira.local.delete is invalid." };
   }
-  if (value.type === "jira.associate") {
-    return hasOnlyKeys(value, ["type", "issueKey", "projectId"]) &&
-      typeof value.issueKey === "string" &&
-      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
-      isId(value.projectId)
-      ? {
-          ok: true,
-          value: {
-            type: "jira.associate",
-            issueKey: value.issueKey,
-            projectId: value.projectId,
-          },
-        }
-      : { ok: false, error: "jira.associate is invalid." };
-  }
-  if (value.type === "jira.startWork") {
-    return hasOnlyKeys(value, ["type", "issueKey", "branchName"]) &&
-      typeof value.issueKey === "string" &&
-      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
-      (value.branchName === undefined ||
-        (typeof value.branchName === "string" &&
-          value.branchName.length <= 100))
-      ? {
-          ok: true,
-          value: {
-            type: "jira.startWork",
-            issueKey: value.issueKey,
-            ...(value.branchName ? { branchName: value.branchName } : {}),
-          },
-        }
-      : { ok: false, error: "jira.startWork is invalid." };
-  }
   if (value.type === "navigation.select") {
     if (!hasOnlyKeys(value, ["type", "page"]) || !isShellPage(value.page)) {
       return { ok: false, error: "navigation.select has an invalid page." };
@@ -467,32 +359,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
             type: "notes.create",
             title: value.title,
             content: value.content,
-          },
-        };
-  }
-  if (value.type === "notes.pin" || value.type === "notes.archive") {
-    const field = value.type === "notes.pin" ? "pinned" : "archived";
-    if (
-      !hasOnlyKeys(value, ["type", "id", field]) ||
-      !isId(value.id) ||
-      typeof value[field] !== "boolean"
-    )
-      return { ok: false, error: `${value.type} is invalid.` };
-    return value.type === "notes.pin"
-      ? {
-          ok: true,
-          value: {
-            type: "notes.pin",
-            id: value.id,
-            pinned: value.pinned as boolean,
-          },
-        }
-      : {
-          ok: true,
-          value: {
-            type: "notes.archive",
-            id: value.id,
-            archived: value.archived as boolean,
           },
         };
   }
@@ -548,17 +414,10 @@ export function parseWebviewRequest(value: unknown): ParseResult {
   if (value.type === "projects.create" || value.type === "projects.update") {
     const update = value.type === "projects.update";
     if (
-      !hasOnlyKeys(value, [
-        "type",
-        "id",
-        "name",
-        "localPath",
-        "preferredIde",
-      ]) ||
+      !hasOnlyKeys(value, ["type", "id", "name", "localPath"]) ||
       (update && !isId(value.id)) ||
       !isString(value.name, workspaceLimits.name) ||
-      !isString(value.localPath, workspaceLimits.path) ||
-      !isPreferredIde(value.preferredIde)
+      !isString(value.localPath, workspaceLimits.path)
     )
       return { ok: false, error: `${value.type} is invalid.` };
     return {
@@ -568,7 +427,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         ...(update ? { id: value.id as string } : {}),
         name: value.name,
         localPath: value.localPath,
-        ...(value.preferredIde ? { preferredIde: value.preferredIde } : {}),
       } as WebviewRequest,
     };
   }
@@ -587,20 +445,6 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ok: true,
       value: { type: value.type, id: value.id } as WebviewRequest,
     };
-  }
-  if (value.type === "projects.favourite") {
-    return hasOnlyKeys(value, ["type", "id", "favourite"]) &&
-      isId(value.id) &&
-      typeof value.favourite === "boolean"
-      ? {
-          ok: true,
-          value: {
-            type: "projects.favourite",
-            id: value.id,
-            favourite: value.favourite,
-          },
-        }
-      : { ok: false, error: "projects.favourite is invalid." };
   }
   if (value.type === "commands.create") {
     if (

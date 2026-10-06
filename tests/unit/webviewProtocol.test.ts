@@ -4,6 +4,39 @@ import { describe, it } from "node:test";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
 void describe("Webview protocol validation", () => {
+  void it("rejects retired actions and removed project metadata", () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    for (const request of [
+      { type: "knowledge.list", noteId: id },
+      {
+        type: "knowledge.attach",
+        noteId: id,
+        targetType: "project",
+        targetId: id,
+      },
+      { type: "knowledge.detach", noteId: id, relationshipId: id },
+      { type: "knowledge.open", targetType: "project", targetId: id },
+      { type: "jira.associate", issueKey: "DEV-1", projectId: id },
+      {
+        type: "jira.startWork",
+        issueKey: "DEV-1",
+        branchName: "feature/DEV-1",
+      },
+      { type: "projects.favourite", id, favourite: true },
+      { type: "notes.pin", id, pinned: true },
+      { type: "notes.archive", id, archived: true },
+    ])
+      assert.equal(parseWebviewRequest(request).ok, false);
+    assert.equal(
+      parseWebviewRequest({
+        type: "projects.create",
+        name: "API",
+        localPath: "/work/api",
+        preferredIde: "vscode",
+      }).ok,
+      false,
+    );
+  });
   void it("strictly bounds comment bodies and pagination", () => {
     const valid = {
       type: "jira.comment.add",
@@ -90,7 +123,7 @@ void describe("Webview protocol validation", () => {
         type: "knowledge.list",
         noteId: "00000000-0000-4000-8000-000000000001",
       }).ok,
-      true,
+      false,
     );
     assert.equal(
       parseWebviewRequest({
@@ -99,7 +132,7 @@ void describe("Webview protocol validation", () => {
         targetType: "jira_issue",
         targetId: "DEV-7",
       }).ok,
-      true,
+      false,
     );
     assert.equal(
       parseWebviewRequest({ type: "search.query", query: "runbook" }).ok,
@@ -131,7 +164,7 @@ void describe("Webview protocol validation", () => {
         issueKey: "DEV-7",
         projectId: "00000000-0000-0000-0000-000000000007",
       }).ok,
-      true,
+      false,
     );
     assert.equal(
       parseWebviewRequest({
@@ -139,7 +172,7 @@ void describe("Webview protocol validation", () => {
         issueKey: "DEV-7",
         branchName: "feature/DEV-7",
       }).ok,
-      true,
+      false,
     );
     assert.deepEqual(
       parseWebviewRequest({ type: "navigation.select", page: "notes" }),
@@ -317,7 +350,6 @@ void describe("Webview protocol validation", () => {
         type: "projects.create",
         name: "API",
         localPath: "/work/api",
-        preferredIde: "vscode",
       }).ok,
       true,
     );

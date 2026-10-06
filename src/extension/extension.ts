@@ -6,7 +6,6 @@ import { ConfluenceService } from "../application/services/confluenceService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
-import { KnowledgeService } from "../application/services/knowledgeService";
 import {
   ConfluenceCacheSearchProvider,
   JiraCacheSearchProvider,
@@ -20,10 +19,6 @@ import {
 } from "../application/services/integrationError";
 import { JiraService } from "../application/services/jiraService";
 import { isAtlassianCloud } from "../application/services/atlassianAuth";
-import {
-  issueProjectKey,
-  StartWorkService,
-} from "../application/services/startWorkService";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { UrlGroupService } from "../application/services/urlGroupService";
 import { DeveloperApplicationService } from "../application/services/developerApplicationService";
@@ -33,11 +28,9 @@ import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { ConfluenceRepository } from "../infrastructure/database/confluenceRepository";
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
-import { RelationshipRepository } from "../infrastructure/database/relationshipRepository";
 import { UrlGroupRepository } from "../infrastructure/database/urlGroupRepository";
 import { DeveloperApplicationRepository } from "../infrastructure/database/developerApplicationRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
-import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
 import { VscodeHttpTransport } from "../infrastructure/http/vscodeHttpTransport";
@@ -47,10 +40,7 @@ import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
 } from "../infrastructure/vscode/vscodeCommandExecutor";
-import {
-  VscodeBranchConfirmationGateway,
-  VscodeProjectWorkspaceGateway,
-} from "../infrastructure/vscode/vscodeStartWorkGateway";
+import { VscodeProjectWorkspaceGateway } from "../infrastructure/vscode/vscodeProjectWorkspaceGateway";
 import { createPlatformService } from "../platform/platformService";
 import { NodeDeveloperApplicationProcessGateway } from "../platform/developerApplicationProcess";
 import { DeveloperApplicationIconProvider } from "../platform/developerApplicationIcon";
@@ -90,14 +80,12 @@ export async function activate(
     platform.operatingSystem,
   );
   const homeService = new HomeService(
-    workspaceRepository,
     noteRepository,
     urlGroupRepository,
     developerApplicationService,
   );
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
-  const relationshipRepository = new RelationshipRepository(database);
   const extensionProxy = new VscodeExtensionProxy(context.secrets);
   const httpTransport = new VscodeHttpTransport(
     createExtensionProxyFetch(
@@ -115,24 +103,11 @@ export async function activate(
     context.secrets,
     new FetchConfluenceClientFactory(httpTransport),
   );
-  const knowledgeService = new KnowledgeService(
-    relationshipRepository,
-    noteRepository,
-    jiraRepository,
-    confluenceRepository,
-    workspaceRepository,
-  );
   const searchService = new SearchService([
     new LocalSearchProvider(noteRepository, workspaceRepository),
     new JiraCacheSearchProvider(jiraRepository),
     new ConfluenceCacheSearchProvider(confluenceRepository),
   ]);
-  const startWorkService = new StartWorkService(
-    workspaceRepository,
-    new NodeGitWorkflow(),
-    new VscodeProjectWorkspaceGateway(),
-    new VscodeBranchConfirmationGateway(),
-  );
   const commandExecutionService = new CommandExecutionService(
     workspaceRepository,
     new VscodeCommandExecutor(),
@@ -209,12 +184,6 @@ export async function activate(
     };
     const sendHome = async (): Promise<boolean> => {
       const state = homeService.getState();
-      const withGitBranch = async <T extends { localPath: string }>(
-        project: T,
-      ) => ({
-        ...project,
-        gitBranch: await gitBranchService.getBranch(project.localPath),
-      });
       return panel.webview.postMessage({
         type: "home.state",
         state: {
@@ -226,12 +195,6 @@ export async function activate(
                 developerApplicationService.getIconSource(application.id),
               ),
             })),
-          ),
-          currentProject: state.currentProject
-            ? await withGitBranch(state.currentProject)
-            : undefined,
-          favouriteProjects: await Promise.all(
-            state.favouriteProjects.map(withGitBranch),
           ),
         },
       } satisfies ExtensionResponse);
@@ -250,11 +213,6 @@ export async function activate(
       panel.webview.postMessage({
         type: "confluence.state",
         state: await confluenceService.refresh(),
-      } satisfies ExtensionResponse);
-    const sendKnowledge = (noteId: string): Thenable<boolean> =>
-      panel.webview.postMessage({
-        type: "knowledge.state",
-        state: knowledgeService.getState(noteId),
       } satisfies ExtensionResponse);
     const sendSearch = (query = ""): Thenable<boolean> =>
       panel.webview.postMessage({
@@ -472,45 +430,6 @@ export async function activate(
               await sendNotes();
               return;
             }
-            case "knowledge.list":
-              await sendKnowledge(request.noteId);
-              return;
-            case "knowledge.attach":
-              await knowledgeService.attach(
-                request.noteId,
-                request.targetType,
-                request.targetId,
-              );
-              await sendKnowledge(request.noteId);
-              return;
-            case "knowledge.detach":
-              await knowledgeService.detach(
-                request.noteId,
-                request.relationshipId,
-              );
-              await sendKnowledge(request.noteId);
-              return;
-            case "knowledge.open":
-              if (request.targetType === "jira_issue") {
-                await vscode.env.openExternal(
-                  vscode.Uri.parse(jiraService.getIssueUrl(request.targetId)),
-                );
-              } else if (request.targetType === "confluence_page") {
-                await vscode.env.openExternal(
-                  vscode.Uri.parse(
-                    confluenceService.getPageUrl(request.targetId),
-                  ),
-                );
-              } else {
-                const project = workspaceRepository.getProject(
-                  request.targetId,
-                );
-                if (!project) throw new Error("Project was not found.");
-                await new VscodeProjectWorkspaceGateway().openProject(
-                  project.localPath,
-                );
-              }
-              return;
             case "jira.connect": {
               const cloud = isAtlassianCloud(request.baseUrl);
               const email = cloud
@@ -654,29 +573,6 @@ export async function activate(
               await jiraService.deleteLocalCard(request.id);
               await sendJira();
               return;
-            case "jira.associate":
-              await workspaceService.associateJiraProject(
-                request.projectId,
-                issueProjectKey(request.issueKey),
-              );
-              await sendWorkspace();
-              await sendJira();
-              return;
-            case "jira.startWork": {
-              const result = await startWorkService.start(
-                request.issueKey,
-                request.branchName,
-              );
-              if (!result.started) return;
-              await panel.webview.postMessage({
-                type: "jira.workStarted",
-                projectName: result.projectName,
-                ...(result.branchName ? { branchName: result.branchName } : {}),
-                branchChanged: result.branchChanged,
-                started: result.started,
-              } satisfies ExtensionResponse);
-              return;
-            }
             case "navigation.select":
               activePage = request.page;
               await sendState();
@@ -708,14 +604,7 @@ export async function activate(
                 request.content,
               );
               break;
-            case "notes.pin":
-              await noteService.setPinned(request.id, request.pinned);
-              break;
-            case "notes.archive":
-              await noteService.setArchived(request.id, request.archived);
-              break;
             case "notes.delete":
-              await knowledgeService.deleteForResource("note", request.id);
               await noteService.deleteNote(request.id);
               break;
             case "sticky.create":
@@ -780,7 +669,6 @@ export async function activate(
               await workspaceService.createProject(
                 request.name,
                 request.localPath,
-                request.preferredIde,
               );
               break;
             case "projects.update":
@@ -794,18 +682,10 @@ export async function activate(
                 request.id as string,
                 request.name,
                 request.localPath,
-                request.preferredIde,
               );
               break;
             case "projects.delete":
-              await knowledgeService.deleteForResource("project", request.id);
               await workspaceService.deleteProject(request.id);
-              break;
-            case "projects.favourite":
-              await workspaceService.setFavourite(
-                request.id,
-                request.favourite,
-              );
               break;
             case "projects.terminal":
               await commandExecutionService.openProjectTerminal(

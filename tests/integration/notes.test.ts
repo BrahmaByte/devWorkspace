@@ -32,7 +32,23 @@ void afterEach(async () => {
 });
 
 void describe("local notes", () => {
-  void it("creates, searches, edits, pins, archives, and deletes notes", async () => {
+  void it("retains legacy pin and archive flags when editing and reopening notes", async () => {
+    const { database, filePath, service } = await openNotes();
+    const id = await service.createNote("Legacy", "Content");
+    database.run("UPDATE notes SET is_pinned=1,is_archived=1 WHERE id=?;", [
+      id,
+    ]);
+    await service.updateNote(id, "Legacy updated", "New content");
+    database.close();
+    const restored = await LocalDatabase.open(filePath);
+    const note = new NoteService(new NoteRepository(restored)).getState()
+      .notes[0];
+    assert.equal(note?.isPinned, true);
+    assert.equal(note?.isArchived, true);
+    assert.equal(note?.content, "New content");
+    restored.close();
+  });
+  void it("creates, searches, edits, and deletes notes", async () => {
     const { database, service } = await openNotes();
     const createdId = await service.createNote(
       "Release plan",
@@ -45,11 +61,9 @@ void describe("local notes", () => {
     const note = found[0];
     assert.ok(note);
     await service.updateNote(note.id, "Updated plan", "Workspace ready");
-    await service.setPinned(note.id, true);
-    await service.setArchived(note.id, true);
     const updated = service.getState("Updated").notes[0];
-    assert.equal(updated?.isPinned, true);
-    assert.equal(updated?.isArchived, true);
+    assert.equal(updated?.content, "Workspace ready");
+
     await service.deleteNote(note.id);
     assert.equal(service.getState("Updated").notes.length, 0);
     database.close();
