@@ -72,7 +72,8 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
 - Use the sync icon to refresh Jira on demand while retaining the saved filter.
-- Select an issue to view its details and open it in your default browser.
+- Select an issue to view unified metadata and a formatted description, or open
+  it in your default browser.
 - Add local-only cards at the bottom of the board. These cards stay on your
   computer and are never sent to Jira.
 
@@ -106,14 +107,17 @@ the page in Focus Reader or your default browser.
 Knowledge provides a two-column Confluence browser:
 
 1. Search for a Confluence page in the left column.
-2. Select a result to show its details.
+2. Select a result to read its formatted content in the right pane. The header
+   shows its space, version, authors, dates, status, and labels when available.
 3. Use the reader icon for a full-screen, distraction-free view with a generated
    table of contents.
 4. Use the bookmark icon to save the page as a local note reference.
 5. Use the external-open icon to open the original page in your default browser.
 
-Confluence page bodies are loaded only when Focus Reader is opened and are not
-cached locally.
+Images and static diagrams appear in both reading views. Unavailable or blocked
+media is clearly identified; use the external-open icon for active macros or
+unsupported embeds. Page bodies and images are loaded on selection and are not
+cached on disk. Focus Reader includes the same metadata and a table of contents.
 
 ## Global search
 

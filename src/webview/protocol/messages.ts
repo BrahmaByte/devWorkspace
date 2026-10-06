@@ -63,7 +63,10 @@ export type WebviewRequest =
   | { readonly type: "confluence.search"; readonly query: string }
   | {
       readonly type:
-        "confluence.open" | "confluence.reader" | "confluence.bookmark";
+        | "confluence.open"
+        | "confluence.reader"
+        | "confluence.preview"
+        | "confluence.bookmark";
       readonly id: string;
     }
   | { readonly type: "knowledge.list"; readonly noteId: string }
@@ -197,8 +200,14 @@ export type ExtensionResponse =
   | { readonly type: "jira.state"; readonly state: JiraState }
   | { readonly type: "confluence.state"; readonly state: ConfluenceState }
   | {
-      readonly type: "confluence.reader";
+      readonly type: "confluence.reader" | "confluence.preview";
       readonly document: ConfluenceReaderDocument;
+    }
+  | {
+      readonly type: "confluence.readError";
+      readonly id: string;
+      readonly target: "preview" | "reader";
+      readonly message: string;
     }
   | { readonly type: "confluence.bookmarked"; readonly noteId: string }
   | { readonly type: "knowledge.state"; readonly state: KnowledgeState }

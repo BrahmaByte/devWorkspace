@@ -19,6 +19,7 @@ export interface JiraIssue {
   readonly status: string;
   readonly updatedAt: string;
   readonly description?: string;
+  readonly descriptionHtml?: string;
   readonly issueType?: string;
   readonly priority?: string;
   readonly assignee?: string;

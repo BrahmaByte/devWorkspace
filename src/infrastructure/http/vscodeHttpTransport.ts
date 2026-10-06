@@ -25,7 +25,11 @@ export class VscodeHttpTransport {
     ),
   ) {}
 
-  public async fetch(url: string, init: RequestInit = {}): Promise<Response> {
+  public async fetch(
+    url: string,
+    init: RequestInit = {},
+    publicMediaRedirectHosts: readonly string[] = [],
+  ): Promise<Response> {
     const trustedOrigin = new URL(url).origin;
     let currentUrl = url;
     let currentInit = init;
@@ -34,7 +38,12 @@ export class VscodeHttpTransport {
       const response = await this.fetchImplementation(currentUrl, {
         ...currentInit,
         redirect: "manual",
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: init.signal
+          ? AbortSignal.any([
+              init.signal,
+              AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            ])
+          : AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       if (!REDIRECT_STATUSES.has(response.status)) return response;
 
@@ -42,8 +51,19 @@ export class VscodeHttpTransport {
       if (!location || redirects === MAX_REDIRECTS)
         throw new Error("The server returned too many redirects.");
       const nextUrl = new URL(location, currentUrl);
-      if (nextUrl.origin !== trustedOrigin)
-        throw new UnsafeNetworkRedirectError();
+      if (nextUrl.origin !== trustedOrigin) {
+        if (
+          nextUrl.protocol !== "https:" ||
+          nextUrl.username ||
+          nextUrl.password ||
+          !publicMediaRedirectHosts.includes(nextUrl.hostname)
+        )
+          throw new UnsafeNetworkRedirectError();
+        const headers = new Headers(currentInit.headers);
+        for (const name of ["authorization", "cookie", "proxy-authorization"])
+          headers.delete(name);
+        currentInit = { ...currentInit, headers };
+      }
 
       const method = (currentInit.method ?? "GET").toUpperCase();
       if (

@@ -431,10 +431,23 @@ export async function activate(
               );
               return;
             case "confluence.reader":
-              await panel.webview.postMessage({
-                type: "confluence.reader",
-                document: await confluenceService.readPage(request.id),
-              } satisfies ExtensionResponse);
+            case "confluence.preview":
+              try {
+                await panel.webview.postMessage({
+                  type: request.type,
+                  document: await confluenceService.readPage(request.id),
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                await panel.webview.postMessage({
+                  type: "confluence.readError",
+                  id: request.id,
+                  target:
+                    request.type === "confluence.preview"
+                      ? "preview"
+                      : "reader",
+                  message: connectionErrorMessage("confluence", error),
+                } satisfies ExtensionResponse);
+              }
               return;
             case "confluence.bookmark": {
               const page = confluenceService.getPage(request.id);

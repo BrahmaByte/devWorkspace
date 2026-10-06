@@ -8,6 +8,52 @@ import {
 } from "../../src/infrastructure/http/vscodeHttpTransport";
 
 void describe("VS Code HTTP transport", () => {
+  void it("allows only approved public media redirects and strips provider credentials", async () => {
+    const requests: Array<{ url: string; headers: Headers }> = [];
+    const transport = new VscodeHttpTransport((input, init) => {
+      requests.push({
+        url:
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url,
+        headers: new Headers(init?.headers),
+      });
+      return Promise.resolve(
+        requests.length === 1
+          ? new Response(null, {
+              status: 302,
+              headers: {
+                location: "https://api.media.atlassian.com/file/fake/binary",
+              },
+            })
+          : new Response("image"),
+      );
+    });
+    await transport.fetch(
+      "https://confluence.example.test/download/image",
+      { headers: { Authorization: "Bearer fake", Cookie: "fake-cookie" } },
+      ["api.media.atlassian.com"],
+    );
+    assert.equal(requests[0]?.headers.get("authorization"), "Bearer fake");
+    assert.equal(requests[1]?.headers.get("authorization"), null);
+    assert.equal(requests[1]?.headers.get("cookie"), null);
+    const unsafe = new VscodeHttpTransport(() =>
+      Promise.resolve(
+        new Response(null, {
+          status: 302,
+          headers: { location: "https://evil.test/file" },
+        }),
+      ),
+    );
+    await assert.rejects(
+      unsafe.fetch("https://confluence.example.test/download/image", {}, [
+        "api.media.atlassian.com",
+      ]),
+      UnsafeNetworkRedirectError,
+    );
+  });
   void it("follows bounded same-origin redirects and preserves credentials", async () => {
     const requests: Array<{ url: string; authorization: string | null }> = [];
     const fetchImplementation: FetchImplementation = (input, init) => {

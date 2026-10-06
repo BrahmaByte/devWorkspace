@@ -24,6 +24,21 @@ export interface ConfluenceReaderDocument {
   readonly page: ConfluencePage;
   readonly html: string;
   readonly headings: readonly ConfluenceReaderHeading[];
+  readonly media?: readonly {
+    readonly id: string;
+    readonly dataUrl: string;
+    readonly alt: string;
+  }[];
+  readonly mediaWarnings?: readonly string[];
+  readonly metadata?: {
+    readonly spaceKey?: string;
+    readonly version?: number;
+    readonly status?: string;
+    readonly createdBy?: string;
+    readonly updatedBy?: string;
+    readonly createdAt?: string;
+    readonly labels?: readonly string[];
+  };
 }
 
 export interface ConfluenceState {

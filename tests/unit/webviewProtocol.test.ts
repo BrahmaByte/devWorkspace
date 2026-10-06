@@ -4,6 +4,24 @@ import { describe, it } from "node:test";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
 void describe("Webview protocol validation", () => {
+  void it("validates Confluence preview identifiers and rejects additional fields", () => {
+    assert.equal(
+      parseWebviewRequest({ type: "confluence.preview", id: "42" }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "confluence.preview", id: "../42" }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "confluence.preview",
+        id: "42",
+        url: "https://evil.test",
+      }).ok,
+      false,
+    );
+  });
   void it("accepts allowlisted shell messages", () => {
     assert.deepEqual(parseWebviewRequest({ type: "shell.ready" }), {
       ok: true,

@@ -12,6 +12,7 @@ import {
   type AtlassianCredential,
 } from "../../application/services/atlassianAuth";
 import { VscodeHttpTransport } from "../http/vscodeHttpTransport";
+import { mediaDataUrl } from "./readerMedia";
 
 type JsonRecord = Record<string, unknown>;
 export class ConfluenceRequestError extends Error {
@@ -58,14 +59,182 @@ export class FetchConfluenceClient implements ConfluenceClient {
     if (!/^[0-9A-Za-z_-]{1,100}$/u.test(id))
       throw new Error("Invalid Confluence page identifier.");
     const data = await this.request(
-      `/rest/api/content/${encodeURIComponent(id)}?expand=body.view,space,version`,
+      `/rest/api/content/${encodeURIComponent(id)}?expand=body.view,body.export_view,space,version,history,metadata.labels`,
     );
     const body = isRecord(data.body) ? data.body : undefined;
-    const view = body && isRecord(body.view) ? body.view : undefined;
+    const view =
+      body &&
+      isRecord(body.export_view) &&
+      typeof body.export_view.value === "string" &&
+      body.export_view.value.trim()
+        ? body.export_view
+        : body && isRecord(body.view)
+          ? body.view
+          : undefined;
     if (!view || typeof view.value !== "string")
       throw new Error("Confluence page body is unavailable.");
-    const sanitized = sanitizeConfluenceHtml(view.value);
-    return { page: toPage(data), ...sanitized };
+    const sources: Array<{
+      id: string;
+      url: string;
+      alt: string;
+      inline?: string;
+    }> = [];
+    const warnings: string[] = [];
+    let sourceHtml = view.value;
+    const inline = new Map<string, string>();
+    sourceHtml = sourceHtml.replace(
+      /<svg\b[^>]*>[\s\S]*?<\/svg\s*>/giu,
+      (svg) => {
+        const key = `reader-inline:${inline.size}`;
+        try {
+          inline.set(key, mediaDataUrl(Buffer.from(svg), "image/svg+xml"));
+          return `<img src="${key}" alt="Diagram">`;
+        } catch {
+          warnings.push(
+            "An active or unsupported embedded diagram was blocked.",
+          );
+          return "<p>Diagram unavailable. Open the original page to view this macro.</p>";
+        }
+      },
+    );
+    const sanitized = sanitizeConfluenceHtml(sourceHtml, (src, alt) => {
+      if (!src.trim()) return undefined;
+      let inlineData = inline.get(src);
+      const embedded =
+        /^data:(image\/(?:png|jpeg|gif|webp|svg\+xml));base64,([A-Za-z0-9+/=]+)$/u.exec(
+          src,
+        );
+      if (embedded) {
+        if (src.length > 2_700_000) return undefined;
+        try {
+          inlineData = mediaDataUrl(
+            Buffer.from(embedded[2] ?? "", "base64"),
+            embedded[1] ?? "",
+          );
+        } catch {
+          warnings.push("An invalid embedded image was blocked.");
+          return undefined;
+        }
+      } else if (src.length > 4000) return undefined;
+      if (sources.length >= 20) {
+        warnings.push("Additional images were omitted (20-image limit).");
+        return undefined;
+      }
+      let url: URL;
+      try {
+        url = new URL(src, this.baseUrl + "/");
+      } catch {
+        return undefined;
+      }
+      if (
+        !inlineData &&
+        (url.origin !== new URL(this.baseUrl).origin ||
+          url.username ||
+          url.password ||
+          url.protocol !== "https:")
+      ) {
+        warnings.push("An external image was blocked for privacy.");
+        return undefined;
+      }
+      const existing = sources.find((source) => source.url === url.toString());
+      if (existing) return existing.id;
+      const mediaId = `reader-media-${sources.length + 1}`;
+      sources.push({
+        id: mediaId,
+        url: url.toString(),
+        alt,
+        ...(inlineData ? { inline: inlineData } : {}),
+      });
+      return mediaId;
+    });
+    const media: NonNullable<ConfluenceReaderDocument["media"]>[number][] = [];
+    const deadline = AbortSignal.timeout(20_000);
+    let total = 0;
+    for (const source of sources) {
+      try {
+        const dataUrl =
+          source.inline ?? (await this.readMedia(source.url, deadline));
+        total += dataUrl.length;
+        if (total > 8_000_000) throw new Error("Page media limit exceeded.");
+        media.push({ id: source.id, alt: source.alt, dataUrl });
+      } catch {
+        warnings.push(
+          "An image or diagram could not be loaded. Open the original page if needed.",
+        );
+      }
+    }
+    const space = isRecord(data.space) ? data.space : {};
+    const version = isRecord(data.version) ? data.version : {};
+    const history = isRecord(data.history) ? data.history : {};
+    const metadata = isRecord(data.metadata) ? data.metadata : {};
+    const labels =
+      isRecord(metadata.labels) && Array.isArray(metadata.labels.results)
+        ? metadata.labels.results
+            .filter(isRecord)
+            .flatMap((label) =>
+              typeof label.name === "string" ? [label.name] : [],
+            )
+            .slice(0, 50)
+        : [];
+    return {
+      page: toPage(data),
+      ...sanitized,
+      media,
+      mediaWarnings: [...new Set(warnings)],
+      metadata: {
+        ...(typeof space.key === "string" ? { spaceKey: space.key } : {}),
+        ...(typeof version.number === "number"
+          ? { version: version.number }
+          : {}),
+        ...(typeof data.status === "string" ? { status: data.status } : {}),
+        ...(isRecord(history.createdBy) &&
+        typeof history.createdBy.displayName === "string"
+          ? { createdBy: history.createdBy.displayName }
+          : {}),
+        ...(isRecord(version.by) && typeof version.by.displayName === "string"
+          ? { updatedBy: version.by.displayName }
+          : {}),
+        ...(typeof history.createdDate === "string"
+          ? { createdAt: history.createdDate }
+          : {}),
+        labels,
+      },
+    };
+  }
+  private async readMedia(url: string, signal: AbortSignal): Promise<string> {
+    const response = await this.transport.fetch(
+      url,
+      {
+        signal,
+        headers: {
+          Authorization: authorizationHeader(this.credential),
+          Accept: "image/png,image/jpeg,image/gif,image/webp,image/svg+xml",
+        },
+      },
+      ["api.media.atlassian.com"],
+    );
+    if (!response.ok) throw new ConfluenceRequestError(response.status);
+    if (Number(response.headers.get("content-length") ?? 0) > 2_000_000)
+      throw new Error("Image too large.");
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Empty media response.");
+    try {
+      while (true) {
+        const result = await reader.read();
+        if (result.done) break;
+        size += result.value.byteLength;
+        if (size > 2_000_000) throw new Error("Image too large.");
+        chunks.push(result.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    return mediaDataUrl(
+      Buffer.concat(chunks),
+      response.headers.get("content-type") ?? "",
+    );
   }
   private async request(path: string): Promise<JsonRecord> {
     const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
@@ -120,7 +289,10 @@ const allowedTags = new Set([
 ]);
 const voidTags = new Set(["br", "hr"]);
 
-export function sanitizeConfluenceHtml(value: string): {
+export function sanitizeConfluenceHtml(
+  value: string,
+  image?: (src: string, alt: string) => string | undefined,
+): {
   readonly html: string;
   readonly headings: readonly ConfluenceReaderHeading[];
 } {
@@ -137,8 +309,35 @@ export function sanitizeConfluenceHtml(value: string): {
       const match = /^<\s*(\/)?\s*([a-z][a-z0-9]*)\b[^>]*>$/iu.exec(token);
       if (!match) return "";
       const tag = match[2]?.toLowerCase() ?? "";
+      if (tag === "img" && !match[1] && image) {
+        const attrs: Record<string, string> = {};
+        for (const attribute of token.matchAll(
+          /\s(src|alt)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/giu,
+        ))
+          attrs[attribute[1]?.toLowerCase() ?? ""] = decodeEntities(
+            attribute[2] ?? attribute[3] ?? attribute[4] ?? "",
+          );
+        const mediaId = image(
+          attrs.src ?? "",
+          (attrs.alt ?? "Image").slice(0, 300),
+        );
+        return mediaId && /^reader-media-\d+$/u.test(mediaId)
+          ? `<img data-reader-media="${mediaId}">`
+          : "";
+      }
       if (!allowedTags.has(tag)) return "";
       if (match[1]) return voidTags.has(tag) ? "" : `</${tag}>`;
+      if (tag === "td" || tag === "th") {
+        const spans: string[] = [];
+        for (const attribute of token.matchAll(
+          /\s(colspan|rowspan)\s*=\s*(?:"([0-9]+)"|'([0-9]+)'|([0-9]+))/giu,
+        )) {
+          const count = Number(attribute[2] ?? attribute[3] ?? attribute[4]);
+          if (count > 0 && count < 100)
+            spans.push(`${attribute[1]?.toLowerCase()}="${count}"`);
+        }
+        return `<${tag}${spans.length ? " " + spans.join(" ") : ""}>`;
+      }
       return `<${tag}>`;
     })
     .join("");
@@ -174,10 +373,14 @@ function decodeEntities(value: string): string {
   return value.replace(
     /&(#x[0-9a-f]+|#\d+|[a-z]+);/giu,
     (entity, key: string) => {
-      if (key.startsWith("#x"))
-        return String.fromCodePoint(Number.parseInt(key.slice(2), 16));
-      if (key.startsWith("#"))
-        return String.fromCodePoint(Number.parseInt(key.slice(1), 10));
+      if (key.startsWith("#")) {
+        const code = key.toLowerCase().startsWith("#x")
+          ? Number.parseInt(key.slice(2), 16)
+          : Number.parseInt(key.slice(1), 10);
+        return code >= 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : "\ufffd";
+      }
       return named[key.toLowerCase()] ?? entity;
     },
   );

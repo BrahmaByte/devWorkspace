@@ -224,6 +224,7 @@ export function parseWebviewRequest(value: unknown): ParseResult {
   if (
     value.type === "confluence.open" ||
     value.type === "confluence.reader" ||
+    value.type === "confluence.preview" ||
     value.type === "confluence.bookmark"
   ) {
     return hasOnlyKeys(value, ["type", "id"]) &&

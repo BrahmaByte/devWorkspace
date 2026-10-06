@@ -8,6 +8,8 @@ import {
   type AtlassianCredential,
 } from "../../application/services/atlassianAuth";
 import { VscodeHttpTransport } from "../http/vscodeHttpTransport";
+import { formatJiraDescription } from "../http/richText";
+import { sanitizeConfluenceHtml } from "../confluence/fetchConfluenceClient";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -87,7 +89,7 @@ export class FetchJiraClient implements JiraClient {
   public async getIssue(issueKey: string): Promise<JiraIssue> {
     return toIssue(
       await this.request(
-        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description,issuetype,priority,assignee,reporter,parent,labels,created`,
+        `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}?fields=summary,status,updated,description,issuetype,priority,assignee,reporter,parent,labels,created&expand=renderedFields`,
       ),
     );
   }
@@ -130,12 +132,21 @@ function toIssue(value: unknown): JiraIssue {
   const reporter = value.fields.reporter;
   const parent = value.fields.parent;
   const labels = value.fields.labels;
+  const rendered = isRecord(value.renderedFields)
+    ? value.renderedFields.description
+    : undefined;
+  const descriptionHtml = sanitizeConfluenceHtml(
+    typeof rendered === "string" && rendered.trim()
+      ? rendered
+      : formatJiraDescription(value.fields.description),
+  ).html;
   return {
     id: requiredString(value.id),
     key: requiredString(value.key),
     summary: requiredString(value.fields.summary),
     status: isRecord(status) ? requiredString(status.name) : "Unknown",
     updatedAt: requiredString(value.fields.updated),
+    ...(descriptionHtml ? { descriptionHtml } : {}),
     ...(descriptionText(value.fields.description)
       ? { description: descriptionText(value.fields.description) }
       : {}),

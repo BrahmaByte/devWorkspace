@@ -263,6 +263,17 @@ void describe("Webview shell", () => {
     assert.match(html, /new DOMParser\(\)/);
     assert.match(html, /safeReaderTags/);
     assert.match(html, /id="reader-toc"/);
+    assert.match(html, /type:"confluence\.preview"/);
+    assert.match(
+      html,
+      /selectedConfluencePage\?\.id!==documentData\.page\.id/u,
+    );
+    assert.match(html, /readerPageId!==documentData\.page\.id/u);
+    assert.match(html, /data-reader-media/u);
+    assert.match(html, /iconButton\("bookmark"/u);
+    assert.match(html, /iconButton\("external","Open "\+page\.title/u);
+    assert.match(html, /Created by|Updated by|Version|Page ID/u);
+    assert.match(html, /\.reader-toc\{display:block\}/u);
   });
 
   void it("provides a Kanban board, ad-hoc sync, and refined issue details", () => {
@@ -281,7 +292,10 @@ void describe("Webview shell", () => {
     assert.match(html, /classList\.add\("is-syncing"\)/);
     assert.match(html, /type:"jira\.refresh"/);
     assert.match(html, /type:"jira\.open"/);
-    assert.match(html, /jira-detail-grid/);
+    assert.match(html, /jira-detail-metadata/);
+    assert.doesNotMatch(html, /jira-detail-field|jira-detail-grid/);
+    assert.match(html, /issue\.descriptionHtml/);
+    assert.match(html, /renderRichContent/);
     assert.match(html, /jira-detail-description/);
     assert.match(html, /message\.state\?\.filter/);
     assert.doesNotMatch(html, /type:"jira\.(?:associate|startWork)"/);

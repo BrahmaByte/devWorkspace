@@ -13,6 +13,35 @@ void afterEach(() => {
 });
 
 void describe("Jira REST provider", () => {
+  void it("requests and sanitizes rendered issue descriptions", async () => {
+    let requestUrl = "";
+    globalThis.fetch = (input) => {
+      requestUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ...issueJson(),
+            renderedFields: {
+              description:
+                "<h2>Plan</h2><ul><li><strong>Formatted</strong></li></ul><script>steal()</script>",
+            },
+          }),
+        ),
+      );
+    };
+    const detail = await new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    }).getIssue("DEV-1");
+    assert.match(requestUrl, /expand=renderedFields/u);
+    assert.match(detail.descriptionHtml ?? "", /<strong>Formatted<\/strong>/u);
+    assert.doesNotMatch(detail.descriptionHtml ?? "", /script|steal/u);
+  });
   void it("uses bearer authentication and maps supported responses", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
