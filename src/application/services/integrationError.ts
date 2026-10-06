@@ -37,7 +37,7 @@ export function connectionErrorMessage(
   if (status === 404)
     return `${name} could not find the expected API endpoint. Check the base URL.`;
   if (status === 407)
-    return `${name} could not authenticate with the corporate proxy. Open VS Code Proxy Settings, verify the proxy configuration, then reload VS Code.`;
+    return `${name} could not authenticate with the corporate proxy. Check VS Code Proxy Settings or configure Settings → Network proxy for this extension only.`;
   if (status === 429)
     return `${name} temporarily rate-limited the connection test. Wait and try again.`;
   if (typeof status === "number" && status >= 500)

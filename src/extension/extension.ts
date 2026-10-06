@@ -41,6 +41,8 @@ import { NodeGitWorkflow } from "../infrastructure/git/nodeGitWorkflow";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
 import { VscodeHttpTransport } from "../infrastructure/http/vscodeHttpTransport";
+import { createExtensionProxyFetch } from "../infrastructure/http/extensionProxy";
+import { VscodeExtensionProxy } from "../infrastructure/vscode/vscodeExtensionProxy";
 import {
   VscodeCommandExecutor,
   VscodeConfirmationGateway,
@@ -96,8 +98,12 @@ export async function activate(
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
   const relationshipRepository = new RelationshipRepository(database);
+  const extensionProxy = new VscodeExtensionProxy(context.secrets);
   const httpTransport = new VscodeHttpTransport(
-    globalThis.fetch.bind(globalThis),
+    createExtensionProxyFetch(
+      () => extensionProxy.load(),
+      globalThis.fetch.bind(globalThis),
+    ),
   );
   const jiraService = new JiraService(
     jiraRepository,
@@ -270,6 +276,9 @@ export async function activate(
         const request = parsed.value;
         try {
           switch (request.type) {
+            case "network.configure":
+              await extensionProxy.configure();
+              return;
             case "shell.ready":
               await sendState();
               await sendNotes();
@@ -796,12 +805,15 @@ export async function activate(
               const action = await vscode.window.showErrorMessage(
                 message,
                 "Open Proxy Settings",
+                "Extension-only Proxy",
               );
               if (action === "Open Proxy Settings")
                 await vscode.commands.executeCommand(
                   "workbench.action.openSettings",
                   "proxy",
                 );
+              if (action === "Extension-only Proxy")
+                await extensionProxy.configure();
             }
             return;
           }

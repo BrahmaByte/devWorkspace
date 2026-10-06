@@ -5,6 +5,13 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("offers extension-only network configuration without credential fields", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /Network proxy/u);
+    assert.match(html, /Configure extension-only proxy/u);
+    assert.match(html, /type:"network.configure"/u);
+    assert.doesNotMatch(html, /id="proxy-password"/u);
+  });
   void it("renders the extension logo from an authorized Webview URI", () => {
     const html = createWebviewHtml(
       "vscode-webview://test",

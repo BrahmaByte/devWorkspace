@@ -10,6 +10,11 @@ tests/**
 dist/tests/**
 dist/**/*.map
 node_modules/sql.js/**
+node_modules/undici/docs/**
+node_modules/undici/types/**
+node_modules/undici/scripts/**
+node_modules/undici/**/*.ts
+node_modules/undici/**/*.md
 !node_modules/sql.js/package.json
 !node_modules/sql.js/LICENSE
 !node_modules/sql.js/dist/sql-wasm.js

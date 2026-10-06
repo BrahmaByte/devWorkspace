@@ -32,6 +32,7 @@ export const shellPages = [
 export type ShellPage = (typeof shellPages)[number];
 
 export type WebviewRequest =
+  | { readonly type: "network.configure" }
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }

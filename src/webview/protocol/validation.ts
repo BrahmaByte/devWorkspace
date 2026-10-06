@@ -204,6 +204,7 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       : { ok: false, error: "confluence.connect is invalid." };
   }
   if (
+    value.type === "network.configure" ||
     value.type === "confluence.refresh" ||
     value.type === "confluence.disconnect"
   ) {

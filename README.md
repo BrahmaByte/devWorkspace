@@ -145,6 +145,14 @@ Credentials are stored in VS Code SecretStorage and are never sent to the
 dashboard Webview or written to the local database. Disconnecting removes the
 stored credential and cached provider metadata.
 
+If VS Code's proxy does not work, use **Settings → Network proxy** to configure
+an extension-only HTTP/HTTPS proxy. Optional Basic proxy credentials are entered
+in VS Code prompts and stored in SecretStorage. You can select an IT-approved
+PEM CA bundle for corporate TLS certificates. Certificate verification stays on.
+The override affects only Jira and Confluence, takes effect on the next request,
+and never falls back to a direct connection. Select **Use VS Code proxy (default)**
+to remove it. Other extensions and VS Code settings are unchanged.
+
 ## Appearance and layout
 
 - Use the header theme icon to switch between light and dark mode.
@@ -162,6 +170,7 @@ stored credential and cached provider metadata.
   VPN, then use **Open Proxy Settings** from the error message. DevDashboardV1
   uses VS Code's proxy, proxy authentication, and trusted system certificates;
   reload VS Code after changing managed proxy settings.
+  Alternatively, configure **Settings → Network proxy** for this extension only.
 - **A project or terminal folder is rejected:** select it with the provided VS
   Code folder picker instead of typing a path.
 - **A command does not run:** save it first and approve the VS Code confirmation
