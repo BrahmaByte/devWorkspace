@@ -45,6 +45,14 @@ const required = [
   "extension.vsixmanifest",
   "extension/LICENSE.txt",
   "extension/assets/devdashboardv1-icon.png",
+  ...[
+    "home-light",
+    "home-dark",
+    "notes",
+    "jira-reader",
+    "knowledge",
+    "settings",
+  ].map((name) => `extension/assets/screenshots/${name}.png`),
   "extension/package.json",
   "extension/readme.md",
   "extension/dist/src/extension/extension.js",
@@ -95,6 +103,53 @@ if (packagedManifest.version !== sourceManifest.version)
 const vsixManifest = readEntry("extension.vsixmanifest").toString("utf8");
 if (!vsixManifest.includes(`Version="${sourceManifest.version}"`))
   throw new Error("VSIX manifest does not contain the release version.");
+
+// Packaging screenshots does not host README images. Check the actual URLs
+// rewritten into the packaged README before a Marketplace upload.
+if (process.argv.includes("--check-public-images")) {
+  const readme = readEntry("extension/readme.md").toString("utf8");
+  const urls = new Set([
+    ...[...readme.matchAll(/!\[[^\]]*\]\((https:\/\/[^\s)]+)\)/gu)].map(
+      (match) => match[1],
+    ),
+    ...[...readme.matchAll(/<img\b[^>]*\bsrc="(https:\/\/[^"\s]+)"/gu)].map(
+      (match) => match[1],
+    ),
+  ]);
+  const failures = (
+    await Promise.all(
+      [...urls].map(async (url) => {
+        try {
+          let response = await globalThis.fetch(url, {
+            method: "HEAD",
+            signal: globalThis.AbortSignal.timeout(15_000),
+          });
+          // The gallery icon API serves GET but rejects HEAD.
+          if (response.status === 405 || response.status === 501) {
+            response = await globalThis.fetch(url, {
+              headers: { Range: "bytes=0-511" },
+              signal: globalThis.AbortSignal.timeout(15_000),
+            });
+            await response.body?.cancel();
+          }
+          if (
+            !response.ok ||
+            !response.headers.get("content-type")?.startsWith("image/")
+          )
+            return `${url}: HTTP ${response.status}, not a publicly accessible image`;
+          return undefined;
+        } catch {
+          return `${url}: unavailable (check public hosting and network)`;
+        }
+      }),
+    )
+  ).filter(Boolean);
+  if (failures.length)
+    throw new Error(
+      "Marketplace images would be broken:\n" + failures.join("\n"),
+    );
+  process.stdout.write(`Verified ${urls.size} public README images.\n`);
+}
 
 process.stdout.write(
   `Verified ${archivePath}: ${entries.size} files, version ${sourceManifest.version}.\n`,

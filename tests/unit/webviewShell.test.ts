@@ -57,6 +57,19 @@ void describe("Webview shell", () => {
 
     assert.match(html, /id="theme-toggle"/);
     assert.match(html, /id="clock"/);
+    assert.match(
+      html,
+      /jiraDisplayName=state.connection&&state.currentUser\?\.displayName/u,
+    );
+    assert.match(html, /jiraDisplayName\?", "\+jiraDisplayName/u);
+    assert.match(html, /\.clock\{font-size:1.2rem/u);
+    assert.match(html, /id="zoom-in"/u);
+    assert.match(html, /id="zoom-out"/u);
+    assert.match(html, /id="zoom-reset"/u);
+    assert.match(
+      html,
+      /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,22rem\),1fr\)\)/u,
+    );
     assert.match(html, /vscode\.getState\(\)/);
     assert.match(html, /vscode\.setState/);
     assert.match(html, /setInterval\(updateClock,1000\)/);

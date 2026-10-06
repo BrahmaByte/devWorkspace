@@ -1,7 +1,7 @@
 # DevDashboardV1
 
 <p align="center">
-  <img src="assets/devdashboardv1-icon.png" width="128" height="128" alt="DevDashboardV1 logo" />
+  <img src="https://BrahmaByte.gallery.vsassets.io/_apis/public/gallery/publisher/BrahmaByte/extension/devdashboardv1/latest/assetbyname/Microsoft.VisualStudio.Services.Icons.Default" width="128" height="128" alt="DevDashboardV1 logo" />
 </p>
 
 A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
@@ -18,11 +18,11 @@ You can reopen the dashboard at any time with the same command.
 For manual installation, run **Extensions: Install from VSIX…**, select
 `devdashboardv1.vsix`, and reload VS Code.
 
-## Version 0.1.5
+## Version 0.1.6
 
-- Added the compact Developer apps launcher with installed icons and running status.
-- Fixed macOS app launching and false errors after successfully closing an app.
-- Improved Jira syncing and issue details, and corporate proxy connectivity.
+- Added full-screen Jira details and comments, plus faster Confluence reopening.
+- Improved saved card layouts and Settings grid.
+- Added a personalized Jira greeting, larger clock, and dashboard zoom controls.
 
 ## Screenshots
 
@@ -39,6 +39,18 @@ Current extension UI with illustrative sample data; no personal or corporate dat
 ### Notes
 
 ![Notes browser and autosaving editor](assets/screenshots/notes.png)
+
+### Jira issue viewer
+
+![Full-screen Jira details and comments](assets/screenshots/jira-reader.png)
+
+### Confluence
+
+![Formatted Confluence page and metadata](assets/screenshots/knowledge.png)
+
+### Settings
+
+![Settings connection cards in a responsive grid](assets/screenshots/settings.png)
 
 ## Home
 
@@ -164,11 +176,15 @@ to remove it. Other extensions and VS Code settings are unchanged.
 
 ## Appearance and layout
 
+- The header greets you using your connected Jira display name and shows local time.
+- Use the zoom icons to scale the dashboard from 80% to 150%; click the percentage
+  to reset. `Ctrl/Cmd` with `+`, `-`, or `0` and `Ctrl/Cmd` + wheel also work when
+  the dashboard has focus. VS Code may handle its own global zoom shortcuts.
 - Use the header theme icon to switch between light and dark mode.
 - Resize cards from their lower-right edge.
 - Drag cards with the grip icon, or focus the grip and use the arrow keys, to
   rearrange them.
-- Theme and card layout are restored when the dashboard is reopened.
+- Theme, zoom, and card layout are restored when the dashboard is reopened.
 - Window resizing temporarily constrains cards without replacing saved sizes.
 
 ## Troubleshooting
