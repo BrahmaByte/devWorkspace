@@ -8,6 +8,7 @@ interface ExtensionManifest {
   readonly activationEvents?: readonly string[];
   readonly icon?: string;
   readonly contributes?: {
+    readonly viewsWelcome?: readonly unknown[];
     readonly viewsContainers?: {
       readonly activitybar?: ReadonlyArray<{ id: string; icon: string }>;
     };
@@ -102,6 +103,7 @@ void describe("Extension manifest", () => {
   });
   void it("contributes a native dockable dashboard with a packaged generic icon", () => {
     const manifest = readManifest();
+    assert.equal(manifest.contributes?.viewsWelcome, undefined);
     assert.deepEqual(manifest.contributes?.views?.devdashboardv1, [
       { id: "devdashboardv1.sidebar", name: "Dashboard" },
     ]);

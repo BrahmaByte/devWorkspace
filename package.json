@@ -53,12 +53,6 @@
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "devdashboardv1.sidebar",
-        "contents": "[Open DevDashboardV1 in the editor](command:devdashboardv1.dock)"
-      }
-    ],
     "menus": {
       "view/title": [
         {

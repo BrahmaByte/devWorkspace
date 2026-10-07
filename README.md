@@ -9,19 +9,12 @@ A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
 ## Install and open
 
 Install [DevDashboardV1 from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
-Then run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
+Click the Activity Bar icon, or run **DevDashboardV1: Open DevDashboardV1**
+from the Command Palette. The dashboard opens in the editor area.
 
-You can reopen the dashboard at any time with the same command.
-
-On first use, a starter guide opens automatically and walks through each page.
-Use **Back**, **Next**, **Skip**, or **Escape**; the dashboard remains usable.
-Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
-After an update, a shorter **What's new** guide appears once per installed
-version. Skipping or closing it will not cause repeated prompts on restart.
-
-Use the Activity Bar icon or **DevDashboardV1: Open dashboard from dock** to open
-the dashboard in the editor area. The dock is a launcher, not a second dashboard.
-Move its view to VS Code's Secondary Side Bar if you prefer a right-side launcher.
+A short tour appears on first use. Reopen it with the header's question-mark
+button. After an update, **What's new** highlights the changes once; use Skip
+or Escape to dismiss it.
 
 ## Version 0.1.12
 

@@ -130,6 +130,7 @@ void describe("Dashboard walkthrough", () => {
       },
       iconButton: (_icon: string, label: string, action: () => void) => {
         const element = new Element();
+        element.setAttribute("data-icon", _icon);
         element.setAttribute("aria-label", label);
         element.addEventListener("click", action);
         return element;
@@ -146,6 +147,11 @@ void describe("Dashboard walkthrough", () => {
         data: { type: "walkthrough.state", mode, version: "0.1.10" },
       });
     const panel = body.children[0]!;
+    assert.equal(header.children[0]?.attributes.get("data-icon"), "help");
+    assert.equal(
+      header.children[0]?.attributes.get("aria-label"),
+      "Show starter guide",
+    );
     const [skip, back, next] = panel.children[3]!.children;
     assert.equal(panel.hidden, true);
     send("invalid");
@@ -174,14 +180,11 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(page, "notes");
     send("update");
     assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
-    assert.match(
-      panel.children[1]!.textContent,
-      /Saved proxy compatibility restored/u,
-    );
+    assert.match(panel.children[1]!.textContent, /Choose your proxy route/u);
     assert.equal(page, "settings");
     next!.click();
     assert.equal(page, "workspace");
-    assert.match(panel.children[2]!.textContent, /masked native prompts/u);
+    assert.match(panel.children[2]!.textContent, /masked VS Code prompts/u);
     skip!.click();
     assert.equal(page, "notes");
     send("tour");
@@ -191,7 +194,7 @@ void describe("Dashboard walkthrough", () => {
     });
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
-    header.children[0]!.click();
+    header.children[0].click();
     assert.equal(requests.at(-1)?.type, "walkthrough.open");
     assert.ok(flushes > 0);
     assert.ok(

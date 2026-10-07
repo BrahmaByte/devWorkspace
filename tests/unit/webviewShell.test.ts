@@ -5,6 +5,45 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("omits redundant page headings while keeping accessible navigation and compact group editing", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.doesNotMatch(
+      html,
+      /<h1(?: id="notes-heading")?>(?:Home|Global search|Jira|Workspace|Notes|Knowledge|Settings)<\/h1>/u,
+    );
+    assert.doesNotMatch(html, /#notes-heading|home-heading/u);
+    for (const name of [
+      "Home",
+      "Jira",
+      "Workspace",
+      "Notes",
+      "Knowledge",
+      "Settings",
+      "Global search",
+    ])
+      assert.ok(html.includes(`<section role="region" aria-label="${name}"`));
+    assert.match(
+      html,
+      /\.url-group-summary\{grid-template-columns:minmax\(0,1fr\) auto 2\.2rem\}/u,
+    );
+    assert.match(
+      html,
+      /\.url-group-summary>\.icon-button\{[^}]+width:2\.2rem/u,
+    );
+    assert.match(
+      html,
+      /summary\.append\(iconButton\("edit","Edit "\+group\.name/u,
+    );
+    assert.doesNotMatch(
+      html,
+      /actions\.append\(iconButton\("edit","Edit "\+group\.name/u,
+    );
+    assert.doesNotMatch(
+      html,
+      /\[aria-label="(?:Jira|Workspace|Notes|Knowledge)" data-page=/u,
+    );
+    assert.match(html, /<symbol id="i-help"/u);
+  });
   void it("debounces full-text wiki suggestions and ignores obsolete results while progressively updating focus media", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /Search titles, page text and labels/u);

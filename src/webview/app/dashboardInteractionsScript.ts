@@ -4,7 +4,10 @@ export const dashboardInteractionsStyles = String.raw`
 .jira-quick-filters{display:flex;align-items:center;gap:.7rem;margin:.8rem 0;color:var(--muted)}
 .jira-quick-filters select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:.5rem;padding:.5rem;max-width:100%}
 .jira-issue.jira-highlighted{outline:2px solid var(--accent);outline-offset:2px;background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
-.url-group-summary>.icon-button{flex-shrink:0}
+.url-group-summary{grid-template-columns:minmax(0,1fr) auto 2.2rem}
+.url-group-summary>.icon-button{align-items:center;display:flex;height:2.2rem;justify-content:center;justify-self:end;padding:0;width:2.2rem;min-width:2.2rem}
+.page>.dashboard-grid,.page>.workspace-grid,.page>.settings-grid,.page>.knowledge-app{margin-top:0}
+.notes-browser-title{justify-content:flex-end}
 @media(max-width:720px){.app{display:grid;grid-template-columns:3.5rem minmax(0,1fr)}.app>aside{height:calc(100vh / var(--dashboard-zoom,1));top:0}.app>aside nav{grid-template-columns:1fr}.nav-label{display:none}aside button{padding:.65rem}.app-header{flex-wrap:wrap;height:auto;gap:.4rem;padding:.6rem}.header-tools{max-width:6rem}main{padding:.6rem}.dashboard-grid,.workspace-grid,.settings-grid{grid-template-columns:minmax(0,1fr)}.jira-board{grid-template-columns:minmax(0,1fr)}.jira-quick-filters{flex-wrap:wrap}.notes-app{grid-template-columns:minmax(7rem,1fr) minmax(0,2fr)}.sidebar-brand img{max-width:2rem}.layout-card{min-width:0}}
 `;
 
