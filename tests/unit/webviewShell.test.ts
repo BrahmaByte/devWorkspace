@@ -5,6 +5,24 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("aligns board search and field filters without a preset dropdown or duplicate group heading", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /id="jira-board-search"[^>]+maxlength="200"/u);
+    assert.match(
+      html,
+      /id="jira-filter-toggle"[^>]+aria-controls="jira-filter-popover"/u,
+    );
+    assert.match(html, /id="jira-filter-clear"/u);
+    assert.match(html, /\.jira-board-toolbar\{[^}]+padding:\.8rem 1rem 0/u);
+    assert.match(
+      html,
+      /grid-template-columns:minmax\(6rem,9rem\) minmax\(0,1fr\)/u,
+    );
+    assert.doesNotMatch(
+      html,
+      /jira-preset|jira-quick-filters|detailName\.textContent|detailHeader\.append\(detailTitle/u,
+    );
+  });
   void it("omits redundant page headings while keeping accessible navigation and compact group editing", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.doesNotMatch(
@@ -198,7 +216,7 @@ void describe("Webview shell", () => {
     assert.match(html, /type:"urls\.open"/);
     assert.match(html, /className="url-group-detail"/);
     assert.match(html, /className="url-group-count"/);
-    assert.match(html, /Open one link or launch the full group/);
+    assert.match(html, /detailHeader\.append\(actions\)/u);
     assert.match(html, /\.url-group:hover \.url-group-detail/);
     assert.match(html, /<symbol id="i-link"/);
     assert.match(html, /<symbol id="i-external"/);

@@ -7,7 +7,7 @@ export const walkthroughScript = String.raw`
 const tourSteps=[
  {page:"home",title:"Keep frequently used tools here",text:"Add a sticky note with plus. Open a recent Jira issue, edit a URL group with the pencil, or launch an app from its tile."},
  {page:"settings",title:"Connect Jira and Confluence",text:"Enter your site URL, then your credentials in the VS Code prompts. If your network needs a proxy, configure it in Network proxy."},
- {page:"jira",title:"Filter your board",text:"Choose a quick filter or enter JQL. Sync refreshes the board; click an issue for details and comments. Local-only cards are not sent to Jira."},
+ {page:"jira",title:"Filter your board",text:"Use board search and Filter to narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
  {page:"workspace",title:"Open a project or run a command",text:"Choose a project folder to open it or its terminal. Save a command shortcut, then use Run and approve the confirmation."},
  {page:"notes",title:"Write a note",text:"Use the new-note icon and start typing. Notes save automatically. Select an existing note to edit it."},
  {page:"knowledge",title:"Read a Confluence page",text:"Search for a page and select a result. Use Focus Reader for a full-screen view, or Bookmark to save a reference in Notes."},

@@ -36,7 +36,7 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
-  void it("launches the editor when the dock becomes visible and reuses an open dashboard", () => {
+  void it("closes the empty launcher before opening the editor and reuses an open dashboard", async () => {
     const host = readFileSync(
       resolve(__dirname, "../../../src/extension/extension.ts"),
       "utf8",
@@ -47,10 +47,11 @@ void describe("Extension manifest", () => {
         host.indexOf("  const openSearch ="),
       )
       .replace("<vscode.TreeItem>", "");
-    let visibility!: (event: { visible: boolean }) => void;
+    let visibility!: (event: { visible: boolean }) => Promise<void>;
     let dock!: () => void;
     let opened = 0,
       revealed = 0;
+    const closed: string[] = [];
     const context = {
       dashboardPanel: undefined as
         { reveal: (column: number) => void } | undefined,
@@ -81,6 +82,10 @@ void describe("Extension manifest", () => {
           },
         },
         commands: {
+          executeCommand: (id: string) => {
+            closed.push(id);
+            return Promise.resolve();
+          },
           registerCommand: (id: string, command: () => void) => {
             assert.equal(id, "devdashboardv1.dock");
             dock = command;
@@ -89,11 +94,13 @@ void describe("Extension manifest", () => {
       },
     };
     runInNewContext(code, context);
-    visibility({ visible: false });
+    await visibility({ visible: false });
     assert.equal(opened, 0);
-    visibility({ visible: true });
+    assert.equal(closed.length, 0);
+    await visibility({ visible: true });
     assert.equal(opened, 1);
-    visibility({ visible: true });
+    assert.deepEqual(closed, ["workbench.action.closeSidebar"]);
+    await visibility({ visible: true });
     dock();
     assert.equal(opened, 1);
     assert.equal(revealed, 2);
@@ -123,7 +130,8 @@ void describe("Extension manifest", () => {
       "utf8",
     );
     assert.match(host, /createTreeView<vscode.TreeItem>/u);
-    assert.match(host, /if \(visible\) launchDashboard\(\)/u);
+    assert.match(host, /if \(!visible\) return/u);
+    assert.match(host, /executeCommand\("workbench.action.closeSidebar"\)/u);
     assert.match(host, /dashboardPanel\.reveal\(vscode.ViewColumn.One\)/u);
     assert.doesNotMatch(host, /registerWebviewViewProvider|dockedView/u);
   });

@@ -71,9 +71,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
-- Quick filters offer my open work, reported by me, unassigned open work,
-  updated in the last seven days, and my completed work. Each applies and saves
-  its JQL in the same filter field; you can edit it further.
+- Search the loaded board by issue key or summary. Open **Filter** to select
+  Parent, Assignee, Status, Work type or Labels; **Clear all** resets these
+  board filters without changing your saved JQL.
 - Use the sync icon to refresh Jira on demand while retaining the saved filter.
 - Select an issue for a full-screen viewer with formatted details and comments.
   Load more comments, refresh the thread, or open it in your default browser.

@@ -1116,8 +1116,10 @@ export async function activate(
     },
   );
   const dockVisibility = dockedDashboard.onDidChangeVisibility(
-    ({ visible }) => {
-      if (visible) launchDashboard();
+    async ({ visible }) => {
+      if (!visible) return;
+      await vscode.commands.executeCommand("workbench.action.closeSidebar");
+      launchDashboard();
     },
   );
   const dockCommand = vscode.commands.registerCommand(

@@ -16,6 +16,7 @@ class Element {
   };
   public listeners: Record<string, (event?: unknown) => void> = {};
   public value = "";
+  public checked = false;
   public hidden = false;
   public textContent = "";
   public append(...children: Element[]) {
@@ -54,10 +55,13 @@ void describe("dashboard interactions", () => {
     const context = createContext({
       document: {
         querySelector,
-        querySelectorAll: () =>
-          flatten(querySelector("#jira-issues")).filter(
-            (row) => row.dataset.issueKey,
-          ),
+        addEventListener: () => {},
+        querySelectorAll: (selector: string) =>
+          selector === "#jira-filter-fields button"
+            ? querySelector("#jira-filter-fields").children
+            : flatten(querySelector("#jira-issues")).filter(
+                (row) => row.dataset.issueKey,
+              ),
         createElement: () => new Element(),
       },
       window: {
@@ -90,9 +94,40 @@ void describe("dashboard interactions", () => {
       iconButton: () => new Element(),
     });
     runInContext(dashboardInteractionsScript, context);
+    runInContext(
+      `
+      const issues=[
+        {key:"DEV-1",summary:"Alpha",assignee:"Ada",status:"To Do",issueType:"Task",parentKey:"DEV-9",labels:["api","urgent"]},
+        {key:"DEV-2",summary:"Beta",status:"Done",issueType:"Story",labels:[]}
+      ];
+      jiraBoardSelections={assignee:["Ada"],labels:["api","urgent"]};
+    `,
+      context,
+    );
+    assert.equal(runInContext("jiraFilteredIssues(issues).length", context), 1);
+    runInContext('jiraBoardSelections.status=["Done"]', context);
+    assert.equal(runInContext("jiraFilteredIssues(issues).length", context), 0);
+    runInContext('jiraBoardSelections={assignee:["Unassigned"]}', context);
+    assert.equal(
+      runInContext("jiraFilteredIssues(issues)[0].key", context),
+      "DEV-2",
+    );
+    assert.equal(
+      runInContext(
+        'jiraBoardMatches({summary:"Local",status:"Done"},true)',
+        context,
+      ),
+      false,
+    );
+    runInContext('jiraBoardSelections={};jiraBoardSearch="beta"', context);
+    assert.equal(
+      runInContext("jiraFilteredIssues(issues)[0].key", context),
+      "DEV-2",
+    );
+    runInContext('jiraBoardSearch=""', context);
     const renderLine = createWebviewHtml("vscode-webview://test")
       .split("\n")
-      .find((line) => line.startsWith("function renderJira(state)"))!;
+      .find((line) => line.startsWith("function renderJira("))!;
     runInContext(renderLine, context);
     runInContext(
       'const state={connection:{displayName:"Jira",baseUrl:"https://jira.example.test"},issues:[],localCards:[],filter:"project = OTHER"};renderJira(state);renderRecentJira([{key:"DEV-7",summary:"Recent",status:"Done",updatedAt:"2026-10-07T00:00:00Z"}]);',
@@ -117,6 +152,7 @@ void describe("dashboard interactions", () => {
       runInContext("latestJiraState.filter", context),
       "project = OTHER",
     );
+    assert.equal(querySelector("#jira-filter-fields").children.length, 5);
     selected.listeners.click!();
     assert.deepEqual(opened, ["DEV-7"]);
     runInContext("renderJira(state)", context);
@@ -150,5 +186,31 @@ void describe("dashboard interactions", () => {
     assert.equal(querySelector("#url-group-form").hidden, false);
     listeners.forEach((listener) => listener({ data: { type: "urls.saved" } }));
     assert.equal(querySelector("#url-group-form").hidden, true);
+    runInContext(
+      "latestJiraState={...state,issues};renderJira(latestJiraState)",
+      context,
+    );
+    querySelector("#jira-filter-fields").children[1]!.listeners.click!();
+    const assignee = querySelector("#jira-filter-options").children[1]!;
+    assert.equal(assignee.children[1]!.textContent, "Ada");
+    assignee.children[0]!.checked = true;
+    assignee.children[0]!.listeners.change!();
+    assert.equal(runInContext("jiraFilteredIssues(issues).length", context), 1);
+    assert.equal(querySelector("#jira-filter-count").textContent, "1 active");
+    assert.equal(
+      runInContext("latestJiraState.filter", context),
+      "project = OTHER",
+    );
+    runInContext("jiraSyncPending=true;refreshJiraBoardFilters()", context);
+    assert.equal(runInContext("jiraSyncPending", context), true);
+    querySelector("#jira-filter-clear").listeners.click!();
+    assert.equal(runInContext("jiraFilteredIssues(issues).length", context), 2);
+    assert.equal(querySelector("#jira-filter-count").textContent, "");
+    assert.equal(
+      messages.some(
+        (message) => (message as { type: string }).type === "jira.preset",
+      ),
+      false,
+    );
   });
 });
