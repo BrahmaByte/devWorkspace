@@ -27,6 +27,7 @@ export const shellPages = [
 export type ShellPage = (typeof shellPages)[number];
 
 export type WebviewRequest =
+  | { readonly type: "walkthrough.open" }
   | { readonly type: "network.configure" }
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
@@ -155,6 +156,11 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | {
+      readonly type: "walkthrough.state";
+      readonly mode: "tour" | "update";
+      readonly version: string;
+    }
   | {
       readonly type: "home.state";
       readonly state: HomeState;

@@ -3,7 +3,7 @@
   "displayName": "DevDashboardV1",
   "description": "A local-first developer command center inside VS Code.",
   "icon": "assets/devdashboardv1-icon.png",
-  "version": "0.1.7",
+  "version": "0.1.10",
   "publisher": "BrahmaByte",
   "private": true,
   "license": "Apache-2.0",
@@ -24,6 +24,8 @@
     "workspace"
   ],
   "activationEvents": [
+    "onStartupFinished",
+    "onCommand:devdashboardv1.guide",
     "onCommand:devdashboardv1.open",
     "onCommand:devdashboardv1.search"
   ],
@@ -33,6 +35,11 @@
   ],
   "contributes": {
     "commands": [
+      {
+        "command": "devdashboardv1.guide",
+        "title": "Show starter guide",
+        "category": "DevDashboardV1"
+      },
       {
         "command": "devdashboardv1.open",
         "title": "Open DevDashboardV1",

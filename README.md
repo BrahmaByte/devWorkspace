@@ -13,13 +13,17 @@ Then run **DevDashboardV1: Open DevDashboardV1** from the Command Palette.
 
 You can reopen the dashboard at any time with the same command.
 
-## Version 0.1.7
+On first use, a starter guide opens automatically and walks through each page.
+Use **Back**, **Next**, **Skip**, or **Escape**; the dashboard remains usable.
+Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
+After an update, a shorter **What's new** guide appears once per installed
+version. Skipping or closing it will not cause repeated prompts on restart.
 
-- Added full-screen Jira details and comments, plus faster Confluence reopening.
-- Improved saved card layouts and Settings grid.
-- Added a personalized Jira greeting, larger clock, and dashboard zoom controls.
-- Refined sticky notes, floating zoom controls, and rearrangeable Settings cards.
-- Added cross-platform release validation and versioned extension packages.
+## Version 0.1.10
+
+- Added a skippable starter tour, replay controls and once-per-version update guide.
+- Added secure network logs and accurate proxy rejection messages.
+- Improved proxy credential setup instructions.
 
 ## Screenshots
 

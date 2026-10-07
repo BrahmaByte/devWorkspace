@@ -2,6 +2,10 @@ import * as vscode from "vscode";
 import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
+import {
+  walkthroughMode,
+  walkthroughVersionKey,
+} from "../application/services/walkthrough";
 import { ConfluenceService } from "../application/services/confluenceService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
@@ -53,12 +57,18 @@ import { parseWebviewRequest } from "../webview/protocol/validation";
 
 const OPEN_COMMAND = "devdashboardv1.open";
 const SEARCH_COMMAND = "devdashboardv1.search";
+const GUIDE_COMMAND = "devdashboardv1.guide";
 const LEGACY_OPEN_COMMAND = "devworkspace.open";
 const LEGACY_SEARCH_COMMAND = "devworkspace.search";
 
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
+  const version = (
+    context.extension.packageJSON as { readonly version: string }
+  ).version;
+  let walkthroughShown = false;
+  let panelOpened = false;
   const database = await LocalDatabase.open(
     await prepareDatabasePath(context.globalStorageUri.fsPath),
   );
@@ -131,7 +141,12 @@ export async function activate(
     },
   });
 
-  const showDevDashboardV1 = (initialPage: ShellPage): void => {
+  const showDevDashboardV1 = (
+    initialPage: ShellPage,
+    replayGuide = false,
+  ): void => {
+    panelOpened = true;
+    let replayPending = replayGuide;
     let activePage: ShellPage = initialPage;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
@@ -247,8 +262,38 @@ export async function activate(
             case "network.configure":
               await extensionProxy.configure();
               return;
+            case "walkthrough.open":
+              await panel.webview.postMessage({
+                type: "walkthrough.state",
+                mode: "tour",
+                version,
+              } satisfies ExtensionResponse);
+              return;
             case "shell.ready":
               await sendState();
+              {
+                const mode = replayPending
+                  ? "tour"
+                  : walkthroughShown
+                    ? undefined
+                    : walkthroughMode(
+                        context.globalState.get<string>(walkthroughVersionKey),
+                        version,
+                      );
+                replayPending = false;
+                if (mode) {
+                  walkthroughShown = true;
+                  await context.globalState.update(
+                    walkthroughVersionKey,
+                    version,
+                  );
+                  await panel.webview.postMessage({
+                    type: "walkthrough.state",
+                    mode,
+                    version,
+                  } satisfies ExtensionResponse);
+                }
+              }
               await sendNotes();
               await sendWorkspace();
               await sendHome();
@@ -813,6 +858,9 @@ export async function activate(
   const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
     showDevDashboardV1("search"),
   );
+  const openGuide = vscode.commands.registerCommand(GUIDE_COMMAND, () =>
+    showDevDashboardV1("home", true),
+  );
   const openLegacyDevWorkspace = vscode.commands.registerCommand(
     LEGACY_OPEN_COMMAND,
     () => showDevDashboardV1("home"),
@@ -825,9 +873,22 @@ export async function activate(
   context.subscriptions.push(
     openDevDashboardV1,
     openSearch,
+    openGuide,
     openLegacyDevWorkspace,
     openLegacySearch,
   );
+  // Let an activating command open its own panel before automatic onboarding.
+  const onboardingTimer = setTimeout(() => {
+    if (
+      !panelOpened &&
+      walkthroughMode(
+        context.globalState.get<string>(walkthroughVersionKey),
+        version,
+      )
+    )
+      showDevDashboardV1("home");
+  }, 0);
+  context.subscriptions.push({ dispose: () => clearTimeout(onboardingTimer) });
 }
 
 export function deactivate(): void {

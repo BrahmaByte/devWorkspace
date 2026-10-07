@@ -27,6 +27,15 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("activates onboarding after startup and provides a replay command", () => {
+    const manifest = readManifest();
+    assert.ok(manifest.activationEvents?.includes("onStartupFinished"));
+    assert.ok(
+      manifest.contributes?.commands?.some(
+        ({ command }) => command === "devdashboardv1.guide",
+      ),
+    );
+  });
   void it("uses the packaged DevDashboardV1 Marketplace icon", () => {
     assert.equal(readManifest().icon, "assets/devdashboardv1-icon.png");
   });

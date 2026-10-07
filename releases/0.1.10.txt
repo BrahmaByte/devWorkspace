@@ -1,0 +1,12 @@
+DevDashboardV1 0.1.10
+
+Getting started
+- The dashboard opens a skippable, page-by-page starter tour on first use.
+- Back, Next, Skip and Escape help users explore without changing their data.
+- Replay from the header guide icon or DevDashboardV1: Show starter guide.
+- Returning users see a short What's new walkthrough once per installed version.
+- The last shown version is remembered locally in VS Code global state.
+
+Includes the recent secure proxy diagnostics and accurate CONNECT rejection
+messages. Credentials stay in SecretStorage; guides do not execute commands or
+create sample data. No Marketplace publication is performed by the local build.

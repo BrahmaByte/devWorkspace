@@ -83,6 +83,11 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "shell.ready" } }
       : { ok: false, error: "shell.ready contains unknown fields." };
   }
+  if (value.type === "walkthrough.open") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "walkthrough.open" } }
+      : { ok: false, error: "walkthrough.open contains unknown fields." };
+  }
   if (value.type === "home.refresh") {
     return hasOnlyKeys(value, ["type"])
       ? { ok: true, value: { type: "home.refresh" } }
