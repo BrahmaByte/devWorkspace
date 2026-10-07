@@ -81,8 +81,29 @@ Use Workspace to manage local development tools:
   Git branch, and open a VS Code terminal in a project.
 - **Command shortcuts:** save a command with an optional terminal folder. Running
   it opens a visible VS Code terminal and requires confirmation when appropriate.
-- **Environment profiles:** save environment-variable names for reference. Secret
-  values are not stored.
+- **User environment:** search by variable name (up to 50 matches; values stay
+  hidden). Use plus or edit, then enter a non-secret name and masked value in
+  native VS Code prompts. Choose overwrite or append and confirm persistence.
+  PATH append adds `;` on Windows or `:` on macOS/Linux; other variables append
+  the exact entered text. Old saved profile references remain in a collapsed list.
+
+Persistent edits require a trusted workspace and affect only your user, never
+machine settings. Windows writes the User environment registry. macOS/Linux use
+the supported user shell's startup file: `.zshenv`, or Bash's existing
+`.bash_profile`/`.bash_login`, otherwise `.profile` (also sh/dash/ksh).
+These are **future shell sessions, not a universal GUI-app environment**.
+Existing processes retain old values; fully restart VS Code or sign out/in as
+needed. Later shell configuration can override startup values. Unmanaged Unix
+variables append to VS Code's inherited value; existing managed entries append
+to their saved value. Search includes inherited names and simple user-file assignments.
+
+OS environment values are plaintext—never use this for credentials. Common
+credential names and startup/security hooks are blocked. Values never enter the
+dashboard, database, settings or logs. Symlinked, oversized, non-UTF-8, foreign-owned
+and externally changed startup files are rejected; custom ZDOTDIR and other shells
+require manual setup. OS changes remain after uninstall and are not included in
+database snapshots. Remove the marked file block or Windows user entry manually
+to undo. Native file updates restrict permissions to the current user.
 
 Command text is preserved exactly, including repeated spaces.
 

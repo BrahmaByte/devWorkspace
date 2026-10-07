@@ -228,7 +228,7 @@ void describe("Webview shell", () => {
   void it("provides icon-driven workspace management", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
-    for (const id of ["project-form", "command-form", "environment-form"])
+    for (const id of ["project-form", "command-form", "environment-search"])
       assert.match(html, new RegExp(`id="${id}"`));
     assert.match(html, /message\?\.type==="workspace\.state"/);
     assert.match(html, /type:"commands\.execute"/);
@@ -253,10 +253,7 @@ void describe("Webview shell", () => {
       /id="command-project"|id="command-shell"|id="command-policy"|id="command-platform"/,
     );
     assert.doesNotMatch(html, /querySelector\("#command-project"\)/);
-    assert.match(
-      html,
-      /fillProjectSelect=\(select,includeAll\)=>\{if\(!select\)return/,
-    );
+    assert.doesNotMatch(html, /fillProjectSelect/);
     assert.match(html, /class="icon-button primary-icon-button"/);
     assert.match(html, /workspace-item-copy strong\{display:inline-block\}/);
     assert.match(
@@ -268,6 +265,22 @@ void describe("Webview shell", () => {
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
     );
+  });
+
+  void it("keeps user environment search minimal and values confined to native prompts", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    const form = html.match(
+      /<form id="environment-search"[^>]*>(.*?)<\/form>/u,
+    )?.[1];
+    assert.ok(form);
+    assert.equal((form.match(/<input\b/gu) || []).length, 1);
+    assert.match(form, /id="environment-query"/u);
+    assert.match(form, /id="environment-add"/u);
+    assert.doesNotMatch(
+      html,
+      /environment-project|environment-description|environment-name|environment-variables|environment-form|fillProjectSelect/u,
+    );
+    assert.match(html, /type:"environment.configure"/u);
   });
 
   void it("shows the theme action with the correct sun or moon icon", () => {

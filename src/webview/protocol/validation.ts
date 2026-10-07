@@ -514,5 +514,26 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       },
     };
   }
+  if (value.type === "environment.search") {
+    return hasOnlyKeys(value, ["type", "query"]) &&
+      isString(value.query, 100) &&
+      !/[\r\n\0]/u.test(value.query)
+      ? { ok: true, value: { type: value.type, query: value.query } }
+      : { ok: false, error: "Invalid environment search." };
+  }
+  if (value.type === "environment.configure") {
+    return hasOnlyKeys(value, ["type", "name"]) &&
+      (value.name === undefined ||
+        (typeof value.name === "string" &&
+          /^[A-Za-z_][A-Za-z0-9_]{0,99}$/u.test(value.name)))
+      ? {
+          ok: true,
+          value: {
+            type: value.type,
+            ...(value.name === undefined ? {} : { name: value.name }),
+          },
+        }
+      : { ok: false, error: "Invalid environment action." };
+  }
   return { ok: false, error: "Unknown message type." };
 }

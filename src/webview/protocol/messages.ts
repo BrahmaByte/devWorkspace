@@ -125,6 +125,8 @@ export type WebviewRequest =
     }
   | { readonly type: "sticky.delete"; readonly id: string }
   | { readonly type: "workspace.refresh" }
+  | { readonly type: "environment.search"; readonly query: string }
+  | { readonly type: "environment.configure"; readonly name?: string }
   | { readonly type: "projects.browse" }
   | { readonly type: "commands.browse" }
   | {
@@ -157,6 +159,12 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | {
+      readonly type: "environment.results";
+      readonly query: string;
+      readonly names: readonly string[];
+      readonly message?: string;
+    }
   | {
       readonly type: "walkthrough.state";
       readonly mode: "tour" | "update";

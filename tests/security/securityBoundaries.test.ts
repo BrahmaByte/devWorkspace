@@ -17,6 +17,10 @@ void describe("security boundaries", () => {
       { type: "jira.connect", displayName: "x", baseUrl: "x", pat: "fake" },
       { type: "apps.launch", id: "x", executablePath: "/bin/sh" },
       { type: "apps.browse", executablePath: "/bin/sh" },
+      { type: "environment.configure", name: "DEV_FAKE", value: "fake-secret" },
+      { type: "environment.configure", name: "PATH", mode: "overwrite" },
+      { type: "environment.configure", name: "BAD;command" },
+      { type: "environment.search", query: "a\nb" },
     ];
     for (const payload of payloads)
       assert.equal(parseWebviewRequest(payload).ok, false);

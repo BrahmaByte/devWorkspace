@@ -28,6 +28,11 @@ import { UrlGroupService } from "../application/services/urlGroupService";
 import { DeveloperApplicationService } from "../application/services/developerApplicationService";
 import { prepareDatabasePath } from "../infrastructure/database/location";
 import { LocalDatabase } from "../infrastructure/database/localDatabase";
+import {
+  UserEnvironment,
+  UserEnvironmentError,
+  validateEnvironmentName,
+} from "../platform/userEnvironment";
 import { NoteRepository } from "../infrastructure/database/noteRepository";
 import { ConfluenceRepository } from "../infrastructure/database/confluenceRepository";
 import { JiraRepository } from "../infrastructure/database/jiraRepository";
@@ -126,6 +131,8 @@ export async function activate(
   const noteRepository = new NoteRepository(database);
   const noteService = new NoteService(noteRepository);
   const platform = createPlatformService();
+  const userEnvironment = new UserEnvironment(platform.operatingSystem);
+  let environmentEditPending = false;
   const workspaceRepository = new WorkspaceRepository(database);
   const workspaceService = new WorkspaceService(
     workspaceRepository,
@@ -873,6 +880,95 @@ export async function activate(
             case "commands.execute":
               await commandExecutionService.execute(request.id);
               break;
+            case "environment.search": {
+              const names = vscode.workspace.isTrusted
+                ? await userEnvironment.search(request.query)
+                : [];
+              await panel.webview.postMessage({
+                type: "environment.results",
+                query: request.query,
+                names,
+                ...(!vscode.workspace.isTrusted
+                  ? {
+                      message:
+                        "Trust this workspace before searching your user environment.",
+                    }
+                  : {}),
+              } satisfies ExtensionResponse);
+              return;
+            }
+            case "environment.configure": {
+              if (!vscode.workspace.isTrusted) {
+                await vscode.window.showWarningMessage(
+                  "Trust this workspace before editing your OS user environment.",
+                );
+                return;
+              }
+              if (environmentEditPending) return;
+              environmentEditPending = true;
+              try {
+                const name = await vscode.window.showInputBox({
+                  title: "Persistent user environment",
+                  value: request.name,
+                  prompt:
+                    "Non-secret variable name. User scope only; no administrator access.",
+                  ignoreFocusOut: true,
+                  validateInput: (value) => {
+                    try {
+                      validateEnvironmentName(value);
+                      return undefined;
+                    } catch {
+                      return "Use a non-secret name; startup/security hooks are blocked.";
+                    }
+                  },
+                });
+                if (name === undefined) return;
+                validateEnvironmentName(name);
+                const choice = await vscode.window.showQuickPick(
+                  [
+                    { label: "Overwrite", mode: "overwrite" as const },
+                    { label: "Append", mode: "append" as const },
+                  ],
+                  {
+                    title: "How should the user environment variable change?",
+                    ignoreFocusOut: true,
+                  },
+                );
+                if (!choice) return;
+                const value = await vscode.window.showInputBox({
+                  title: "Environment value (not a secret)",
+                  password: true,
+                  ignoreFocusOut: true,
+                  prompt:
+                    "OS environment values are plaintext. Do not enter tokens or passwords. Append preserves exact text; PATH adds the OS delimiter automatically.",
+                  validateInput: (value) =>
+                    !value.length ||
+                    value.length > 16000 ||
+                    /[\r\n\0]/u.test(value)
+                      ? "Enter a non-empty single-line value (maximum 16000 characters)."
+                      : undefined,
+                });
+                if (value === undefined) return;
+                const change = await userEnvironment.prepare(
+                  name,
+                  value,
+                  choice.mode,
+                );
+                const approved = await vscode.window.showWarningMessage(
+                  `${choice.label} ${name} permanently in ${change.location}? OS environment values are plaintext. Existing processes are not updated. PATH changes affect which programs run. No system-wide settings or credentials are changed.`,
+                  { modal: true },
+                  "Save user environment",
+                );
+                if (approved !== "Save user environment") return;
+                await change.commit();
+                await vscode.window.showInformationMessage(
+                  "User environment saved. Open a new shell or sign out/in and fully restart VS Code as needed. Existing processes keep their old environment.",
+                );
+              } finally {
+                environmentEditPending = false;
+              }
+              return;
+            }
             case "environments.create":
               await workspaceService.createEnvironment(
                 request.projectId,
@@ -893,6 +989,21 @@ export async function activate(
           else await sendWorkspace();
           await sendHome();
         } catch (error) {
+          if (request.type.startsWith("environment.")) {
+            const message =
+              error instanceof UserEnvironmentError
+                ? error.message
+                : "The user environment operation could not finish. Check OS permissions and retry; no administrator elevation or policy bypass was attempted.";
+            if (request.type === "environment.search")
+              await panel.webview.postMessage({
+                type: "environment.results",
+                query: request.query,
+                names: [],
+                message,
+              } satisfies ExtensionResponse);
+            else await vscode.window.showErrorMessage(message);
+            return;
+          }
           if (request.type.startsWith("apps.")) {
             const message =
               request.type === "apps.browse"
