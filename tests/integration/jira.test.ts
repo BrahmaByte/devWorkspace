@@ -99,6 +99,79 @@ void afterEach(async () => {
 });
 
 void describe("Jira integration", () => {
+  void it("loads five recent assigned issues independently of the saved board filter", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-recent-jira-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new JiraRepository(database);
+    const secrets = new MemorySecrets();
+    const factory = new FakeFactory();
+    const service = new JiraService(repository, secrets, factory);
+    await service.connect("Jira", "https://jira.example.test", "fake-token");
+    await service.search("project = DEV ORDER BY created DESC");
+    const client = new FakeClient();
+    client.searchIssues = (query: string) => {
+      factory.queries.push(query);
+      return Promise.resolve(
+        Array.from({ length: 7 }, (_, index) => ({
+          ...issue,
+          key: `DEV-${index + 1}`,
+          status: index === 6 ? "Done" : "To Do",
+          updatedAt: `2026-10-0${index + 1}T08:00:00.000Z`,
+        })),
+      );
+    };
+    factory.create = () => client;
+    const recent = await service.getRecentIssues();
+    const queryCount = factory.queries.length;
+    assert.deepEqual(
+      (await service.getRecentIssues(false)).issues,
+      recent.issues,
+    );
+    assert.equal(factory.queries.length, queryCount);
+    assert.deepEqual(
+      recent.issues.map((item) => item.key),
+      ["DEV-7", "DEV-6", "DEV-5", "DEV-4", "DEV-3"],
+    );
+    assert.equal(recent.issues[0]?.status, "Done");
+    assert.equal(
+      factory.queries.at(-1),
+      "assignee = currentUser() ORDER BY updated DESC",
+    );
+    assert.equal(repository.getFilter(), "project = DEV ORDER BY created DESC");
+    assert.equal(
+      repository.listIssues(repository.getConnection()!.id).length,
+      1,
+    );
+    client.searchIssues = () => Promise.reject(new Error("offline"));
+    const offline = await service.getRecentIssues();
+    assert.deepEqual(offline.issues, recent.issues);
+    assert.match(offline.message!, /could not refresh/u);
+    secrets.values.clear();
+    assert.deepEqual((await service.getRecentIssues()).issues, []);
+    await service.connect(
+      "Jira",
+      "https://jira.example.test",
+      "fake-new-token",
+    );
+    let completeSearch!: (issues: JiraIssue[]) => void;
+    let markStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    client.searchIssues = () =>
+      new Promise<JiraIssue[]>((resolve) => {
+        completeSearch = resolve;
+        markStarted();
+      });
+    const pending = service.getRecentIssues();
+    await started;
+    await service.disconnect();
+    completeSearch([issue]);
+    assert.deepEqual((await pending).issues, []);
+    assert.deepEqual((await service.getRecentIssues()).issues, []);
+    database.close();
+  });
   void it("stores PATs only in SecretStorage and restores cached state", async () => {
     const directory = await mkdtemp(join(tmpdir(), "devworkspace-jira-"));
     directories.push(directory);

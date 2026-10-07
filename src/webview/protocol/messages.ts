@@ -11,6 +11,7 @@ import type {
   JiraCommentPage,
   JiraIssue,
   JiraState,
+  JiraQuickFilter,
 } from "../../domain/jira/models";
 import type { WorkspaceState } from "../../domain/workspace/models";
 
@@ -34,6 +35,12 @@ export type WebviewRequest =
   | { readonly type: "home.search"; readonly query: string }
   | {
       readonly type: "urls.create";
+      readonly name: string;
+      readonly urls: readonly string[];
+    }
+  | {
+      readonly type: "urls.update";
+      readonly id: string;
       readonly name: string;
       readonly urls: readonly string[];
     }
@@ -85,6 +92,7 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.open"; readonly issueKey: string }
   | { readonly type: "jira.search"; readonly query: string }
+  | { readonly type: "jira.preset"; readonly preset: JiraQuickFilter }
   | {
       readonly type: "jira.local.create";
       readonly summary: string;
@@ -159,6 +167,7 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | { readonly type: "urls.saved" }
   | {
       readonly type: "environment.results";
       readonly query: string;

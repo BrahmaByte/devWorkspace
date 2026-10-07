@@ -22,6 +22,7 @@ import {
   shouldOfferProxySettings,
 } from "../application/services/integrationError";
 import { JiraService } from "../application/services/jiraService";
+import { jiraQuickFilters } from "../domain/jira/models";
 import { isAtlassianCloud } from "../application/services/atlassianAuth";
 import { WorkspaceService } from "../application/services/workspaceService";
 import { UrlGroupService } from "../application/services/urlGroupService";
@@ -211,6 +212,7 @@ export async function activate(
   const showDevDashboardV1 = (
     initialPage: ShellPage,
     replayGuide = false,
+    dockedView?: vscode.WebviewView,
   ): void => {
     panelOpened = true;
     let replayPending = replayGuide;
@@ -219,18 +221,27 @@ export async function activate(
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const selectedProjectPaths = new SelectedPathAuthorizer();
-    const panel = vscode.window.createWebviewPanel(
-      "devdashboardv1.main",
-      "DevDashboardV1",
-      vscode.ViewColumn.One,
-      {
+    const panel =
+      dockedView ??
+      vscode.window.createWebviewPanel(
+        "devdashboardv1.main",
+        "DevDashboardV1",
+        vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          localResourceRoots: [
+            vscode.Uri.joinPath(context.extensionUri, "assets"),
+          ],
+          retainContextWhenHidden: false,
+        },
+      );
+    if (dockedView)
+      dockedView.webview.options = {
         enableScripts: true,
         localResourceRoots: [
           vscode.Uri.joinPath(context.extensionUri, "assets"),
         ],
-        retainContextWhenHidden: false,
-      },
-    );
+      };
 
     const logoUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -274,12 +285,16 @@ export async function activate(
         projects,
       } satisfies ExtensionResponse);
     };
-    const sendHome = async (): Promise<boolean> => {
+    const sendHome = async (refreshRecent = false): Promise<boolean> => {
+      if (refreshRecent) await sendHome();
+      const recent = await jiraService.getRecentIssues(refreshRecent);
       const state = homeService.getState();
       return panel.webview.postMessage({
         type: "home.state",
         state: {
           ...state,
+          recentJiraIssues: recent.issues,
+          recentJiraMessage: recent.message,
           developerApplications: await Promise.all(
             state.developerApplications.map(async (application) => ({
               ...application,
@@ -366,13 +381,13 @@ export async function activate(
               }
               await sendNotes();
               await sendWorkspace();
-              await sendHome();
+              void sendHome(true);
               await sendJira();
               await sendConfluence();
               if (activePage === "search") await sendSearch();
               return;
             case "home.refresh":
-              await sendHome();
+              await sendHome(true);
               return;
             case "home.search":
               activePage = "notes";
@@ -381,6 +396,20 @@ export async function activate(
               return;
             case "urls.create":
               await urlGroupService.create(request.name, request.urls);
+              await panel.webview.postMessage({
+                type: "urls.saved",
+              } satisfies ExtensionResponse);
+              await sendHome();
+              return;
+            case "urls.update":
+              await urlGroupService.update(
+                request.id,
+                request.name,
+                request.urls,
+              );
+              await panel.webview.postMessage({
+                type: "urls.saved",
+              } satisfies ExtensionResponse);
               await sendHome();
               return;
             case "urls.delete":
@@ -626,14 +655,17 @@ export async function activate(
                   email,
                 ),
               } satisfies ExtensionResponse);
+              await sendHome(true);
               return;
             }
             case "jira.refresh":
               await sendJira();
+              await sendHome(true);
               return;
             case "jira.disconnect":
               await jiraService.disconnect();
               await sendJira();
+              await sendHome();
               return;
             case "jira.issue":
               try {
@@ -722,6 +754,14 @@ export async function activate(
                 state: await jiraService.search(request.query),
               } satisfies ExtensionResponse);
               return;
+            case "jira.preset":
+              await panel.webview.postMessage({
+                type: "jira.state",
+                state: await jiraService.search(
+                  jiraQuickFilters[request.preset],
+                ),
+              } satisfies ExtensionResponse);
+              return;
             case "jira.local.create":
               await jiraService.createLocalCard(
                 request.summary,
@@ -742,7 +782,7 @@ export async function activate(
               await sendState();
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
-              if (activePage === "home") await sendHome();
+              if (activePage === "home") await sendHome(true);
               if (activePage === "jira" || activePage === "settings")
                 await sendJira();
               if (activePage === "knowledge" || activePage === "settings")
@@ -1069,6 +1109,16 @@ export async function activate(
   const openDevDashboardV1 = vscode.commands.registerCommand(OPEN_COMMAND, () =>
     showDevDashboardV1("home"),
   );
+  const dockedDashboard = vscode.window.registerWebviewViewProvider(
+    "devdashboardv1.sidebar",
+    {
+      resolveWebviewView: (view) => showDevDashboardV1("home", false, view),
+    },
+  );
+  const dockCommand = vscode.commands.registerCommand(
+    "devdashboardv1.dock",
+    () => vscode.commands.executeCommand("devdashboardv1.sidebar.focus"),
+  );
   const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
     showDevDashboardV1("search"),
   );
@@ -1117,6 +1167,8 @@ export async function activate(
 
   context.subscriptions.push(
     openDevDashboardV1,
+    dockedDashboard,
+    dockCommand,
     openSearch,
     openGuide,
     snapshotCommand,

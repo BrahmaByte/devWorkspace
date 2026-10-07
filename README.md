@@ -19,6 +19,10 @@ Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
 After an update, a shorter **What's new** guide appears once per installed
 version. Skipping or closing it will not cause repeated prompts on restart.
 
+Open the docked dashboard with its Activity Bar icon or **DevDashboardV1: Open
+docked dashboard**. Move the Dashboard view to VS Code's Secondary Side Bar to
+keep it on the right. The view's open icon launches the larger editor dashboard.
+
 ## Version 0.1.12
 
 - Restored previously saved custom proxies without requiring reconfiguration.
@@ -41,7 +45,8 @@ Home contains:
 
 - **Sticky notes:** create a note with the plus icon, then click a sticky to view,
   edit, recolor, or delete it.
-- **Current Jira task:** opens the Jira board when selected.
+- **Current Jira task:** your five most recently updated assigned issues,
+  including completed work. Click one to open the board with that issue highlighted.
 - **URL groups:** save a named set of frequently used HTTPS links.
 - **Developer apps:** add an application with the native picker, launch it, see
   whether a dashboard-started instance is running, and close that instance after
@@ -55,6 +60,13 @@ to Stopped once it exits.
 Hover over or focus a URL-group name to show its URLs. Select an individual URL
 to open it, or use the open-all icon to launch the complete group in your default
 browser. Every icon includes a hover description.
+Use a group's edit icon to change its name or links; save with the check icon.
+Failed saves keep your draft available for correction.
+
+Recent Jira work refreshes when you open Home or sync Jira, independently of the
+board's filter. If a selected issue is outside that filter, the board temporarily
+shows it with a label without replacing your saved JQL. A failed refresh shows
+the last session's results with a warning.
 
 Application paths stay in the local database and are never sent to the dashboard
 Webview. DevDashboardV1 tracks and closes only instances that it launched; it does
@@ -66,6 +78,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
+- Quick filters offer my open work, reported by me, unassigned open work,
+  updated in the last seven days, and my completed work. Each applies and saves
+  its JQL in the same filter field; you can edit it further.
 - Use the sync icon to refresh Jira on demand while retaining the saved filter.
 - Select an issue for a full-screen viewer with formatted details and comments.
   Load more comments, refresh the thread, or open it in your default browser.

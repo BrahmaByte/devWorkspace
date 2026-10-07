@@ -7,7 +7,9 @@ import { confluenceLimits } from "../../application/services/confluenceService";
 import { jiraBoardLimits } from "../../application/services/jiraService";
 import {
   jiraBoardStatuses,
+  jiraQuickFilters,
   type JiraBoardStatus,
+  type JiraQuickFilter,
 } from "../../domain/jira/models";
 import { searchLimit } from "../../application/services/searchService";
 import { urlGroupLimits } from "../../application/services/urlGroupService";
@@ -99,8 +101,13 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
   }
-  if (value.type === "urls.create") {
-    return hasOnlyKeys(value, ["type", "name", "urls"]) &&
+  if (value.type === "urls.create" || value.type === "urls.update") {
+    const update = value.type === "urls.update";
+    return hasOnlyKeys(
+      value,
+      update ? ["type", "id", "name", "urls"] : ["type", "name", "urls"],
+    ) &&
+      (!update || isId(value.id)) &&
       isString(value.name, urlGroupLimits.name) &&
       Array.isArray(value.urls) &&
       value.urls.length > 0 &&
@@ -108,7 +115,14 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       value.urls.every((url) => isString(url, urlGroupLimits.url))
       ? {
           ok: true,
-          value: { type: "urls.create", name: value.name, urls: value.urls },
+          value: update
+            ? {
+                type: "urls.update",
+                id: value.id as string,
+                name: value.name,
+                urls: value.urls,
+              }
+            : { type: "urls.create", name: value.name, urls: value.urls },
         }
       : { ok: false, error: "urls.create is invalid." };
   }
@@ -300,6 +314,19 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       !/[\r\n\0]/u.test(value.query)
       ? { ok: true, value: { type: "jira.search", query: value.query } }
       : { ok: false, error: "jira.search is invalid." };
+  }
+  if (value.type === "jira.preset") {
+    return hasOnlyKeys(value, ["type", "preset"]) &&
+      typeof value.preset === "string" &&
+      Object.hasOwn(jiraQuickFilters, value.preset)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.preset",
+            preset: value.preset as JiraQuickFilter,
+          },
+        }
+      : { ok: false, error: "Invalid Jira preset." };
   }
   if (value.type === "jira.local.create") {
     return hasOnlyKeys(value, ["type", "summary", "status"]) &&

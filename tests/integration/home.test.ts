@@ -41,6 +41,37 @@ void afterEach(async () => {
 });
 
 void describe("home dashboard", () => {
+  void it("edits URL groups safely and restores the same group after restart", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-url-edit-"));
+    directories.push(directory);
+    const path = getDatabasePath(directory);
+    const database = await LocalDatabase.open(path);
+    const service = new UrlGroupService(new UrlGroupRepository(database));
+    await service.create("Original", ["https://example.test/old"]);
+    const original = service.list()[0]!;
+    await service.update(original.id, " New name ", [
+      "https://example.test/new",
+      "https://example.test/new",
+    ]);
+    assert.deepEqual(service.list()[0]?.urls, ["https://example.test/new"]);
+    assert.equal(service.list()[0]?.createdAt, original.createdAt);
+    await assert.rejects(
+      service.update(original.id, "Unsafe", ["https://user:pass@example.test"]),
+      /HTTPS/u,
+    );
+    await assert.rejects(
+      service.update("missing", "Missing", ["https://example.test"]),
+      /not found/u,
+    );
+    assert.equal(service.list()[0]?.name, "New name");
+    database.close();
+    const reopened = await LocalDatabase.open(path);
+    const restored = new UrlGroupRepository(reopened).list();
+    assert.equal(restored.length, 1);
+    assert.equal(restored[0]?.id, original.id);
+    assert.equal(restored[0]?.name, "New name");
+    reopened.close();
+  });
   void it("restores local dashboard state and tolerates missing Jira", async () => {
     const directory = await mkdtemp(join(tmpdir(), "devworkspace-home-"));
     directories.push(directory);

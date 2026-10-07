@@ -7,6 +7,13 @@ interface ExtensionManifest {
   readonly activationEvents?: readonly string[];
   readonly icon?: string;
   readonly contributes?: {
+    readonly viewsContainers?: {
+      readonly activitybar?: ReadonlyArray<{ id: string; icon: string }>;
+    };
+    readonly views?: Record<
+      string,
+      ReadonlyArray<{ id: string; type: string }>
+    >;
     readonly commands?: ReadonlyArray<{
       readonly command?: string;
       readonly title?: string;
@@ -27,6 +34,29 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("contributes a native dockable dashboard with a packaged generic icon", () => {
+    const manifest = readManifest();
+    assert.deepEqual(manifest.contributes?.views?.devdashboardv1, [
+      { id: "devdashboardv1.sidebar", name: "Dashboard", type: "webview" },
+    ]);
+    const container = manifest.contributes?.viewsContainers?.activitybar?.[0];
+    assert.equal(container?.id, "devdashboardv1");
+    assert.match(
+      readFileSync(resolve(__dirname, "../../../", container.icon), "utf8"),
+      /<svg/u,
+    );
+    assert.ok(
+      manifest.contributes?.commands?.some(
+        (entry) => entry.command === "devdashboardv1.dock",
+      ),
+    );
+    const host = readFileSync(
+      resolve(__dirname, "../../../src/extension/extension.ts"),
+      "utf8",
+    );
+    assert.match(host, /registerWebviewViewProvider/u);
+    assert.match(host, /showDevDashboardV1\("home", false, view\)/u);
+  });
   void it("provides native database snapshot and restore commands", () => {
     const manifest = readManifest();
     for (const suffix of ["snapshot", "restore"]) {

@@ -36,7 +36,39 @@
     "ui"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "devdashboardv1",
+          "title": "DevDashboardV1",
+          "icon": "assets/dashboard-view.svg"
+        }
+      ]
+    },
+    "views": {
+      "devdashboardv1": [
+        {
+          "id": "devdashboardv1.sidebar",
+          "name": "Dashboard",
+          "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "devdashboardv1.open",
+          "when": "view == devdashboardv1.sidebar",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
+      {
+        "command": "devdashboardv1.dock",
+        "title": "Open docked dashboard",
+        "category": "DevDashboardV1"
+      },
       {
         "command": "devdashboardv1.database.snapshot",
         "title": "Create database snapshot",
@@ -54,6 +86,7 @@
       },
       {
         "command": "devdashboardv1.open",
+        "icon": "$(open-preview)",
         "title": "Open DevDashboardV1",
         "category": "DevDashboardV1"
       },

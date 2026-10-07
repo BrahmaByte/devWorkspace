@@ -4,6 +4,38 @@ import { describe, it } from "node:test";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
 void describe("Webview protocol validation", () => {
+  void it("validates saved group edits and whitelists Jira presets", () => {
+    const request = {
+      type: "urls.update",
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Tools",
+      urls: ["https://example.test"],
+    };
+    assert.equal(parseWebviewRequest(request).ok, true);
+    assert.equal(parseWebviewRequest({ ...request, id: "../bad" }).ok, false);
+    assert.equal(
+      parseWebviewRequest({ ...request, credential: "fake" }).ok,
+      false,
+    );
+    for (const preset of ["mine", "reported", "unassigned", "recent", "done"])
+      assert.equal(
+        parseWebviewRequest({ type: "jira.preset", preset }).ok,
+        true,
+      );
+    for (const preset of ["constructor", "__proto__", "arbitrary", 1])
+      assert.equal(
+        parseWebviewRequest({ type: "jira.preset", preset }).ok,
+        false,
+      );
+    assert.equal(
+      parseWebviewRequest({
+        type: "jira.preset",
+        preset: "mine",
+        query: "ignored",
+      }).ok,
+      false,
+    );
+  });
   void it("rejects retired actions and removed project metadata", () => {
     const id = "00000000-0000-4000-8000-000000000001";
     for (const request of [

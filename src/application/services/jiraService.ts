@@ -42,6 +42,54 @@ const secretKey = (connectionId: string) =>
   `devworkspace.jira.${connectionId}.pat`;
 
 export class JiraService {
+  private recentConnectionId: string | undefined;
+  private recentIssues: readonly JiraIssue[] = [];
+  private recentGeneration = 0;
+  private recentMessage: string | undefined;
+
+  public async getRecentIssues(refresh = true): Promise<{
+    issues: readonly JiraIssue[];
+    message?: string;
+  }> {
+    const generation = this.recentGeneration;
+    const connection = this.repository.getConnection();
+    if (connection?.id !== this.recentConnectionId) {
+      this.recentConnectionId = connection?.id;
+      this.recentIssues = [];
+      this.recentMessage = undefined;
+    }
+    if (!connection) return { issues: [] };
+    const stored = await this.secrets.get(secretKey(connection.id));
+    if (!stored)
+      return { issues: [], message: "Reconnect Jira to load recent work." };
+    if (!refresh)
+      return { issues: this.recentIssues, message: this.recentMessage };
+    try {
+      const issues = await this.clients
+        .create(connection.baseUrl, deserializeCredential(stored))
+        .searchIssues("assignee = currentUser() ORDER BY updated DESC");
+      if (
+        generation !== this.recentGeneration ||
+        this.repository.getConnection()?.id !== connection.id ||
+        (await this.secrets.get(secretKey(connection.id))) !== stored
+      )
+        return { issues: [] };
+      this.recentIssues = [...issues]
+        .sort(
+          (a, b) =>
+            (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0) ||
+            a.key.localeCompare(b.key),
+        )
+        .slice(0, 5);
+      this.recentMessage = undefined;
+      return { issues: this.recentIssues };
+    } catch {
+      if (generation !== this.recentGeneration) return { issues: [] };
+      this.recentMessage =
+        "Recent Jira work could not refresh. Showing last loaded issues.";
+      return { issues: this.recentIssues, message: this.recentMessage };
+    }
+  }
   private readonly posting = new Set<string>();
   private async commentClient(issueKey: string): Promise<JiraClient> {
     this.getIssueUrl(issueKey);
@@ -91,6 +139,9 @@ export class JiraService {
     token: string,
     email?: string,
   ): Promise<JiraState> {
+    this.recentGeneration++;
+    this.recentIssues = [];
+    this.recentMessage = undefined;
     const normalizedUrl = this.validateUrl(baseUrl);
     if (!displayName.trim() || displayName.length > jiraLimits.name)
       throw new Error("Connection name is invalid.");
@@ -284,6 +335,9 @@ export class JiraService {
   }
 
   public async disconnect(): Promise<void> {
+    this.recentGeneration++;
+    this.recentIssues = [];
+    this.recentMessage = undefined;
     const connection = this.repository.getConnection();
     if (!connection) return;
     await this.secrets.delete(secretKey(connection.id));

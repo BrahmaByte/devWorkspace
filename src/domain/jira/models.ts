@@ -12,6 +12,16 @@ export interface JiraUser {
   readonly emailAddress?: string;
 }
 
+export const jiraQuickFilters = {
+  mine: "assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC",
+  reported: "reporter = currentUser() ORDER BY updated DESC",
+  unassigned:
+    "assignee IS EMPTY AND statusCategory != Done ORDER BY updated DESC",
+  recent: "updated >= -7d ORDER BY updated DESC",
+  done: "assignee = currentUser() AND statusCategory = Done ORDER BY updated DESC",
+} as const;
+export type JiraQuickFilter = keyof typeof jiraQuickFilters;
+
 export interface JiraIssue {
   readonly id: string;
   readonly key: string;

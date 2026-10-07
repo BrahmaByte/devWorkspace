@@ -13,6 +13,24 @@ export class UrlGroupService {
   }
 
   public async create(name: string, urls: readonly string[]): Promise<void> {
+    await this.save(name, urls);
+  }
+
+  public async update(
+    id: string,
+    name: string,
+    urls: readonly string[],
+  ): Promise<void> {
+    const previous = this.repository.list().find((group) => group.id === id);
+    if (!previous) throw new Error("URL group was not found.");
+    await this.save(name, urls, previous);
+  }
+
+  private async save(
+    name: string,
+    urls: readonly string[],
+    previous?: UrlGroup,
+  ): Promise<void> {
     const normalizedName = name.trim();
     if (!normalizedName || normalizedName.length > urlGroupLimits.name)
       throw new Error("URL group name is invalid.");
@@ -23,10 +41,10 @@ export class UrlGroupService {
     ];
     const now = new Date().toISOString();
     await this.repository.save({
-      id: randomUUID(),
+      id: previous?.id ?? randomUUID(),
       name: normalizedName,
       urls: normalizedUrls,
-      createdAt: now,
+      createdAt: previous?.createdAt ?? now,
       updatedAt: now,
     });
   }
