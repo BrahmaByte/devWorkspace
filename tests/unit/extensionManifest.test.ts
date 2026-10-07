@@ -27,6 +27,18 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("provides native database snapshot and restore commands", () => {
+    const manifest = readManifest();
+    for (const suffix of ["snapshot", "restore"]) {
+      const command = `devdashboardv1.database.${suffix}`;
+      assert.ok(manifest.activationEvents?.includes(`onCommand:${command}`));
+      assert.ok(
+        manifest.contributes?.commands?.some(
+          (entry) => entry.command === command,
+        ),
+      );
+    }
+  });
   void it("activates onboarding after startup and provides a replay command", () => {
     const manifest = readManifest();
     assert.ok(manifest.activationEvents?.includes("onStartupFinished"));

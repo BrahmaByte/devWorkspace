@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { createHash } from "node:crypto";
+import initSqlJs from "sql.js";
 import { tmpdir } from "node:os";
 import { afterEach, describe, it } from "node:test";
 
@@ -15,6 +24,17 @@ import {
 import { LocalStateRepository } from "../../src/infrastructure/database/localStateRepository";
 
 const temporaryDirectories: string[] = [];
+
+async function rewriteDatabase(filePath: string, sql: string): Promise<void> {
+  const SQL = await initSqlJs({
+    locateFile: () => require.resolve("sql.js/dist/sql-wasm.wasm"),
+  });
+  const database = new SQL.Database(await readFile(filePath));
+  database.run(sql);
+  const bytes = database.export();
+  database.close();
+  await writeFile(filePath, bytes);
+}
 
 async function createDatabase(): Promise<{
   database: LocalDatabase;
@@ -35,6 +55,210 @@ void afterEach(async () => {
 });
 
 void describe("Local SQLite database", () => {
+  void it("restores a manual snapshot, backs up replaced data and blocks stale writes", async () => {
+    const { database, filePath } = await createDatabase();
+    const repository = new LocalStateRepository(database);
+    await repository.createNote({
+      id: "a",
+      title: "First",
+      content: "Original",
+    });
+    const snapshot = await database.createSnapshot();
+    await repository.createNote({ id: "b", title: "Second", content: "Later" });
+    await database.restoreSnapshot(snapshot);
+    assert.throws(() => database.run("DELETE FROM notes;"), /Reload VS Code/u);
+    await assert.rejects(database.persist(), /Reload VS Code/u);
+    database.close();
+    const restored = await LocalDatabase.open(filePath);
+    assert.equal(new LocalStateRepository(restored).count("notes"), 1);
+    assert.equal(
+      restored.getScalar("SELECT content FROM notes WHERE id = 'a';"),
+      "Original",
+    );
+    const backup = (await restored.snapshots()).find(
+      ({ kind }) => kind === "before-restore",
+    );
+    assert.ok(backup);
+    await restored.restoreSnapshot(backup.name);
+    restored.close();
+    const previous = await LocalDatabase.open(filePath);
+    assert.equal(new LocalStateRepository(previous).count("notes"), 2);
+    previous.close();
+  });
+
+  void it("snapshots the previous file before a changed save and limits automatic frequency", async () => {
+    const { database, filePath } = await createDatabase();
+    const before = await readFile(filePath);
+    const repository = new LocalStateRepository(database);
+    await repository.createNote({
+      id: "a",
+      title: "First",
+      content: "Original",
+    });
+    await repository.createNote({ id: "b", title: "Second", content: "Later" });
+    const automatic = (await database.snapshots()).filter(
+      ({ kind }) => kind === "automatic",
+    );
+    assert.equal(automatic.length, 1);
+    assert.deepEqual(
+      await readFile(join(dirname(filePath), "snapshots", automatic[0]!.name)),
+      before,
+    );
+    database.close();
+  });
+
+  void it("serializes concurrent saves without leaving temporary files", async () => {
+    const { database, filePath } = await createDatabase();
+    const repository = new LocalStateRepository(database);
+    await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        repository.createNote({
+          id: String(index),
+          title: "Note",
+          content: "Local data",
+        }),
+      ),
+    );
+    assert.ok(
+      !(await readdir(dirname(filePath))).some((name) => name.endsWith(".tmp")),
+    );
+    database.close();
+    const reopened = await LocalDatabase.open(filePath);
+    assert.equal(new LocalStateRepository(reopened).count("notes"), 8);
+    reopened.close();
+  });
+
+  void it("keeps the live file unchanged when a required snapshot cannot be written", async () => {
+    const { database, filePath } = await createDatabase();
+    const before = await readFile(filePath);
+    // A regular file where the snapshot directory belongs simulates unavailable storage.
+    const blocked = join(dirname(filePath), "snapshots");
+    await writeFile(blocked, "unavailable");
+    database.run(
+      "UPDATE jira_board_preferences SET jql_filter = 'project = FAKE' WHERE id = 1;",
+    );
+    await assert.rejects(database.persist());
+    assert.deepEqual(await readFile(filePath), before);
+    await rm(blocked);
+    await database.persist();
+    database.close();
+    const reopened = await LocalDatabase.open(filePath);
+    assert.equal(
+      reopened.getScalar(
+        "SELECT jql_filter FROM jira_board_preferences WHERE id = 1;",
+      ),
+      "project = FAKE",
+    );
+    reopened.close();
+  });
+
+  void it("retains ten snapshots with matching checksums including the newest manual copy", async () => {
+    const { database, filePath } = await createDatabase();
+    let newest = "";
+    for (let index = 0; index < 12; index++)
+      newest = await database.createSnapshot();
+    const snapshots = await database.snapshots();
+    assert.equal(snapshots.length, 10);
+    assert.ok(snapshots.some(({ name }) => name === newest));
+    const files = await readdir(join(dirname(filePath), "snapshots"));
+    assert.equal(files.length, 20);
+    for (const { name } of snapshots) {
+      const path = join(dirname(filePath), "snapshots", name);
+      assert.equal(
+        await readFile(`${path}.sha256`, "utf8"),
+        createHash("sha256")
+          .update(await readFile(path))
+          .digest("hex"),
+      );
+    }
+    database.close();
+  });
+
+  void it("rejects corruption, unsupported schemas and path traversal without replacing data", async () => {
+    const { database, filePath } = await createDatabase();
+    const snapshot = await database.createSnapshot();
+    const path = join(dirname(filePath), "snapshots", snapshot);
+    const good = await readFile(path);
+    const live = await readFile(filePath);
+    await writeFile(path, "corrupt");
+    await assert.rejects(database.restoreSnapshot(snapshot), /checksum/u);
+    assert.deepEqual(await readFile(filePath), live);
+    for (const sql of [
+      "INSERT INTO schema_migrations VALUES (7, 'future', '2026');",
+      "CREATE TRIGGER unexpected AFTER INSERT ON notes BEGIN DELETE FROM notes; END;",
+      "PRAGMA foreign_keys = OFF; INSERT INTO environment_profiles (id, project_id, name) VALUES ('bad', 'missing', 'Fake');",
+    ]) {
+      await writeFile(path, good);
+      await rewriteDatabase(path, sql);
+      const bytes = await readFile(path);
+      await writeFile(
+        `${path}.sha256`,
+        createHash("sha256").update(bytes).digest("hex"),
+      );
+      await assert.rejects(database.restoreSnapshot(snapshot));
+      assert.deepEqual(await readFile(filePath), live);
+    }
+    await assert.rejects(
+      database.restoreSnapshot("../../workspace.sqlite"),
+      /selection/u,
+    );
+    await database.persist(); // A failed restore does not poison subsequent writes.
+    database.close();
+  });
+
+  void it("recovers a corrupt live file from a validated snapshot without discarding the damaged copy", async () => {
+    const { database, filePath } = await createDatabase();
+    await new LocalStateRepository(database).createNote({
+      id: "a",
+      title: "Saved",
+      content: "Local",
+    });
+    const snapshot = await database.createSnapshot();
+    database.close();
+    await writeFile(filePath, "damaged database");
+    await assert.rejects(
+      LocalDatabase.open(filePath),
+      DatabaseInitializationError,
+    );
+    assert.equal(await readFile(filePath, "utf8"), "damaged database");
+    await LocalDatabase.restoreFile(filePath, snapshot);
+    const restored = await LocalDatabase.open(filePath);
+    assert.equal(new LocalStateRepository(restored).count("notes"), 1);
+    const backup = (await restored.snapshots()).find(
+      ({ kind }) => kind === "before-restore",
+    );
+    assert.ok(backup);
+    assert.equal(
+      await readFile(join(dirname(filePath), "snapshots", backup.name), "utf8"),
+      "damaged database",
+    );
+    restored.close();
+  });
+
+  void it("takes a pre-migration snapshot and migrates supported older restores in memory", async () => {
+    const { database, filePath } = await createDatabase();
+    database.close();
+    await rewriteDatabase(
+      filePath,
+      "DROP TABLE developer_applications; DELETE FROM schema_migrations WHERE version = 6;",
+    );
+    const oldBytes = await readFile(filePath);
+    const migrated = await LocalDatabase.open(filePath);
+    const snapshot = (await migrated.snapshots()).find(
+      ({ kind }) => kind === "migration",
+    );
+    assert.ok(snapshot);
+    assert.deepEqual(
+      await readFile(join(dirname(filePath), "snapshots", snapshot.name)),
+      oldBytes,
+    );
+    await migrated.restoreSnapshot(snapshot.name);
+    migrated.close();
+    const restored = await LocalDatabase.open(filePath);
+    assert.equal(new LocalStateRepository(restored).getSchemaVersion(), 6);
+    restored.close();
+  });
+
   void it("uses a generic filename and migrates legacy extension storage", async () => {
     const storageRoot = await mkdtemp(join(tmpdir(), "devdashboard-storage-"));
     temporaryDirectories.push(storageRoot);

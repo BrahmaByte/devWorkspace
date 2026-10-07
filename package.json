@@ -25,6 +25,8 @@
   ],
   "activationEvents": [
     "onStartupFinished",
+    "onCommand:devdashboardv1.database.snapshot",
+    "onCommand:devdashboardv1.database.restore",
     "onCommand:devdashboardv1.guide",
     "onCommand:devdashboardv1.open",
     "onCommand:devdashboardv1.search"
@@ -35,6 +37,16 @@
   ],
   "contributes": {
     "commands": [
+      {
+        "command": "devdashboardv1.database.snapshot",
+        "title": "Create database snapshot",
+        "category": "DevDashboardV1"
+      },
+      {
+        "command": "devdashboardv1.database.restore",
+        "title": "Restore database snapshot",
+        "category": "DevDashboardV1"
+      },
       {
         "command": "devdashboardv1.guide",
         "title": "Show starter guide",

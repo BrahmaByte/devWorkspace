@@ -58,6 +58,8 @@ import { parseWebviewRequest } from "../webview/protocol/validation";
 const OPEN_COMMAND = "devdashboardv1.open";
 const SEARCH_COMMAND = "devdashboardv1.search";
 const GUIDE_COMMAND = "devdashboardv1.guide";
+const SNAPSHOT_COMMAND = "devdashboardv1.database.snapshot";
+const RESTORE_COMMAND = "devdashboardv1.database.restore";
 const LEGACY_OPEN_COMMAND = "devworkspace.open";
 const LEGACY_SEARCH_COMMAND = "devworkspace.search";
 
@@ -69,9 +71,58 @@ export async function activate(
   ).version;
   let walkthroughShown = false;
   let panelOpened = false;
-  const database = await LocalDatabase.open(
-    await prepareDatabasePath(context.globalStorageUri.fsPath),
+  const databasePath = await prepareDatabasePath(
+    context.globalStorageUri.fsPath,
   );
+  const selectRestore = async (): Promise<string | undefined> => {
+    const snapshots = await LocalDatabase.listSnapshots(databasePath);
+    if (!snapshots.length) {
+      await vscode.window.showWarningMessage(
+        "No local database snapshots are available.",
+      );
+      return undefined;
+    }
+    const selected = await vscode.window.showQuickPick(
+      snapshots.map((snapshot) => ({
+        label: new Date(snapshot.createdAt).toLocaleString(),
+        description: snapshot.kind,
+        name: snapshot.name,
+      })),
+      {
+        title: "Restore a local database snapshot",
+        placeHolder: "Most recent snapshots first",
+      },
+    );
+    if (!selected) return undefined;
+    const confirmed = await vscode.window.showWarningMessage(
+      "Restore this snapshot and reload VS Code? Close other VS Code windows using DevDashboardV1 first. Current local data will be replaced after validation; a pre-restore copy will be saved. Credentials and VS Code settings are not restored.",
+      { modal: true },
+      "Restore and reload",
+    );
+    return confirmed === "Restore and reload" ? selected.name : undefined;
+  };
+  let database: LocalDatabase;
+  try {
+    database = await LocalDatabase.open(databasePath);
+  } catch (error) {
+    const action = await vscode.window.showErrorMessage(
+      "DevDashboardV1 could not open its database. The existing file has not been replaced. You can select a validated local snapshot to recover your data.",
+      "Restore snapshot",
+    );
+    if (!action) throw error;
+    const selected = await selectRestore();
+    if (!selected) throw error;
+    try {
+      await LocalDatabase.restoreFile(databasePath, selected);
+      await vscode.commands.executeCommand("workbench.action.reloadWindow");
+      return;
+    } catch {
+      await vscode.window.showErrorMessage(
+        "Snapshot recovery failed. The current database is retained if validation failed. Check file permissions, available disk space and snapshot compatibility.",
+      );
+      throw error;
+    }
+  }
   const noteRepository = new NoteRepository(database);
   const noteService = new NoteService(noteRepository);
   const platform = createPlatformService();
@@ -893,6 +944,37 @@ export async function activate(
   const openGuide = vscode.commands.registerCommand(GUIDE_COMMAND, () =>
     showDevDashboardV1("home", true),
   );
+  const snapshotCommand = vscode.commands.registerCommand(
+    SNAPSHOT_COMMAND,
+    async () => {
+      try {
+        await database.createSnapshot();
+        await vscode.window.showInformationMessage(
+          "Database snapshot saved locally. Snapshots contain private local data but no SecretStorage credentials. The latest 10 are retained.",
+        );
+      } catch {
+        await vscode.window.showErrorMessage(
+          "Database snapshot could not be saved. Check disk space and storage permissions. No restore was performed.",
+        );
+      }
+    },
+  );
+  const restoreCommand = vscode.commands.registerCommand(
+    RESTORE_COMMAND,
+    async () => {
+      try {
+        const selected = await selectRestore();
+        if (!selected) return;
+        await database.restoreSnapshot(selected);
+        confluenceService.clearReaderCache();
+        await vscode.commands.executeCommand("workbench.action.reloadWindow");
+      } catch {
+        await vscode.window.showErrorMessage(
+          "Database restore could not finish. Invalid snapshots are rejected before replacing data. Check permissions/disk space; if replacement succeeded but reload failed, run Developer: Reload Window before editing.",
+        );
+      }
+    },
+  );
   const openLegacyDevWorkspace = vscode.commands.registerCommand(
     LEGACY_OPEN_COMMAND,
     () => showDevDashboardV1("home"),
@@ -906,6 +988,8 @@ export async function activate(
     openDevDashboardV1,
     openSearch,
     openGuide,
+    snapshotCommand,
+    restoreCommand,
     openLegacyDevWorkspace,
     openLegacySearch,
   );

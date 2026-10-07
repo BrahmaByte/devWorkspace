@@ -135,6 +135,29 @@ Use the search icon in the header or:
 Search covers local notes, projects, command shortcuts, cached Jira issues, and
 cached Confluence page metadata.
 
+## Data safety
+
+Database saves use flushed temporary files and atomic replacement. Before a
+changed save, an automatic snapshot preserves the previous database at most once
+per hour; migrations and restores also save a copy first. The latest **10
+snapshots total** are retained alongside `workspace.sqlite` in the generic
+`brahmabyte.localdata/snapshots` folder under VS Code's global storage.
+
+- Run **DevDashboardV1: Create database snapshot** before important changes.
+- Run **DevDashboardV1: Restore database snapshot**, choose a copy and confirm.
+  **Close other VS Code windows using the extension first.** Restore checks the
+  checksum, SQLite integrity, relationships and schema before replacing data,
+  saves a pre-restore copy, then reloads VS Code. If startup fails, a recovery
+  prompt offers the same validated restore. Newer unsupported schemas are rejected.
+
+Snapshots contain private local data, including notes and cached provider metadata;
+they are **not encrypted**. SecretStorage credentials and VS Code settings/layout
+are not backed up or restored; reconnect providers if needed. Disconnecting a
+provider does not erase older snapshots. Each database/snapshot is limited to
+128 MiB. Checksums detect accidental damage, not malicious modification.
+These same-disk copies do not protect against disk loss: keep an IT-approved
+encrypted backup of the folder, including the `.sha256` files, separately.
+
 ## Settings and Atlassian connections
 
 Open Settings with the icon at the bottom of the navigation rail. Enter the Jira
