@@ -209,10 +209,10 @@ export async function activate(
     },
   });
 
+  let dashboardPanel: vscode.WebviewPanel | undefined;
   const showDevDashboardV1 = (
     initialPage: ShellPage,
     replayGuide = false,
-    dockedView?: vscode.WebviewView,
   ): void => {
     panelOpened = true;
     let replayPending = replayGuide;
@@ -221,27 +221,19 @@ export async function activate(
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const selectedProjectPaths = new SelectedPathAuthorizer();
-    const panel =
-      dockedView ??
-      vscode.window.createWebviewPanel(
-        "devdashboardv1.main",
-        "DevDashboardV1",
-        vscode.ViewColumn.One,
-        {
-          enableScripts: true,
-          localResourceRoots: [
-            vscode.Uri.joinPath(context.extensionUri, "assets"),
-          ],
-          retainContextWhenHidden: false,
-        },
-      );
-    if (dockedView)
-      dockedView.webview.options = {
+    const panel = vscode.window.createWebviewPanel(
+      "devdashboardv1.main",
+      "DevDashboardV1",
+      vscode.ViewColumn.One,
+      {
         enableScripts: true,
         localResourceRoots: [
           vscode.Uri.joinPath(context.extensionUri, "assets"),
         ],
-      };
+        retainContextWhenHidden: false,
+      },
+    );
+    dashboardPanel = panel;
 
     const logoUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -1101,6 +1093,7 @@ export async function activate(
     );
 
     panel.onDidDispose(() => {
+      if (dashboardPanel === panel) dashboardPanel = undefined;
       messageSubscription.dispose();
       appChangeSubscription.dispose();
     });
@@ -1109,15 +1102,27 @@ export async function activate(
   const openDevDashboardV1 = vscode.commands.registerCommand(OPEN_COMMAND, () =>
     showDevDashboardV1("home"),
   );
-  const dockedDashboard = vscode.window.registerWebviewViewProvider(
+  const launchDashboard = () => {
+    if (dashboardPanel) dashboardPanel.reveal(vscode.ViewColumn.One);
+    else showDevDashboardV1("home");
+  };
+  const dockedDashboard = vscode.window.createTreeView<vscode.TreeItem>(
     "devdashboardv1.sidebar",
     {
-      resolveWebviewView: (view) => showDevDashboardV1("home", false, view),
+      treeDataProvider: {
+        getTreeItem: (item) => item,
+        getChildren: () => [],
+      },
+    },
+  );
+  const dockVisibility = dockedDashboard.onDidChangeVisibility(
+    ({ visible }) => {
+      if (visible) launchDashboard();
     },
   );
   const dockCommand = vscode.commands.registerCommand(
     "devdashboardv1.dock",
-    () => vscode.commands.executeCommand("devdashboardv1.sidebar.focus"),
+    launchDashboard,
   );
   const openSearch = vscode.commands.registerCommand(SEARCH_COMMAND, () =>
     showDevDashboardV1("search"),
@@ -1168,6 +1173,7 @@ export async function activate(
   context.subscriptions.push(
     openDevDashboardV1,
     dockedDashboard,
+    dockVisibility,
     dockCommand,
     openSearch,
     openGuide,

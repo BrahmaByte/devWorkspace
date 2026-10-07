@@ -49,11 +49,16 @@
       "devdashboardv1": [
         {
           "id": "devdashboardv1.sidebar",
-          "name": "Dashboard",
-          "type": "webview"
+          "name": "Dashboard"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "devdashboardv1.sidebar",
+        "contents": "[Open DevDashboardV1 in the editor](command:devdashboardv1.dock)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
@@ -66,7 +71,7 @@
     "commands": [
       {
         "command": "devdashboardv1.dock",
-        "title": "Open docked dashboard",
+        "title": "Open dashboard from dock",
         "category": "DevDashboardV1"
       },
       {

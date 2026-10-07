@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, it } from "node:test";
+import { runInNewContext } from "node:vm";
 
 interface ExtensionManifest {
   readonly activationEvents?: readonly string[];
@@ -34,10 +35,75 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("launches the editor when the dock becomes visible and reuses an open dashboard", () => {
+    const host = readFileSync(
+      resolve(__dirname, "../../../src/extension/extension.ts"),
+      "utf8",
+    );
+    const code = host
+      .slice(
+        host.indexOf("  const launchDashboard ="),
+        host.indexOf("  const openSearch ="),
+      )
+      .replace("<vscode.TreeItem>", "");
+    let visibility!: (event: { visible: boolean }) => void;
+    let dock!: () => void;
+    let opened = 0,
+      revealed = 0;
+    const context = {
+      dashboardPanel: undefined as
+        { reveal: (column: number) => void } | undefined,
+      showDevDashboardV1: (page: string) => {
+        assert.equal(page, "home");
+        opened++;
+        context.dashboardPanel = {
+          reveal: (column) => {
+            assert.equal(column, 1);
+            revealed++;
+          },
+        };
+      },
+      vscode: {
+        ViewColumn: { One: 1 },
+        window: {
+          createTreeView: (
+            id: string,
+            options: { treeDataProvider: { getChildren: () => unknown[] } },
+          ) => {
+            assert.equal(id, "devdashboardv1.sidebar");
+            assert.deepEqual(options.treeDataProvider.getChildren().length, 0);
+            return {
+              onDidChangeVisibility: (listener: typeof visibility) => {
+                visibility = listener;
+              },
+            };
+          },
+        },
+        commands: {
+          registerCommand: (id: string, command: () => void) => {
+            assert.equal(id, "devdashboardv1.dock");
+            dock = command;
+          },
+        },
+      },
+    };
+    runInNewContext(code, context);
+    visibility({ visible: false });
+    assert.equal(opened, 0);
+    visibility({ visible: true });
+    assert.equal(opened, 1);
+    visibility({ visible: true });
+    dock();
+    assert.equal(opened, 1);
+    assert.equal(revealed, 2);
+    context.dashboardPanel = undefined;
+    dock();
+    assert.equal(opened, 2);
+  });
   void it("contributes a native dockable dashboard with a packaged generic icon", () => {
     const manifest = readManifest();
     assert.deepEqual(manifest.contributes?.views?.devdashboardv1, [
-      { id: "devdashboardv1.sidebar", name: "Dashboard", type: "webview" },
+      { id: "devdashboardv1.sidebar", name: "Dashboard" },
     ]);
     const container = manifest.contributes?.viewsContainers?.activitybar?.[0];
     assert.equal(container?.id, "devdashboardv1");
@@ -54,8 +120,10 @@ void describe("Extension manifest", () => {
       resolve(__dirname, "../../../src/extension/extension.ts"),
       "utf8",
     );
-    assert.match(host, /registerWebviewViewProvider/u);
-    assert.match(host, /showDevDashboardV1\("home", false, view\)/u);
+    assert.match(host, /createTreeView<vscode.TreeItem>/u);
+    assert.match(host, /if \(visible\) launchDashboard\(\)/u);
+    assert.match(host, /dashboardPanel\.reveal\(vscode.ViewColumn.One\)/u);
+    assert.doesNotMatch(host, /registerWebviewViewProvider|dockedView/u);
   });
   void it("provides native database snapshot and restore commands", () => {
     const manifest = readManifest();

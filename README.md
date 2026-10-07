@@ -19,9 +19,9 @@ Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
 After an update, a shorter **What's new** guide appears once per installed
 version. Skipping or closing it will not cause repeated prompts on restart.
 
-Open the docked dashboard with its Activity Bar icon or **DevDashboardV1: Open
-docked dashboard**. Move the Dashboard view to VS Code's Secondary Side Bar to
-keep it on the right. The view's open icon launches the larger editor dashboard.
+Use the Activity Bar icon or **DevDashboardV1: Open dashboard from dock** to open
+the dashboard in the editor area. The dock is a launcher, not a second dashboard.
+Move its view to VS Code's Secondary Side Bar if you prefer a right-side launcher.
 
 ## Version 0.1.12
 
