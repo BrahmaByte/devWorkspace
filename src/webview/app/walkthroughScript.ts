@@ -15,8 +15,8 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"home",title:"A guide whenever you need it",text:"You can now explore every dashboard page with a skippable starter tour. Replay it from the header guide icon. Updates show this shorter guide once per installed version instead of repeating the full tour."},
- {page:"settings",title:"Clearer proxy troubleshooting",text:"Open View → Output → DevDashboardV1 Network, then retry Jira or Confluence. Rejected proxy tunnels show their HTTP status and troubleshooting guidance instead of a misleading cancellation message. Credentials and content are omitted."}
+ {page:"notes",title:"Reliable Confluence bookmarks",text:"Saved references now open after other searches, cache expiry and restart. Focus Reader requires your API credential; browser links use the saved URL without it. Keep the bookmark's original Confluence site configured in Settings."},
+ {page:"settings",title:"Safer data and native networking",text:"VS Code-managed networking is now the default for existing installs. Use the Command Palette to Create database snapshot or Restore database snapshot. Ten copies are retained. Close other extension windows before restore; credentials are not backed up. Keep an independent encrypted backup."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

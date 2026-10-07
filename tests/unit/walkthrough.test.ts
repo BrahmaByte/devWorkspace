@@ -174,8 +174,14 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(page, "notes");
     send("update");
     assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
+    assert.match(
+      panel.children[1]!.textContent,
+      /Reliable Confluence bookmarks/u,
+    );
+    assert.equal(page, "notes");
     next!.click();
     assert.equal(page, "settings");
+    assert.match(panel.children[2]!.textContent, /database snapshot/u);
     skip!.click();
     assert.equal(page, "notes");
     send("tour");

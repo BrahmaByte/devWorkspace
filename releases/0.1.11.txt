@@ -1,0 +1,27 @@
+DevDashboardV1 0.1.11
+
+Confluence
+- Saved Notes bookmarks open independently of the latest search results,
+  including after reader-cache expiry and restart.
+- Browser actions use the persisted, validated reference through VS Code APIs.
+- Missing notes, invalid bookmarks and connection changes have actionable errors.
+- Full-text search includes titles, page text and labels, with bounded session
+  caching; formatted page text loads before embedded media.
+
+Networking
+- VS Code-managed networking is the default, including existing installations
+  with legacy custom proxy settings. Extension-only overrides remain opt-in.
+
+Data safety
+- Database saves use flushed temporary files and atomic replacement.
+- Ten snapshots total are retained: hourly before changed saves, before
+  migrations/restores and on manual request.
+- Command Palette create/restore commands validate checksums, SQLite integrity,
+  relationships and supported schemas. Restore saves a pre-restore copy and
+  reloads VS Code; startup recovery offers the same validated flow.
+- Close other extension windows before restore. Snapshots contain private local
+  data, not SecretStorage credentials; they are unencrypted same-disk copies.
+  Keep an independent IT-approved encrypted backup for disk-loss protection.
+
+Publishing infrastructure now supports Microsoft Entra ID/GitHub OIDC.
+This local release does not publish to Marketplace or trigger a remote release.

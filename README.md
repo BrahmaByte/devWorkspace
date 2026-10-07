@@ -19,11 +19,12 @@ Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
 After an update, a shorter **What's new** guide appears once per installed
 version. Skipping or closing it will not cause repeated prompts on restart.
 
-## Version 0.1.10
+## Version 0.1.11
 
-- Added a skippable starter tour, replay controls and once-per-version update guide.
-- Added secure network logs and accurate proxy rejection messages.
-- Improved proxy credential setup instructions.
+- Fixed saved Confluence bookmarks after searches, cache expiry and restart.
+- Added atomic database saves, bounded snapshots and validated recovery commands.
+- Made VS Code-managed networking the default for existing installs.
+- Improved Confluence full-text search, session caching and progressive page loading.
 
 ## Screenshots
 
