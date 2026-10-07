@@ -143,9 +143,9 @@ void describe("Extension-only proxy", () => {
     assert.match(source, /workbench.action.openSettings/u);
     assert.match(
       source,
-      /return config\?\.enabled === true \? config : undefined/u,
+      /return value \? \(JSON\.parse\(value\) as ExtensionProxyConfig\) : undefined/u,
     );
-    assert.match(source, /JSON\.stringify\(\{\s+enabled: true,/u);
+    assert.doesNotMatch(source, /enabled: true|config\?\.enabled/u);
     assert.doesNotMatch(source, /\.update\(|NODE_TLS_REJECT_UNAUTHORIZED/u);
     assert.match(
       source,

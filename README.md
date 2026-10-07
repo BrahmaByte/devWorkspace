@@ -203,11 +203,10 @@ Credentials are stored in VS Code SecretStorage and are never sent to the
 dashboard Webview or written to the local database. Disconnecting removes the
 stored credential and cached provider metadata.
 
-VS Code-managed networking is the default, including for existing installs with
-legacy custom proxy settings. Legacy settings remain saved but inactive; explicitly
-configure an extension-only proxy again if you need that override. To restore the
-default later, select **Settings → Network proxy → Use VS Code proxy (default)**.
-This delegates PAC/bypass rules and supported
+Saved extension-only proxy settings remain active across updates, including older
+configurations. If no custom proxy is saved, networking delegates to VS Code.
+To switch to VS Code-managed networking, select **Settings → Network proxy →
+Use VS Code proxy (default)**. This delegates PAC/bypass rules and supported
 authentication negotiation to VS Code. The picker can open VS Code proxy settings;
 it never changes global network settings automatically. Authentication support
 depends on your VS Code version, OS and corporate policy.
