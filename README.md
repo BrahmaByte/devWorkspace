@@ -19,12 +19,12 @@ Replay it from the header guide icon or **DevDashboardV1: Show starter guide**.
 After an update, a shorter **What's new** guide appears once per installed
 version. Skipping or closing it will not cause repeated prompts on restart.
 
-## Version 0.1.11
+## Version 0.1.12
 
-- Fixed saved Confluence bookmarks after searches, cache expiry and restart.
-- Added atomic database saves, bounded snapshots and validated recovery commands.
-- Made VS Code-managed networking the default for existing installs.
-- Improved Confluence full-text search, session caching and progressive page loading.
+- Restored previously saved custom proxies without requiring reconfiguration.
+- Added name-only environment search and confirmed persistent user overwrite/append.
+- Windows changes use the user registry; macOS/Linux changes apply to supported
+  user-shell sessions, not all GUI applications. Values stay out of the dashboard.
 
 ## Screenshots
 

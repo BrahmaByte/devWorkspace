@@ -15,8 +15,8 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"notes",title:"Reliable Confluence bookmarks",text:"Saved references now open after other searches, cache expiry and restart. Focus Reader requires your API credential; browser links use the saved URL without it. Keep the bookmark's original Confluence site configured in Settings."},
- {page:"settings",title:"Safer data and native networking",text:"VS Code-managed networking is now the default for existing installs. Use the Command Palette to Create database snapshot or Restore database snapshot. Ten copies are retained. Close other extension windows before restore; credentials are not backed up. Keep an independent encrypted backup."}
+ {page:"settings",title:"Saved proxy compatibility restored",text:"Previously saved extension-only proxies remain active without reconfiguration. With no custom proxy, networking uses VS Code. Switch routes explicitly in Settings; TLS verification and safe network diagnostics remain enabled."},
+ {page:"workspace",title:"Persistent user environment",text:"Search by variable name without exposing values. Use plus or edit for masked native prompts, overwrite or append, and destination confirmation. Windows writes the user registry; macOS/Linux update supported shell startup files, not every GUI app. Never store credentials here. Existing processes need restarting."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

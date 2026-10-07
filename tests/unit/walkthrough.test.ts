@@ -176,12 +176,12 @@ void describe("Dashboard walkthrough", () => {
     assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
     assert.match(
       panel.children[1]!.textContent,
-      /Reliable Confluence bookmarks/u,
+      /Saved proxy compatibility restored/u,
     );
-    assert.equal(page, "notes");
-    next!.click();
     assert.equal(page, "settings");
-    assert.match(panel.children[2]!.textContent, /database snapshot/u);
+    next!.click();
+    assert.equal(page, "workspace");
+    assert.match(panel.children[2]!.textContent, /masked native prompts/u);
     skip!.click();
     assert.equal(page, "notes");
     send("tour");

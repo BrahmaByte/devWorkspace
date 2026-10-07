@@ -1,0 +1,22 @@
+DevDashboardV1 0.1.12
+
+Networking
+- Restored saved extension-only proxy configurations, including older entries,
+  without requiring users to reconfigure them after updating.
+- With no custom proxy saved, Jira and Confluence use VS Code networking.
+- Explicit proxy selection, verified TLS and safe CONNECT diagnostics remain.
+- This reverses the activation change in 0.1.11, not the other networking fixes.
+
+Workspace
+- Replaced unnecessary environment fields with name-only search and add/edit.
+- Persistent user variables support overwrite and append, including PATH's
+  platform-specific delimiter, with masked native VS Code prompts and confirmation.
+- Windows uses the user environment registry. macOS/Linux use supported user-shell
+  startup files; this does not configure a universal GUI application environment.
+- Credential and startup/security-hook names are blocked. Values never enter
+  the Webview, database, extension settings or logs. OS values remain plaintext.
+- Unix writes reject unsafe files and stale confirmations. OS changes are not
+  included in database snapshots. Existing processes retain their old values.
+- Existing saved environment profile references remain available in a collapsed list.
+
+The update guide and user documentation reflect these changes.

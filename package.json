@@ -3,7 +3,7 @@
   "displayName": "DevDashboardV1",
   "description": "A local-first developer command center inside VS Code.",
   "icon": "assets/devdashboardv1-icon.png",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "publisher": "BrahmaByte",
   "private": true,
   "license": "Apache-2.0",
