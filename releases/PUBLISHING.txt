@@ -1,0 +1,85 @@
+Marketplace publishing: GitHub OIDC + Microsoft Entra ID
+======================================================
+
+Publisher: BrahmaByte; repository: BrahmaByte/devWorkspace.
+Release now uses vsce publish --azure-credential with short-lived credentials,
+not VSCE_PAT. CI/packaging cannot request OIDC tokens. The tested, checksum-
+verified VSIX is reused unchanged; Marketplace publication remains opt-in.
+
+ONE-TIME SETUP
+
+1. In Microsoft Entra admin center > App registrations > New registration,
+   create a single-tenant app (for example devdashboard-marketplace). Leave
+   Redirect URI empty. Record Application (client) ID and Directory (tenant) ID.
+   Do not create a client secret or grant broad Azure/Graph roles. An Entra
+   tenant and permission to configure identities are required; a personal
+   Marketplace account alone is insufficient. A federated user-assigned managed
+   identity is an alternative. No Azure subscription role or Azure-hosted runner
+   is required by these workflows.
+
+2. In the app's Certificates & secrets > Federated credentials > Add credential,
+   select GitHub Actions deploying Azure resources. Use organization BrahmaByte,
+   repository devWorkspace, entity type Environment, environment marketplace.
+   Confirm the exact, case-sensitive trust values:
+     Issuer: https://token.actions.githubusercontent.com
+     Subject: repo:BrahmaByte/devWorkspace:environment:marketplace
+     Audience: api://AzureADTokenExchange
+
+3. GitHub repository Settings > Environments > create marketplace. Restrict
+   deployments to branch main (for identity setup) and release tags v*.
+   Require reviewers/prevent self-review where available. Protect main/release
+   tags with rulesets restricting modifications to trusted owners. Environment
+   trust does not itself restrict which branches can use that environment.
+   Add ENVIRONMENT VARIABLES (not secrets):
+     AZURE_CLIENT_ID = Application (client) ID
+     AZURE_TENANT_ID = Directory (tenant) ID
+   These IDs are not credentials. Never store access tokens here.
+
+4. Push the workflow changes to main. In Actions run "Marketplace identity
+   setup" on main and approve its environment gate. Its summary returns the
+   Marketplace profile ID without publishing or displaying access tokens.
+   If profile lookup requires registration (e.g. TF401444), add the identity
+   under Organization settings > Users in an Azure DevOps organization connected
+   to the same Entra tenant. If an Object ID is required, use the service
+   principal's Object ID from Enterprise applications, not App registrations.
+   Grant only needed access; this workflow does not require Azure Repos access.
+
+5. Open https://marketplace.visualstudio.com/manage/publishers/BrahmaByte
+   and add the returned profile ID under Members with Contributor role.
+   This is NOT the Entra client ID, object ID or Azure resource path. Identity
+   setup proves login/profile lookup, not permission to publish; membership
+   is a separate required grant.
+
+6. For automatic publication, add REPOSITORY Actions variable
+   MARKETPLACE_PUBLISH_ENABLED=true. For manual publication leave it unset/false
+   and dispatch Release against a release tag with publish_marketplace=true.
+   The opt-in must be repository-level: job conditions run before environment
+   variables load. Remove/revoke obsolete VSCE_PAT after identity setup succeeds.
+
+RELEASE AND DEBUGGING
+
+Prepare a new stable version in package.json/both root lockfile versions and
+releases/VERSION.txt; commit/push, then push its matching vVERSION tag.
+Tags must include the new workflows: old tags keep the old PAT workflow.
+Never move a published tag or reuse a Marketplace version. No extension version
+bump is needed for this pipeline-only migration itself.
+Release validates Windows/Linux/Intel Mac/Apple Silicon, audits dependencies,
+packages a universal VSIX with tag-pinned image links, verifies it, creates a
+GitHub release and optionally publishes. Environment approval still applies.
+
+- Missing IDs: check environment variables, not repository secrets.
+- Federation mismatch: check issuer/subject/audience, case and environment name.
+- Profile lookup/TF401444: check Azure DevOps registration and tenant association.
+- Marketplace 401/403: check profile ID's Contributor membership in BrahmaByte;
+  allow time for new configuration to apply. Azure roles do not grant membership.
+- Skipped job: enable repository opt-in or dispatch a tag with publishing on.
+- Duplicate version: retry skips the existing version; ship changes as a new one.
+Never enable shell tracing or print bearer tokens into logs.
+
+POLICY (checked 2026-10-07)
+Microsoft documents global Azure DevOps PAT retirement on December 1, 2026;
+this does not mean every PAT has already stopped working.
+https://code.visualstudio.com/api/working-with-extensions/publishing-extension#secure-automated-publishing-to-visual-studio-marketplace
+https://github.com/Azure/login
+https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect
+https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity

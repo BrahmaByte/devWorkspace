@@ -1,0 +1,39 @@
+name: Marketplace identity setup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CORE_OUTPUT: none
+    steps:
+      - name: Check Marketplace identity configuration
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          test -n "$AZURE_CLIENT_ID" && test -n "$AZURE_TENANT_ID" || { echo "Set AZURE_CLIENT_ID and AZURE_TENANT_ID in the marketplace environment variables."; exit 1; }
+      - name: Sign in with GitHub OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Retrieve Marketplace profile ID without publishing
+        run: |
+          profile_id=$(az rest --method get --url https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798 --query id --output tsv)
+          if [[ ! "$profile_id" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]]; then
+            echo "Marketplace returned no valid profile ID. Check the identity's Azure DevOps registration. No publishing attempted."
+            exit 1
+          fi
+          printf '### Marketplace identity\n\nProfile ID: `%s`\n\nAdd this ID to publisher **BrahmaByte** with the **Contributor** role. This is not the Entra client/object ID. No publishing was attempted.\n' "$profile_id" >> "$GITHUB_STEP_SUMMARY"

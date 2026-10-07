@@ -108,6 +108,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CORE_OUTPUT: none
     steps:
       - uses: actions/checkout@v4
         with:
@@ -124,10 +129,21 @@ jobs:
       - name: Verify checksum
         working-directory: release-assets
         run: sha256sum --check SHA256SUMS.txt
-      - name: Publish the exact verified VSIX
+      - name: Check Marketplace identity configuration
         env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          test -n "$AZURE_CLIENT_ID" && test -n "$AZURE_TENANT_ID" || { echo "Set AZURE_CLIENT_ID and AZURE_TENANT_ID in the marketplace environment variables."; exit 1; }
+      - name: Sign in with GitHub OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Publish the exact verified VSIX using Microsoft Entra ID
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          test -n "$VSCE_PAT" || { echo "Configure VSCE_PAT in the marketplace environment."; exit 1; }
-          npx --no-install vsce publish --packagePath "release-assets/devdashboardv1-${RELEASE_TAG#v}.vsix" --skip-duplicate
+          npx --no-install vsce publish --azure-credential --packagePath "release-assets/devdashboardv1-${RELEASE_TAG#v}.vsix" --skip-duplicate

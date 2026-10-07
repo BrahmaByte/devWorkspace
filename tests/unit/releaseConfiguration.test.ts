@@ -5,6 +5,10 @@ import { spawnSync } from "node:child_process";
 
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
 const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
+const identityWorkflow = readFileSync(
+  ".github/workflows/marketplace-identity.yml",
+  "utf8",
+);
 const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
   readonly scripts: Readonly<Record<string, string>>;
   readonly version: string;
@@ -52,9 +56,35 @@ void describe("Release validation configuration", () => {
     assert.match(releaseWorkflow, /sha256sum --check SHA256SUMS\.txt/u);
     assert.match(releaseWorkflow, /--verify-tag/u);
     assert.match(releaseWorkflow, /environment: marketplace/u);
-    assert.match(releaseWorkflow, /secrets\.VSCE_PAT/u);
-    assert.match(releaseWorkflow, /vsce publish --packagePath/u);
+    assert.match(
+      releaseWorkflow,
+      /vsce publish --azure-credential --packagePath/u,
+    );
     assert.doesNotMatch(releaseWorkflow, /pull_request_target/u);
+  });
+  void it("uses environment-protected OIDC without publishing secrets or CI identity access", () => {
+    const [nonPublishingJobs, marketplaceJob] =
+      releaseWorkflow.split("\n  marketplace:");
+    assert.doesNotMatch(nonPublishingJobs ?? "", /id-token: write/u);
+    assert.match(marketplaceJob ?? "", /id-token: write/u);
+    assert.doesNotMatch(workflow, /id-token: write/u);
+    for (const publishingWorkflow of [releaseWorkflow, identityWorkflow]) {
+      assert.match(publishingWorkflow, /environment: marketplace/u);
+      assert.match(publishingWorkflow, /uses: azure\/login@v3/u);
+      assert.match(publishingWorkflow, /vars\.AZURE_CLIENT_ID/u);
+      assert.match(publishingWorkflow, /vars\.AZURE_TENANT_ID/u);
+      assert.match(publishingWorkflow, /allow-no-subscriptions: true/u);
+      assert.doesNotMatch(
+        publishingWorkflow,
+        /VSCE_PAT|AZURE_CLIENT_SECRET|secrets\.|pull_request_target/u,
+      );
+    }
+    assert.match(identityWorkflow, /workflow_dispatch:/u);
+    assert.doesNotMatch(identityWorkflow, /vsce publish|gh release|push:/u);
+    assert.match(identityWorkflow, /--query id --output tsv/u);
+    assert.match(identityWorkflow, /499b84ac-1321-427f-aa17-267ca6975798/u);
+    assert.match(identityWorkflow, /GITHUB_STEP_SUMMARY/u);
+    assert.doesNotMatch(identityWorkflow, /get-access-token|Authorization/u);
   });
   void it("pins all supported operating-system and architecture targets", () => {
     for (const target of [
