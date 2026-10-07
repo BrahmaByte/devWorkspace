@@ -16,12 +16,12 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.12
+## Version 0.1.13
 
-- Restored previously saved custom proxies without requiring reconfiguration.
-- Added name-only environment search and confirmed persistent user overwrite/append.
-- Windows changes use the user registry; macOS/Linux changes apply to supported
-  user-shell sessions, not all GUI applications. Values stay out of the dashboard.
+- Added a Jira-style board search and field filter for Parent, Assignee, Status,
+  Work type and Labels without changing saved JQL.
+- The dock launcher now closes its empty primary pane before opening the dashboard.
+- URL-group details show the group name once with compact actions.
 
 ## Screenshots
 

@@ -1,0 +1,15 @@
+DevDashboardV1 0.1.13
+
+Dashboard polish
+- The dock launcher closes its empty primary pane before revealing the dashboard
+  editor.
+- URL-group details no longer repeat the group name; open and delete actions stay
+  compact and aligned.
+
+Jira board filters
+- Added board search by issue key or summary.
+- Added a Jira-style field filter for Parent, Assignee, Status, Work type and
+  Labels. Multiple values within a field are combined, while fields combine
+  together. These filters refine loaded issues and do not rewrite saved JQL.
+- Local-only cards remain local and are filtered only by supported board fields.
+- The starter guide now describes the shipped board search and field filters.
