@@ -11,7 +11,11 @@ export class VscodeExtensionProxy {
   public constructor(private readonly secrets: vscode.SecretStorage) {}
   public async load(): Promise<ExtensionProxyConfig | undefined> {
     const value = await this.secrets.get(KEY);
-    return value ? (JSON.parse(value) as ExtensionProxyConfig) : undefined;
+    const config = value
+      ? (JSON.parse(value) as ExtensionProxyConfig & { enabled?: boolean })
+      : undefined;
+    // Legacy overrides remain saved, but native networking is now the default.
+    return config?.enabled === true ? config : undefined;
   }
   public async configure(): Promise<void> {
     const previous = await this.load();
@@ -111,6 +115,7 @@ export class VscodeExtensionProxy {
     await this.secrets.store(
       KEY,
       JSON.stringify({
+        enabled: true,
         url: validateProxyUrl(url),
         ...(username ? { username, password } : {}),
         ...(ca ? { ca } : {}),

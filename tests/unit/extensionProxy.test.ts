@@ -141,6 +141,11 @@ void describe("Extension-only proxy", () => {
       /Does not negotiate NTLM, Kerberos, Digest or corporate SSO/u,
     );
     assert.match(source, /workbench.action.openSettings/u);
+    assert.match(
+      source,
+      /return config\?\.enabled === true \? config : undefined/u,
+    );
+    assert.match(source, /JSON\.stringify\(\{\s+enabled: true,/u);
     assert.doesNotMatch(source, /\.update\(|NODE_TLS_REJECT_UNAUTHORIZED/u);
     assert.match(
       source,
