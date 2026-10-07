@@ -1,6 +1,44 @@
 export type IntegrationProvider = "jira" | "confluence";
 
+export class ProxyTunnelError extends Error {
+  public constructor(public readonly status: number) {
+    super("Proxy CONNECT tunnel rejected.");
+  }
+}
+
+export function proxyTunnelErrorMessage(error: unknown): string | undefined {
+  if (!(error instanceof ProxyTunnelError)) return undefined;
+  const status = error.status;
+  if (!Number.isInteger(status) || status < 100 || status > 599)
+    return "Proxy CONNECT tunnel failed. Check proxy configuration with your IT team.";
+  let hint =
+    "Check proxy configuration and destination access with your IT team.";
+  if (status === 407)
+    hint =
+      "Proxy authentication rejected. Check proxy credentials; extension-only proxy supports Basic authentication, not NTLM/Kerberos/SSO. Use VS Code's managed proxy for corporate sign-in.";
+  else if (status === 401 || status === 403)
+    hint =
+      "Proxy access denied, not a Jira/Confluence credential error. Check corporate sign-in and permission to CONNECT to the destination on port 443.";
+  else if (status >= 300 && status < 400)
+    hint =
+      "Proxy redirected the tunnel, possibly to a sign-in page. Check the proxy endpoint and corporate sign-in; CONNECT redirects are not followed.";
+  else if (status === 502 || status === 504)
+    hint =
+      "Proxy could not reach the upstream destination. Check destination DNS, VPN, firewall and server availability with your IT team.";
+  else if (status >= 500)
+    hint =
+      "Proxy server failed. Contact your proxy administrator; no direct fallback was attempted.";
+  else if (status === 400 || status === 404 || status === 405)
+    hint =
+      "Proxy endpoint rejected CONNECT. Check proxy URL/port and HTTPS tunneling support.";
+  else if (status === 429)
+    hint =
+      "Proxy rate limited the tunnel. Wait before retrying; there is no automatic retry.";
+  return `Proxy CONNECT rejected (HTTP ${status}). ${hint}`;
+}
+
 export function shouldOfferProxySettings(error: unknown): boolean {
+  if (error instanceof ProxyTunnelError) return true;
   const status =
     typeof error === "object" && error !== null && "status" in error
       ? error.status
@@ -28,6 +66,8 @@ export function connectionErrorMessage(
   error: unknown,
 ): string {
   const name = provider === "jira" ? "Jira" : "Confluence";
+  const proxyMessage = proxyTunnelErrorMessage(error);
+  if (proxyMessage) return `${name}: ${proxyMessage}`;
   const status =
     typeof error === "object" && error !== null && "status" in error
       ? error.status

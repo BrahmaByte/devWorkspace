@@ -186,6 +186,11 @@ to remove it. Other extensions and VS Code settings are unchanged.
   Confluence. Logs show network mode, HTTP status, elapsed time and safe
   DNS/TLS/proxy/timeout hints. URLs, credentials, headers and page content are
   omitted. Cached pages do not trigger network logs.
+  **Proxy CONNECT HTTP 403** indicates proxy access policy, **3xx** may indicate
+  a corporate sign-in redirect, **407** indicates proxy authentication, and
+  **502/504** indicate upstream reachability. These are not user cancellations.
+  The extension-only proxy supports Basic authentication; use VS Code's managed
+  proxy for corporate NTLM/Kerberos/SSO authentication.
 - **A project or terminal folder is rejected:** select it with the provided VS
   Code folder picker instead of typing a path.
 - **A command does not run:** save it first and approve the VS Code confirmation

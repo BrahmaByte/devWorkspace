@@ -1,0 +1,13 @@
+DevDashboardV1 0.1.9
+
+Proxy connection diagnostics
+- Fixed proxy CONNECT rejection being incorrectly reported as user cancellation.
+- Logs and connection errors now include the rejected tunnel's HTTP status, with
+  guidance for access policy, sign-in redirects, proxy authentication, endpoint
+  configuration, rate limiting and upstream connectivity.
+- Provider credential errors remain distinct from proxy access errors.
+- Actual caller cancellation and request deadlines are distinguished from
+  internal transport aborts, and nested TLS/network failures remain visible.
+
+Logs still omit credentials, URLs, headers, content and raw errors. TLS checks,
+no-direct-fallback and no-automatic-retry protections are unchanged.

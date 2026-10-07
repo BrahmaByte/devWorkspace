@@ -1,4 +1,5 @@
 // Allowlist diagnostics: never reflect raw errors, URLs, credentials or content.
+import { proxyTunnelErrorMessage } from "../../application/services/integrationError";
 const HINTS: Record<string, string> = {
   ENOTFOUND: "DNS lookup failed. Check the base URL, proxy host and VPN.",
   EAI_AGAIN: "DNS lookup temporarily failed. Check DNS and VPN.",
@@ -28,10 +29,16 @@ const HINTS: Record<string, string> = {
     "TLS hostname mismatch. Check URL and proxy certificate.",
 };
 
-export function networkDiagnosticHint(error: unknown): string {
+export function networkDiagnosticHint(
+  error: unknown,
+  signal?: AbortSignal | null,
+): string {
   let current = error;
+  let aborted = false;
   for (let depth = 0; depth < 4; depth++) {
     if (typeof current !== "object" || current === null) break;
+    const proxyMessage = proxyTunnelErrorMessage(current);
+    if (proxyMessage) return proxyMessage;
     if ("status" in current) {
       if (current.status === 407)
         return "HTTP 407: Proxy authentication rejected. Check proxy credentials; extension-only proxy supports Basic authentication.";
@@ -57,8 +64,15 @@ export function networkDiagnosticHint(error: unknown): string {
     if (current instanceof Error && current.name === "TimeoutError")
       return "Request timed out. Check proxy, VPN and firewall.";
     if (current instanceof Error && current.name === "AbortError")
-      return "Request cancelled. Retry only when ready.";
+      aborted = true;
     current = "cause" in current ? current.cause : undefined;
   }
+  if (signal?.aborted)
+    return signal.reason instanceof Error &&
+      signal.reason.name === "TimeoutError"
+      ? "Request deadline expired. Check proxy, VPN and firewall."
+      : "Request cancelled by the caller's abort signal. Retry only when ready.";
+  if (aborted)
+    return "Transport aborted the request without a caller cancellation. Check proxy tunnel rejection and network connectivity.";
   return "No safe diagnostic code available. Check base URL, proxy, VPN, TLS trust and server availability.";
 }

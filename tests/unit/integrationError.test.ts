@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   connectionErrorMessage,
   shouldOfferProxySettings,
+  ProxyTunnelError,
 } from "../../src/application/services/integrationError";
 
 void describe("Integration connection errors", () => {
@@ -61,6 +62,19 @@ void describe("Integration connection errors", () => {
   });
 
   void it("offers proxy settings only for transport failures", () => {
+    assert.equal(shouldOfferProxySettings(new ProxyTunnelError(403)), true);
+    assert.match(
+      connectionErrorMessage("confluence", new ProxyTunnelError(403)),
+      /Proxy access denied, not a Jira\/Confluence credential error/,
+    );
+    assert.match(
+      connectionErrorMessage("jira", new ProxyTunnelError(302)),
+      /redirected the tunnel/,
+    );
+    assert.match(
+      connectionErrorMessage("jira", new ProxyTunnelError(502)),
+      /upstream destination/,
+    );
     assert.equal(shouldOfferProxySettings({ status: 401 }), false);
     assert.equal(shouldOfferProxySettings({ status: 407 }), true);
     assert.equal(

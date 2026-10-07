@@ -7,6 +7,7 @@ import { X509Certificate } from "node:crypto";
 import { ProxyAgent, fetch as proxyFetch } from "undici";
 import type { FetchImplementation } from "./vscodeHttpTransport";
 import { networkDiagnosticHint } from "./networkDiagnostics";
+import { ProxyTunnelError } from "../../application/services/integrationError";
 
 export interface ExtensionProxyConfig {
   readonly url: string;
@@ -144,10 +145,18 @@ export function createExtensionProxyFetch(
       } catch (error) {
         let cause: unknown = error;
         for (let depth = 0; depth < 4 && cause instanceof Error; depth++) {
-          if (/Proxy response \(407\)/u.test(cause.message))
-            throw Object.assign(new Error("Proxy authentication required."), {
-              status: 407,
-            });
+          // Undici uses AbortError for every non-200 CONNECT response, not just
+          // user cancellation. Preserve only the bounded status, never raw text.
+          const tunnelStatus =
+            /^Proxy response \(([1-5]\d{2})\) !== 200 when HTTP Tunneling$/u.exec(
+              cause.message,
+            );
+          if (
+            "code" in cause &&
+            cause.code === "UND_ERR_ABORTED" &&
+            tunnelStatus
+          )
+            throw new ProxyTunnelError(Number(tunnelStatus[1]));
           cause = cause.cause;
         }
         throw error;
@@ -168,7 +177,7 @@ export function createExtensionProxyFetch(
       return response;
     } catch (error) {
       write(
-        `Request failed; elapsed ${Date.now() - started} ms. ${networkDiagnosticHint(error)}`,
+        `Request failed; elapsed ${Date.now() - started} ms. ${networkDiagnosticHint(error, init?.signal)}`,
       );
       throw error;
     }

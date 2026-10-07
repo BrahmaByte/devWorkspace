@@ -17,6 +17,11 @@ import {
 import { VscodeHttpTransport } from "../../src/infrastructure/http/vscodeHttpTransport";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 import { networkDiagnosticHint } from "../../src/infrastructure/http/networkDiagnostics";
+import {
+  ProxyTunnelError,
+  connectionErrorMessage,
+  shouldOfferProxySettings,
+} from "../../src/application/services/integrationError";
 
 // Generate ephemeral test credentials; no private key is stored in the repository.
 async function testTlsCertificate(): Promise<{ key: string; cert: string }> {
@@ -230,7 +235,10 @@ void describe("Extension-only proxy", () => {
         logs.join("\n"),
         /extension-only HTTP proxy; Basic authentication=true; custom CA=false/,
       );
-      assert.match(logs.join("\n"), /HTTP 407: Proxy authentication rejected/);
+      assert.match(
+        logs.join("\n"),
+        /Proxy CONNECT rejected \(HTTP 407\).*Proxy authentication rejected/,
+      );
       assert.doesNotMatch(
         logs.join("\n"),
         /fake-user|fake-password|fake-token|127\.0\.0\.1|jira\.example/,
@@ -238,6 +246,111 @@ void describe("Extension-only proxy", () => {
     } finally {
       proxy.close();
     }
+  });
+  void it("reports rejected CONNECT status instead of cancellation, without direct fallback or sensitive logs", async () => {
+    let status = 403;
+    let calls = 0;
+    const proxy = createServer();
+    proxy.on("connect", (_, socket) =>
+      socket.end(
+        `HTTP/1.1 ${status} Mock rejection\r\nContent-Length: 0\r\n\r\n`,
+      ),
+    );
+    proxy.listen(0, "127.0.0.1");
+    await once(proxy, "listening");
+    try {
+      const address = proxy.address();
+      assert.ok(address && typeof address !== "string");
+      const logs: string[] = [];
+      const signal = new AbortController().signal;
+      const transport = new VscodeHttpTransport(
+        createExtensionProxyFetch(
+          () =>
+            Promise.resolve({
+              url: `http://127.0.0.1:${address.port}`,
+              username: "fake-sensitive-user",
+              password: "fake-sensitive-password",
+            }),
+          () => {
+            calls++;
+            return Promise.resolve(new Response());
+          },
+          (message) => logs.push(message),
+        ),
+      );
+      for (const [code, hint] of [
+        [403, /Proxy access denied/],
+        [302, /redirected/],
+        [502, /upstream destination/],
+        [407, /Basic authentication, not NTLM/],
+        [405, /HTTPS tunneling support/],
+        [503, /Proxy server failed/],
+        [429, /rate limited/],
+      ] as const) {
+        status = code;
+        logs.length = 0;
+        await assert.rejects(
+          transport.fetch(
+            "https://fake-sensitive-host.test/rest?token=fake-sensitive-query",
+            {
+              signal,
+              headers: { Authorization: "Bearer fake-sensitive-token" },
+            },
+          ),
+          (error: unknown) => {
+            assert.ok(error instanceof ProxyTunnelError);
+            assert.equal(error.status, code);
+            assert.equal(shouldOfferProxySettings(error), true);
+            assert.match(connectionErrorMessage("jira", error), hint);
+            return true;
+          },
+        );
+        assert.equal(signal.aborted, false);
+        const output = logs.join("\n");
+        assert.match(
+          output,
+          new RegExp(`Proxy CONNECT rejected \\(HTTP ${code}\\)`),
+        );
+        assert.match(output, hint);
+        assert.doesNotMatch(
+          output,
+          /Request cancelled|fake-sensitive|127\.0\.0\.1|Bearer/,
+        );
+      }
+      assert.equal(calls, 0);
+    } finally {
+      await new Promise<void>((resolve) => proxy.close(() => resolve()));
+    }
+  });
+
+  void it("distinguishes caller cancellation from an internal transport abort and checks deeper causes", async () => {
+    const abort = new DOMException("fake-private-error", "AbortError");
+    assert.match(networkDiagnosticHint(abort), /without a caller cancellation/);
+    const controller = new AbortController();
+    controller.abort(abort);
+    const logs: string[] = [];
+    const fetch = createExtensionProxyFetch(
+      () => Promise.resolve(undefined),
+      () => Promise.reject(abort),
+      (message) => logs.push(message),
+    );
+    await assert.rejects(
+      fetch("https://jira.example.test", { signal: controller.signal }),
+      (error) => error === abort,
+    );
+    assert.match(logs.join("\n"), /cancelled by the caller's abort signal/);
+    assert.doesNotMatch(logs.join("\n"), /fake-private-error/);
+    const timeout = new AbortController();
+    timeout.abort(new DOMException("fake-private-timeout", "TimeoutError"));
+    assert.match(
+      networkDiagnosticHint(abort, timeout.signal),
+      /deadline expired/,
+    );
+    const nested = Object.assign(
+      new Error("fake-private", { cause: { code: "CERT_HAS_EXPIRED" } }),
+      { name: "AbortError" },
+    );
+    assert.match(networkDiagnosticHint(nested), /CERT_HAS_EXPIRED/);
   });
   for (const secureProxy of [false, true]) {
     void it(`tunnels HTTPS through an ${secureProxy ? "HTTPS" : "HTTP"} proxy with verified corporate CA and preserved POST body`, async () => {
