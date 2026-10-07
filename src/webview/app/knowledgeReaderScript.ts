@@ -8,22 +8,22 @@ function wikiMetadata(documentData) {
   return dl;
 }
 const safeReaderTags=new Set(["A","B","BLOCKQUOTE","BR","CODE","DEL","EM","H1","H2","H3","H4","H5","H6","HR","I","IMG","LI","OL","P","PRE","S","STRONG","TABLE","TBODY","TD","TH","THEAD","TR","U","UL"]);
-function cloneReaderNode(node,media,prefix) {
+function cloneReaderNode(node,media,prefix,loading=false) {
   if(node.nodeType===Node.TEXT_NODE)return document.createTextNode(node.textContent||"");
   if(node.nodeType!==Node.ELEMENT_NODE||!safeReaderTags.has(node.tagName))return document.createDocumentFragment();
   if(node.tagName==="IMG"){
     const image=media.get(node.getAttribute("data-reader-media"));
-    if(!image||!/^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/u.test(image.dataUrl||"")){const missing=document.createElement("p");missing.className="media-warning";missing.textContent="Image unavailable. Open the original page to view it.";return missing}
+    if(!image||!/^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/u.test(image.dataUrl||"")){const missing=document.createElement("p");missing.className="media-warning";missing.textContent=loading?"Loading image or diagram…":"Image unavailable. Open the original page to view it.";return missing}
     const img=document.createElement("img");img.src=image.dataUrl;img.alt=image.alt||"Embedded image or diagram";img.loading="lazy";img.decoding="async";return img;
   }
   const clone=document.createElement(node.tagName.toLowerCase());
   if(/^H[1-6]$/u.test(node.tagName)){const id=node.getAttribute("data-reader-id");if(/^reader-section-[0-9]+$/u.test(id||""))clone.id=prefix+id}
   if(node.tagName==="TD"||node.tagName==="TH")["colspan","rowspan"].forEach(name=>{const value=node.getAttribute(name);if(/^[1-9][0-9]?$/u.test(value||""))clone.setAttribute(name,value)});
-  node.childNodes.forEach(child=>clone.append(cloneReaderNode(child,media,prefix)));return clone;
+  node.childNodes.forEach(child=>clone.append(cloneReaderNode(child,media,prefix,loading)));return clone;
 }
 function renderRichContent(article,documentData,prefix="") {
   const parsed=new DOMParser().parseFromString(documentData.html||"","text/html"),media=new Map((documentData.media||[]).map(item=>[item.id,item]));
-  article.replaceChildren();parsed.body.childNodes.forEach(node=>article.append(cloneReaderNode(node,media,prefix)));
+  article.replaceChildren();parsed.body.childNodes.forEach(node=>article.append(cloneReaderNode(node,media,prefix,documentData.mediaLoading)));
   (documentData.mediaWarnings||[]).forEach(message=>{const warning=document.createElement("p");warning.className="media-warning";warning.textContent=message;article.append(warning)});
 }
 function renderWikiPreview(documentData) {
@@ -32,6 +32,7 @@ function renderWikiPreview(documentData) {
   const detail=document.querySelector("#confluence-detail");
   detail.dataset.loadingPage="";detail.querySelector(".wiki-metadata")?.remove();detail.querySelector(".knowledge-detail-header").after(wikiMetadata(documentData));
   const article=detail.querySelector(".knowledge-article");article.removeAttribute("aria-busy");article.removeAttribute("role");renderRichContent(article,documentData,"preview-");
+  if(readerPageId===documentData.page.id&&readerDialog.open)renderReader(documentData);
 }
 function renderConfluenceDetail(page) {
   const changed=selectedConfluencePage?.id!==page?.id;
@@ -46,6 +47,7 @@ function renderConfluenceDetail(page) {
   else if(changed||!detail.dataset.loadingPage){detail.dataset.loadingPage=page.id;vscode.postMessage({type:"confluence.preview",id:page.id})}
 }
 function renderConfluence(state) {
+  if(state.query&&state.query!==document.querySelector("#confluence-query").value.trim())return;
   const summary=document.querySelector("#confluence-summary"),pages=document.querySelector("#confluence-pages"),message=document.querySelector("#confluence-message"),name=document.querySelector("#confluence-name"),url=document.querySelector("#confluence-url");
   summary.replaceChildren();pages.replaceChildren();message.textContent=state.message||(!state.connection?"Configure Confluence from Settings to search pages.":"");
   if(state.connection){name.value=state.connection.displayName;url.value=state.connection.baseUrl;const heading=document.createElement("strong"),connectionState=document.createElement("span");heading.textContent=state.connection.displayName;connectionState.textContent=state.status==="connected"?"Connected":state.status==="expired"?"Credentials required":"Connection unavailable";summary.append(heading,connectionState)}
@@ -77,7 +79,12 @@ window.addEventListener("message",event=>{const message=event.data;
 document.querySelector("#reader-close").addEventListener("click",()=>{readerPageId=undefined;readerDialog.close()});readerDialog.addEventListener("cancel",()=>{readerPageId=undefined});
 document.querySelector("#reader-browser").addEventListener("click",()=>{if(readerPageId)vscode.postMessage({type:"confluence.open",id:readerPageId})});
 document.querySelector("#confluence-form").addEventListener("submit",event=>{event.preventDefault();vscode.postMessage({type:"confluence.connect",displayName:document.querySelector("#confluence-name").value,baseUrl:document.querySelector("#confluence-url").value})});
-document.querySelector("#confluence-search").addEventListener("submit",event=>{event.preventDefault();vscode.postMessage({type:"confluence.search",query:document.querySelector("#confluence-query").value})});
+let wikiSearchTimer,lastWikiQuery="";
+function searchWiki(force=false){const query=document.querySelector("#confluence-query").value.trim();if(!query||query.length>200||(!force&&(query.length<2||query===lastWikiQuery)))return;lastWikiQuery=query;vscode.postMessage({type:"confluence.search",query})}
+document.querySelector("#confluence-query").setAttribute("placeholder","Search titles, page text and labels");
+document.querySelector("#confluence-query").setAttribute("autocomplete","off");
+document.querySelector("#confluence-search").addEventListener("submit",event=>{event.preventDefault();clearTimeout(wikiSearchTimer);searchWiki(true)});
+document.querySelector("#confluence-query").addEventListener("input",()=>{clearTimeout(wikiSearchTimer);wikiSearchTimer=setTimeout(()=>searchWiki(),350)});
 document.querySelector("#confluence-refresh").addEventListener("click",()=>{selectedConfluenceDocument=undefined;document.querySelector("#confluence-detail").dataset.loadingPage="";vscode.postMessage({type:"confluence.refresh"})});
 document.querySelector("#confluence-disconnect").addEventListener("click",()=>{selectedConfluenceDocument=undefined;vscode.postMessage({type:"confluence.disconnect"})});
 `;

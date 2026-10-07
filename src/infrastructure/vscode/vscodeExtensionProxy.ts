@@ -16,7 +16,20 @@ export class VscodeExtensionProxy {
   public async configure(): Promise<void> {
     const previous = await this.load();
     const mode = await vscode.window.showQuickPick(
-      ["Use VS Code proxy (default)", "Configure extension-only proxy"],
+      [
+        {
+          label: "Use VS Code proxy (default)",
+          description: "Recommended for corporate networks on Mac and Windows",
+          detail:
+            "Use VS Code's native proxy discovery, PAC/bypass rules and supported authentication negotiation. No extension-only credentials are required.",
+        },
+        {
+          label: "Configure extension-only proxy",
+          description: "Fixed HTTP/HTTPS proxy: Basic or no authentication",
+          detail:
+            "Does not negotiate NTLM, Kerberos, Digest or corporate SSO. Use VS Code-managed mode for those environments.",
+        },
+      ],
       {
         title:
           "DevDashboardV1 proxy: " +
@@ -24,11 +37,17 @@ export class VscodeExtensionProxy {
       },
     );
     if (!mode) return;
-    if (mode.startsWith("Use")) {
+    if (mode.label.startsWith("Use")) {
       await this.secrets.delete(KEY);
-      await vscode.window.showInformationMessage(
-        "DevDashboardV1 now uses VS Code's network settings.",
+      const action = await vscode.window.showInformationMessage(
+        "DevDashboardV1 now delegates proxy discovery and authentication negotiation to VS Code. Available authentication depends on your VS Code version, OS and corporate policy. No global settings were changed.",
+        "Open VS Code proxy settings",
       );
+      if (action)
+        await vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "http.proxy",
+        );
       return;
     }
     const url = await vscode.window.showInputBox({

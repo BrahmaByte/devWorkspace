@@ -72,7 +72,7 @@ export function createExtensionProxyFetch(
       const config = await load();
       if (!config) {
         write(
-          "Network route: delegated to VS Code network settings (proxy/direct selection managed by VS Code).",
+          "Network route: delegated to VS Code network settings (proxy/direct selection, PAC/bypass rules and supported authentication negotiation managed by VS Code).",
         );
         return defaultFetch(input, init);
       }

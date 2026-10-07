@@ -41,27 +41,48 @@ export class FetchConfluenceClient implements ConfluenceClient {
   public async testConnection(): Promise<void> {
     await this.request("/rest/api/user/current");
   }
-  public async searchPages(query: string): Promise<readonly ConfluencePage[]> {
+  public async searchPages(
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ConfluencePage[]> {
     const escaped = query.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"');
     const parameters = new URLSearchParams({
-      cql: `type=page AND siteSearch ~ "${escaped}"`,
+      cql: `type=page AND text ~ "${escaped}"`,
       limit: "25",
       expand: "space,version",
     });
     const data = await this.request(
       `/rest/api/content/search?${parameters.toString()}`,
+      signal,
     );
     if (!Array.isArray(data.results))
       throw new Error("Invalid Confluence response.");
     return data.results.map(toPage);
   }
-  public async readPage(id: string): Promise<ConfluenceReaderDocument> {
+  public async readPage(
+    id: string,
+    onContent?: (document: ConfluenceReaderDocument) => void,
+  ): Promise<ConfluenceReaderDocument> {
     if (!/^[0-9A-Za-z_-]{1,100}$/u.test(id))
       throw new Error("Invalid Confluence page identifier.");
-    const data = await this.request(
-      `/rest/api/content/${encodeURIComponent(id)}?expand=body.view,body.export_view,space,version,history,metadata.labels`,
+    let data = await this.request(
+      `/rest/api/content/${encodeURIComponent(id)}?expand=body.export_view,space,version,history,metadata.labels`,
     );
-    const body = isRecord(data.body) ? data.body : undefined;
+    let body = isRecord(data.body) ? data.body : undefined;
+    if (
+      !body ||
+      ![body.export_view, body.view].some(
+        (value) =>
+          isRecord(value) &&
+          typeof value.value === "string" &&
+          value.value.trim(),
+      )
+    ) {
+      data = await this.request(
+        `/rest/api/content/${encodeURIComponent(id)}?expand=body.view,space,version,history,metadata.labels`,
+      );
+      body = isRecord(data.body) ? data.body : undefined;
+    }
     const view =
       body &&
       isRecord(body.export_view) &&
@@ -147,22 +168,6 @@ export class FetchConfluenceClient implements ConfluenceClient {
       });
       return mediaId;
     });
-    const media: NonNullable<ConfluenceReaderDocument["media"]>[number][] = [];
-    const deadline = AbortSignal.timeout(20_000);
-    let total = 0;
-    for (const source of sources) {
-      try {
-        const dataUrl =
-          source.inline ?? (await this.readMedia(source.url, deadline));
-        total += dataUrl.length;
-        if (total > 8_000_000) throw new Error("Page media limit exceeded.");
-        media.push({ id: source.id, alt: source.alt, dataUrl });
-      } catch {
-        warnings.push(
-          "An image or diagram could not be loaded. Open the original page if needed.",
-        );
-      }
-    }
     const space = isRecord(data.space) ? data.space : {};
     const version = isRecord(data.version) ? data.version : {};
     const history = isRecord(data.history) ? data.history : {};
@@ -176,11 +181,9 @@ export class FetchConfluenceClient implements ConfluenceClient {
             )
             .slice(0, 50)
         : [];
-    return {
+    const document: ConfluenceReaderDocument = {
       page: toPage(data),
       ...sanitized,
-      media,
-      mediaWarnings: [...new Set(warnings)],
       metadata: {
         ...(typeof space.key === "string" ? { spaceKey: space.key } : {}),
         ...(typeof version.number === "number"
@@ -200,6 +203,38 @@ export class FetchConfluenceClient implements ConfluenceClient {
         labels,
       },
     };
+    if (sources.length) onContent?.({ ...document, mediaLoading: true });
+    const media: NonNullable<ConfluenceReaderDocument["media"]>[number][] = [];
+    const deadline = AbortSignal.timeout(20_000);
+    let total = 0;
+    // Four simultaneous downloads avoid serial round trips without flooding the proxy.
+    for (let start = 0; start < sources.length; start += 4) {
+      const batch = await Promise.all(
+        sources.slice(start, start + 4).map(async (source) => {
+          try {
+            const dataUrl =
+              source.inline ?? (await this.readMedia(source.url, deadline));
+            return { id: source.id, alt: source.alt, dataUrl };
+          } catch {
+            warnings.push(
+              "An image or diagram could not be loaded. Open the original page if needed.",
+            );
+            return undefined;
+          }
+        }),
+      );
+      for (const item of batch) {
+        if (!item) continue;
+        if (total + item.dataUrl.length > 8_000_000) {
+          warnings.push("Additional images were omitted (page media limit).");
+          continue;
+        }
+        total += item.dataUrl.length;
+        media.push(item);
+      }
+      if (deadline.aborted || total >= 8_000_000) break;
+    }
+    return { ...document, media, mediaWarnings: [...new Set(warnings)] };
   }
   private async readMedia(url: string, signal: AbortSignal): Promise<string> {
     const response = await this.transport.fetch(
@@ -236,8 +271,12 @@ export class FetchConfluenceClient implements ConfluenceClient {
       response.headers.get("content-type") ?? "",
     );
   }
-  private async request(path: string): Promise<JsonRecord> {
+  private async request(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<JsonRecord> {
     const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
+      ...(signal ? { signal } : {}),
       headers: {
         Accept: "application/json",
         Authorization: authorizationHeader(this.credential),

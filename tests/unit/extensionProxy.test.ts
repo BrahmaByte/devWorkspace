@@ -93,6 +93,10 @@ void describe("Extension-only proxy", () => {
     assert.match(output, /Provider authentication\/permission rejected/);
     assert.match(output, /request 2.*ENOTFOUND: DNS lookup failed/);
     assert.match(output, /delegated to VS Code/);
+    assert.match(
+      output,
+      /PAC\/bypass rules and supported authentication negotiation managed by VS Code/u,
+    );
     assert.doesNotMatch(output, /fake-secret|Authorization|Bearer/);
     for (const code of [
       "ECONNREFUSED",
@@ -128,6 +132,16 @@ void describe("Extension-only proxy", () => {
     assert.match(source, /IT-provided proxy username for Basic authentication/);
     assert.match(source, /not your Jira or Confluence credentials/);
     assert.match(source, /Leave empty if authentication is not required/);
+    assert.match(
+      source,
+      /Recommended for corporate networks on Mac and Windows/u,
+    );
+    assert.match(
+      source,
+      /Does not negotiate NTLM, Kerberos, Digest or corporate SSO/u,
+    );
+    assert.match(source, /workbench.action.openSettings/u);
+    assert.doesNotMatch(source, /\.update\(|NODE_TLS_REJECT_UNAUTHORIZED/u);
     assert.match(
       source,
       /title: "Proxy password",\s+prompt:\s+"Enter the password for your proxy account\. Input is hidden; proxy credentials are saved securely in VS Code SecretStorage\.",\s+password: true/,

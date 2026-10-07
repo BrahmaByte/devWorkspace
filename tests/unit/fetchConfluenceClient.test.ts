@@ -54,7 +54,114 @@ void describe("Confluence REST provider", () => {
     const searchUrl = new URL(requests[1]?.url ?? "");
     assert.equal(searchUrl.searchParams.get("limit"), "25");
     assert.match(searchUrl.searchParams.get("cql") ?? "", /type=page/u);
+    assert.equal(
+      searchUrl.searchParams.get("cql"),
+      'type=page AND text ~ "release \\"guide\\""',
+    );
     assert.doesNotMatch(searchUrl.searchParams.get("expand") ?? "", /body/u);
+  });
+
+  void it("delivers sanitized text before media and downloads at most four images concurrently", async () => {
+    let active = 0;
+    let maximum = 0;
+    let loaded = 0;
+    let earlyContent = false;
+    const images = Array.from(
+      { length: 9 },
+      (_, index) => `<img src="/download/${index}.svg">`,
+    ).join("");
+    globalThis.fetch = async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      if (url.includes("/download/")) {
+        assert.equal(earlyContent, true);
+        active++;
+        maximum = Math.max(maximum, active);
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        active--;
+        loaded++;
+        return new Response(
+          '<svg viewBox="0 0 1 1"><rect width="1" height="1"/></svg>',
+          {
+            headers: { "content-type": "image/svg+xml" },
+          },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          id: "42",
+          title: "Guide",
+          _links: { webui: "/pages/42" },
+          body: {
+            export_view: {
+              value: `<h1>Ready</h1><script>unsafe()</script>${images}`,
+            },
+          },
+        }),
+      );
+    };
+    const result = await new FetchConfluenceClient(
+      "https://confluence.example.test",
+      { type: "bearer", token: "fake-token" },
+    ).readPage("42", (document) => {
+      assert.equal(loaded, 0);
+      assert.match(document.html, /Ready/u);
+      assert.doesNotMatch(document.html, /script|unsafe|fake-token/u);
+      assert.equal(document.mediaLoading, true);
+      earlyContent = true;
+    });
+    assert.equal(maximum, 4);
+    assert.equal(loaded, 9);
+    assert.equal(result.media?.length, 9);
+    assert.equal(result.mediaLoading, undefined);
+    assert.deepEqual(
+      result.media?.map((item) => item.id),
+      Array.from({ length: 9 }, (_, index) => `reader-media-${index + 1}`),
+    );
+  });
+
+  void it("requests only one rendered body and falls back when export rendering is unavailable", async () => {
+    const urls: URL[] = [];
+    globalThis.fetch = (input) => {
+      const url = new URL(
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      );
+      urls.push(url);
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: "42",
+            title: "Guide",
+            _links: { webui: "/pages/42" },
+            body: url.searchParams.get("expand")?.startsWith("body.view,")
+              ? { view: { value: "<p>Fallback rendering</p>" } }
+              : {},
+          }),
+        ),
+      );
+    };
+    const result = await new FetchConfluenceClient(
+      "https://confluence.example.test",
+      { type: "bearer", token: "fake-token" },
+    ).readPage("42");
+    assert.match(result.html, /Fallback rendering/u);
+    assert.equal(urls.length, 2);
+    assert.doesNotMatch(
+      urls[0]?.searchParams.get("expand") ?? "",
+      /body.view/u,
+    );
+    assert.doesNotMatch(
+      urls[1]?.searchParams.get("expand") ?? "",
+      /body.export_view/u,
+    );
   });
 
   void it("maps authentication failures without exposing response bodies", async () => {

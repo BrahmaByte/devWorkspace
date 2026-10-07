@@ -5,6 +5,21 @@ import { Script } from "node:vm";
 import { createWebviewHtml } from "../../src/webview/app/shell";
 
 void describe("Webview shell", () => {
+  void it("debounces full-text wiki suggestions and ignores obsolete results while progressively updating focus media", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /Search titles, page text and labels/u);
+    assert.match(html, /setTimeout\(\(\)=>searchWiki\(\),350\)/u);
+    assert.match(html, /clearTimeout\(wikiSearchTimer\);searchWiki\(true\)/u);
+    assert.match(
+      html,
+      /state\.query!==document\.querySelector\("#confluence-query"\)\.value\.trim\(\)/u,
+    );
+    assert.match(html, /Loading image or diagram/u);
+    assert.match(
+      html,
+      /readerPageId===documentData\.page\.id&&readerDialog\.open\)renderReader\(documentData\)/u,
+    );
+  });
   void it("accepts the slim Home payload and preserves the separate current Jira task", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.ok(

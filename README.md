@@ -107,6 +107,11 @@ Previously opened pages load from a five-minute session cache (up to five pages,
 24 MB). Refresh Confluence in Settings to discard it and retrieve fresh content.
 Page bodies and images are never cached on disk.
 
+Search matches titles, page text and labels across pages you can access. Suggestions
+appear after a short typing pause; press Enter to search immediately. Repeated
+searches use a one-minute session cache. Formatted text appears first, while images
+and diagrams load in parallel.
+
 1. Search for a Confluence page in the left column.
 2. Select a result to read its formatted content in the right pane. The header
    shows its space, version, authors, dates, status, and labels when available.
@@ -150,6 +155,12 @@ Credentials are stored in VS Code SecretStorage and are never sent to the
 dashboard Webview or written to the local database. Disconnecting removes the
 stored credential and cached provider metadata.
 
+For corporate networks on Mac and Windows, select **Settings → Network proxy →
+Use VS Code proxy (default)**. This delegates PAC/bypass rules and supported
+authentication negotiation to VS Code. The picker can open VS Code proxy settings;
+it never changes global network settings automatically. Authentication support
+depends on your VS Code version, OS and corporate policy.
+
 If VS Code's proxy does not work, use **Settings → Network proxy** to configure
 an extension-only HTTP/HTTPS proxy. For Basic authentication, enter your
 IT-provided proxy username and password in the VS Code prompts, not your Jira
@@ -192,7 +203,9 @@ to remove it. Other extensions and VS Code settings are unchanged.
   omitted. Cached pages do not trigger network logs.
   **Proxy CONNECT HTTP 403** indicates proxy access policy, **3xx** may indicate
   a corporate sign-in redirect, **407** indicates proxy authentication, and
-  **502/504** indicate upstream reachability. These are not user cancellations.
+  **502/504** indicate a proxy/upstream failure, not a user cancellation; they
+  do not establish whether routing, authentication, DNS or server availability
+  caused it. Compare the failing route with the working browser or VS Code route.
   The extension-only proxy supports Basic authentication; use VS Code's managed
   proxy for corporate NTLM/Kerberos/SSO authentication.
 - **A project or terminal folder is rejected:** select it with the provided VS

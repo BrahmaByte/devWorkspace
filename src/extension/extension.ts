@@ -106,7 +106,16 @@ export async function activate(
   );
   const httpTransport = new VscodeHttpTransport(
     createExtensionProxyFetch(
-      () => extensionProxy.load(),
+      async () => {
+        const config = await extensionProxy.load();
+        if (!config) {
+          const http = vscode.workspace.getConfiguration("http");
+          networkOutput.appendLine(
+            `${new Date().toISOString()} VS Code networking: extension proxy support enabled=${http.get("proxySupport", "off") !== "off"}; additional fetch support enabled=${http.get("fetchAdditionalSupport", true) === true}; system certificates enabled=${http.get("systemCertificates", true) === true}. Proxy addresses and authentication data omitted.`,
+          );
+        }
+        return config;
+      },
       globalThis.fetch.bind(globalThis),
       (message) =>
         networkOutput.appendLine(`${new Date().toISOString()} ${message}`),
@@ -148,6 +157,7 @@ export async function activate(
     panelOpened = true;
     let replayPending = replayGuide;
     let activePage: ShellPage = initialPage;
+    let confluenceSearchSequence = 0;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
     const selectedProjectPaths = new SelectedPathAuthorizer();
@@ -261,6 +271,8 @@ export async function activate(
           switch (request.type) {
             case "network.configure":
               await extensionProxy.configure();
+              confluenceSearchSequence++;
+              confluenceService.clearReaderCache();
               return;
             case "walkthrough.open":
               await panel.webview.postMessage({
@@ -426,19 +438,30 @@ export async function activate(
               return;
             }
             case "confluence.refresh":
+              confluenceSearchSequence++;
               confluenceService.clearReaderCache();
               await sendConfluence();
               return;
             case "confluence.disconnect":
+              confluenceSearchSequence++;
               await confluenceService.disconnect();
               await sendConfluence();
               return;
-            case "confluence.search":
-              await panel.webview.postMessage({
-                type: "confluence.state",
-                state: await confluenceService.search(request.query),
-              } satisfies ExtensionResponse);
+            case "confluence.search": {
+              const sequence = ++confluenceSearchSequence;
+              try {
+                const state = await confluenceService.search(request.query);
+                if (sequence !== confluenceSearchSequence) return;
+                await panel.webview.postMessage({
+                  type: "confluence.state",
+                  state,
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                if (sequence !== confluenceSearchSequence) return;
+                throw error;
+              }
               return;
+            }
             case "confluence.open":
               await vscode.env.openExternal(
                 vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
@@ -447,9 +470,18 @@ export async function activate(
             case "confluence.reader":
             case "confluence.preview":
               try {
+                const responseType = request.type;
                 await panel.webview.postMessage({
                   type: request.type,
-                  document: await confluenceService.readPage(request.id),
+                  document: await confluenceService.readPage(
+                    request.id,
+                    (document) => {
+                      void panel.webview.postMessage({
+                        type: responseType,
+                        document,
+                      } satisfies ExtensionResponse);
+                    },
+                  ),
                 } satisfies ExtensionResponse);
               } catch (error) {
                 await panel.webview.postMessage({

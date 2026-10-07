@@ -30,6 +30,7 @@ export interface ConfluenceReaderDocument {
     readonly alt: string;
   }[];
   readonly mediaWarnings?: readonly string[];
+  readonly mediaLoading?: boolean;
   readonly metadata?: {
     readonly spaceKey?: string;
     readonly version?: number;
@@ -42,6 +43,7 @@ export interface ConfluenceReaderDocument {
 }
 
 export interface ConfluenceState {
+  readonly query?: string;
   readonly connection?: ConfluenceConnection;
   readonly pages: readonly ConfluencePage[];
   readonly status: "disconnected" | "connected" | "expired" | "error";

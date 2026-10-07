@@ -24,7 +24,7 @@ export function proxyTunnelErrorMessage(error: unknown): string | undefined {
       "Proxy redirected the tunnel, possibly to a sign-in page. Check the proxy endpoint and corporate sign-in; CONNECT redirects are not followed.";
   else if (status === 502 || status === 504)
     hint =
-      "Proxy could not reach the upstream destination. Check destination DNS, VPN, firewall and server availability with your IT team.";
+      "Proxy reported an upstream destination failure; this status alone does not identify the cause. Compare proxy routing/PAC/bypass rules and authentication with the working browser. Check proxy-side DNS, VPN, firewall and server availability with IT; extension-only mode supports Basic authentication only.";
   else if (status >= 500)
     hint =
       "Proxy server failed. Contact your proxy administrator; no direct fallback was attempted.";

@@ -18,8 +18,14 @@ import {
 
 export interface ConfluenceClient {
   testConnection(): Promise<void>;
-  searchPages(query: string): Promise<readonly ConfluencePage[]>;
-  readPage(id: string): Promise<ConfluenceReaderDocument>;
+  searchPages(
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ConfluencePage[]>;
+  readPage(
+    id: string,
+    onContent?: (document: ConfluenceReaderDocument) => void,
+  ): Promise<ConfluenceReaderDocument>;
 }
 export interface ConfluenceClientFactory {
   create(baseUrl: string, credential: AtlassianCredential): ConfluenceClient;
@@ -37,10 +43,26 @@ export class ConfluenceService {
     Promise<ConfluenceReaderDocument>
   >();
   private cacheGeneration = 0;
+  private searchSequence = 0;
+  private readonly searchCache = new Map<
+    string,
+    { pages: readonly ConfluencePage[]; expires: number }
+  >();
+  private readonly pendingSearches = new Map<
+    string,
+    Promise<readonly ConfluencePage[]>
+  >();
+  private readonly searchControllers = new Map<string, AbortController>();
   public clearReaderCache(): void {
     this.cacheGeneration++;
+    this.searchSequence++;
     this.readerCache.clear();
     this.pendingReads.clear();
+    this.searchCache.clear();
+    for (const controller of this.searchControllers.values())
+      controller.abort();
+    this.searchControllers.clear();
+    this.pendingSearches.clear();
   }
   public constructor(
     private readonly repository: ConfluenceRepository,
@@ -123,6 +145,8 @@ export class ConfluenceService {
   }
 
   public async search(query: string): Promise<ConfluenceState> {
+    const sequence = ++this.searchSequence;
+    const generation = this.cacheGeneration;
     const normalized = query.trim();
     if (
       !normalized ||
@@ -135,11 +159,54 @@ export class ConfluenceService {
     const storedCredential = await this.secrets.get(secretKey(connection.id));
     if (!storedCredential)
       throw new Error("Confluence credentials are unavailable.");
-    const pages = await this.clients
-      .create(connection.baseUrl, deserializeCredential(storedCredential))
-      .searchPages(normalized);
-    await this.repository.replacePages(connection.id, pages);
-    return { connection, pages, status: "connected" };
+    if (generation !== this.cacheGeneration)
+      throw new Error("Confluence connection changed. Search again.");
+    const key = JSON.stringify([
+      connection.id,
+      connection.updatedAt,
+      normalized,
+    ]);
+    if (sequence !== this.searchSequence)
+      return { connection, pages: [], status: "connected", query: normalized };
+    for (const [pendingKey, controller] of this.searchControllers) {
+      if (pendingKey !== key) controller.abort();
+    }
+    const cached = this.searchCache.get(key);
+    let pages =
+      cached && cached.expires > this.now() ? cached.pages : undefined;
+    if (!pages) {
+      let pending = this.searchControllers.get(key)?.signal.aborted
+        ? undefined
+        : this.pendingSearches.get(key);
+      if (!pending) {
+        const controller = new AbortController();
+        pending = this.clients
+          .create(connection.baseUrl, deserializeCredential(storedCredential))
+          .searchPages(normalized, controller.signal);
+        this.pendingSearches.set(key, pending);
+        this.searchControllers.set(key, controller);
+      }
+      try {
+        pages = await pending;
+      } finally {
+        if (this.pendingSearches.get(key) === pending) {
+          this.pendingSearches.delete(key);
+          this.searchControllers.delete(key);
+        }
+      }
+      if (generation !== this.cacheGeneration)
+        throw new Error("Confluence connection changed. Search again.");
+      // Metadata only; never persist search terms or page bodies in this cache.
+      if (Buffer.byteLength(JSON.stringify(pages), "utf8") <= 100_000) {
+        this.searchCache.delete(key);
+        this.searchCache.set(key, { pages, expires: this.now() + 60_000 });
+        while (this.searchCache.size > 10)
+          this.searchCache.delete(this.searchCache.keys().next().value!);
+      }
+    }
+    if (sequence === this.searchSequence)
+      await this.repository.replacePages(connection.id, pages);
+    return { connection, pages, status: "connected", query: normalized };
   }
 
   public getPageUrl(id: string): string {
@@ -158,7 +225,10 @@ export class ConfluenceService {
     return { ...page, webUrl: url.toString() };
   }
 
-  public async readPage(id: string): Promise<ConfluenceReaderDocument> {
+  public async readPage(
+    id: string,
+    onContent?: (document: ConfluenceReaderDocument) => void,
+  ): Promise<ConfluenceReaderDocument> {
     const generation = this.cacheGeneration;
     const page = this.getPage(id);
     const connection = this.repository.getConnection();
@@ -187,7 +257,25 @@ export class ConfluenceService {
     const load = async (): Promise<ConfluenceReaderDocument> => {
       const document = await this.clients
         .create(connection.baseUrl, deserializeCredential(storedCredential))
-        .readPage(id);
+        .readPage(id, (content) => {
+          if (
+            generation !== this.cacheGeneration ||
+            content.page.id !== page.id ||
+            new URL(content.page.webUrl, connection.baseUrl).origin !==
+              new URL(connection.baseUrl).origin
+          )
+            return;
+          onContent?.({
+            ...content,
+            page: {
+              ...content.page,
+              webUrl: new URL(
+                content.page.webUrl,
+                connection.baseUrl,
+              ).toString(),
+            },
+          });
+        });
       if (document.page.id !== page.id)
         throw new Error("Confluence returned an unexpected page.");
       const webUrl = new URL(document.page.webUrl, connection.baseUrl);
