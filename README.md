@@ -98,6 +98,9 @@ Updating the extension preserves your saved notes, bookmarks, and project folder
 
 Confluence bookmarks appear as structured reference cards with actions to open
 the page in Focus Reader or your default browser.
+Saved references remain usable after other searches, cache expiry and restart.
+Configure the bookmark's original Confluence site in Settings; Focus Reader needs
+its API credential, while opening the saved browser link does not.
 
 ## Knowledge
 

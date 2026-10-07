@@ -86,6 +86,23 @@ export function connectionErrorMessage(
     return `${name} rejected the connection request (HTTP ${status}). Check the base URL and server configuration.`;
 
   const detail = error instanceof Error ? error.message : "";
+  // Only fixed local errors are shown; never expose provider messages or URLs.
+  if (provider === "confluence") {
+    if (/^Note not found\./u.test(detail))
+      return "The Confluence bookmark note no longer exists. Select an existing note.";
+    if (/Confluence bookmark (is invalid|URL is invalid)/u.test(detail))
+      return "This Confluence bookmark is invalid. Save the page to Notes again.";
+    if (/Confluence page URL is not trusted/u.test(detail))
+      return "This Confluence reference is outside the connected site. Connect to its original Confluence site in Settings.";
+    if (/Confluence page was not found/u.test(detail))
+      return "This Confluence page is no longer in the search results. Search again or open its saved bookmark from Notes.";
+    if (/Confluence is not connected/u.test(detail))
+      return "Confluence is not connected. Configure the bookmark's original site in Settings.";
+    if (/Confluence credentials are unavailable/u.test(detail))
+      return "Confluence credentials are unavailable. Reconnect in Settings; saved links can still open in the browser.";
+    if (/Confluence connection.*changed/u.test(detail))
+      return "The Confluence connection changed while loading. Select the page again.";
+  }
   if (/must use HTTPS|URL is invalid/iu.test(detail))
     return `Enter a valid HTTPS ${name} base URL. HTTP is allowed only for local development.`;
   if (/Connection name/iu.test(detail))

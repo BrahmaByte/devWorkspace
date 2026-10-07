@@ -8,6 +8,24 @@ import {
 } from "../../src/application/services/integrationError";
 
 void describe("Integration connection errors", () => {
+  void it("distinguishes saved-reference failures from network failures without exposing raw messages", () => {
+    for (const [error, expected] of [
+      ["Confluence page was not found.", /search results/u],
+      ["Note not found.", /no longer exists/u],
+      ["Confluence bookmark is invalid.", /Save the page/u],
+      ["Confluence page URL is not trusted.", /original Confluence site/u],
+      ["Confluence is not connected.", /Settings/u],
+      ["Confluence credentials are unavailable.", /Reconnect/u],
+    ] as const) {
+      const message = connectionErrorMessage(
+        "confluence",
+        new Error(error + " fake-sensitive-token"),
+      );
+      assert.match(message, expected);
+      assert.doesNotMatch(message, /fake-sensitive-token/u);
+      assert.doesNotMatch(message, /could not be reached/u);
+    }
+  });
   void it("maps authentication and endpoint failures to actionable messages", () => {
     assert.match(connectionErrorMessage("jira", { status: 401 }), /rejected/u);
     assert.match(

@@ -60,6 +60,14 @@ function toStickyNote(row: Readonly<Record<string, SqlValue>>): StickyNote {
 export class NoteRepository {
   public constructor(private readonly database: LocalDatabase) {}
 
+  public get(id: string): Note {
+    const row = this.database.query("SELECT * FROM notes WHERE id = ?;", [
+      id,
+    ])[0];
+    if (!row) throw new Error("Note not found.");
+    return toNote(row);
+  }
+
   public list(query = ""): readonly Note[] {
     const normalized = query.trim();
     const rows =

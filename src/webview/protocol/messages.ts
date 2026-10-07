@@ -64,6 +64,7 @@ export type WebviewRequest =
         | "confluence.preview"
         | "confluence.bookmark";
       readonly id: string;
+      readonly noteId?: string;
     }
   | {
       readonly type: "jira.connect";

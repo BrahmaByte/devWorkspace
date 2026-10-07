@@ -209,10 +209,22 @@ export function parseWebviewRequest(value: unknown): ParseResult {
     value.type === "confluence.preview" ||
     value.type === "confluence.bookmark"
   ) {
-    return hasOnlyKeys(value, ["type", "id"]) &&
+    return hasOnlyKeys(value, ["type", "id", "noteId"]) &&
       typeof value.id === "string" &&
-      /^[0-9A-Za-z_-]{1,100}$/u.test(value.id)
-      ? { ok: true, value: { type: value.type, id: value.id } }
+      /^[0-9A-Za-z_-]{1,100}$/u.test(value.id) &&
+      (value.noteId === undefined ||
+        ((value.type === "confluence.open" ||
+          value.type === "confluence.reader") &&
+          typeof value.noteId === "string" &&
+          /^[0-9a-f-]{36}$/iu.test(value.noteId)))
+      ? {
+          ok: true,
+          value: {
+            type: value.type,
+            id: value.id,
+            ...(value.noteId === undefined ? {} : { noteId: value.noteId }),
+          },
+        }
       : { ok: false, error: `${value.type} is invalid.` };
   }
   if (value.type === "jira.connect") {

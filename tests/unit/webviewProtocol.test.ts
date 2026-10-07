@@ -114,6 +114,32 @@ void describe("Webview protocol validation", () => {
       parseWebviewRequest({ type: "confluence.reader", id: "42" }).ok,
       true,
     );
+    const bookmarkId = "00000000-0000-4000-8000-000000000001";
+    for (const type of ["confluence.open", "confluence.reader"]) {
+      assert.equal(
+        parseWebviewRequest({ type, id: "42", noteId: bookmarkId }).ok,
+        true,
+      );
+      assert.equal(
+        parseWebviewRequest({ type, id: "42", noteId: "../note" }).ok,
+        false,
+      );
+      assert.equal(
+        parseWebviewRequest({
+          type,
+          id: "42",
+          noteId: bookmarkId,
+          url: "https://evil.test",
+        }).ok,
+        false,
+      );
+    }
+    for (const type of ["confluence.preview", "confluence.bookmark"]) {
+      assert.equal(
+        parseWebviewRequest({ type, id: "42", noteId: bookmarkId }).ok,
+        false,
+      );
+    }
     assert.equal(
       parseWebviewRequest({ type: "confluence.bookmark", id: "42" }).ok,
       true,

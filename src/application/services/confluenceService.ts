@@ -8,6 +8,7 @@ import type {
 } from "../../domain/confluence/models";
 import type { ConfluenceRepository } from "../../infrastructure/database/confluenceRepository";
 import type { SecretStore } from "./jiraService";
+import type { Note } from "../../domain/notes/models";
 import {
   createAtlassianCredential,
   deserializeCredential,
@@ -209,28 +210,64 @@ export class ConfluenceService {
     return { connection, pages, status: "connected", query: normalized };
   }
 
-  public getPageUrl(id: string): string {
-    return this.getPage(id).webUrl;
+  public getPageUrl(id: string, bookmark?: Note): string {
+    return this.getPage(id, bookmark).webUrl;
   }
 
-  public getPage(id: string): ConfluencePage {
+  public getPage(id: string, bookmark?: Note): ConfluencePage {
     const connection = this.repository.getConnection();
-    const page = connection
+    if (!connection)
+      throw new Error("Confluence is not connected. Configure it in Settings.");
+    let page = !bookmark
       ? this.repository.listPages(connection.id).find((item) => item.id === id)
       : undefined;
-    if (!connection || !page) throw new Error("Confluence page was not found.");
-    const url = new URL(page.webUrl, connection.baseUrl);
-    if (url.origin !== new URL(connection.baseUrl).origin)
-      throw new Error("Confluence page URL is not trusted.");
+    if (bookmark) {
+      const lines = bookmark.content.split("\n");
+      const ids = lines.filter((line) => line.startsWith("Document ID: "));
+      const urls = lines.filter((line) => line.startsWith("URL: "));
+      if (
+        lines[0] !== "CONFLUENCE REFERENCE BOOKMARK" ||
+        ids.length !== 1 ||
+        ids[0] !== `Document ID: ${id}` ||
+        !/^[0-9A-Za-z_-]{1,100}$/u.test(id) ||
+        urls.length !== 1 ||
+        !/^https?:\/\//u.test(urls[0]!.slice(5)) ||
+        urls[0]!.slice(5).length > confluenceLimits.url
+      )
+        throw new Error(
+          "Confluence bookmark is invalid. Save the page to Notes again.",
+        );
+      page = {
+        id,
+        title: bookmark.title,
+        webUrl: urls[0]!.slice(5),
+        updatedAt: "",
+      };
+    }
+    if (!page) throw new Error("Confluence page was not found.");
+    let url: URL;
+    try {
+      url = new URL(page.webUrl, connection.baseUrl);
+    } catch {
+      throw new Error(
+        "Confluence bookmark URL is invalid. Save the page to Notes again.",
+      );
+    }
+    const base = new URL(connection.baseUrl);
+    if (url.origin !== base.origin || url.username || url.password)
+      throw new Error(
+        "Confluence page URL is not trusted. Connect to the bookmark's original Confluence site in Settings.",
+      );
     return { ...page, webUrl: url.toString() };
   }
 
   public async readPage(
     id: string,
     onContent?: (document: ConfluenceReaderDocument) => void,
+    bookmark?: Note,
   ): Promise<ConfluenceReaderDocument> {
     const generation = this.cacheGeneration;
-    const page = this.getPage(id);
+    const page = this.getPage(id, bookmark);
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Confluence is not connected.");
     const storedCredential = await this.secrets.get(secretKey(connection.id));

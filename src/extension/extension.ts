@@ -514,9 +514,26 @@ export async function activate(
               return;
             }
             case "confluence.open":
-              await vscode.env.openExternal(
-                vscode.Uri.parse(confluenceService.getPageUrl(request.id)),
-              );
+              try {
+                const opened = await vscode.env.openExternal(
+                  vscode.Uri.parse(
+                    confluenceService.getPageUrl(
+                      request.id,
+                      request.noteId
+                        ? noteRepository.get(request.noteId)
+                        : undefined,
+                    ),
+                  ),
+                );
+                if (!opened)
+                  await vscode.window.showWarningMessage(
+                    "Confluence could not open the default browser. Check your browser configuration.",
+                  );
+              } catch (error) {
+                await vscode.window.showErrorMessage(
+                  connectionErrorMessage("confluence", error),
+                );
+              }
               return;
             case "confluence.reader":
             case "confluence.preview":
@@ -532,6 +549,9 @@ export async function activate(
                         document,
                       } satisfies ExtensionResponse);
                     },
+                    request.noteId
+                      ? noteRepository.get(request.noteId)
+                      : undefined,
                   ),
                 } satisfies ExtensionResponse);
               } catch (error) {

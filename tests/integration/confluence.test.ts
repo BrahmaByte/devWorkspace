@@ -15,6 +15,8 @@ import type { AtlassianCredential } from "../../src/application/services/atlassi
 import { ConfluenceRepository } from "../../src/infrastructure/database/confluenceRepository";
 import { getDatabasePath } from "../../src/infrastructure/database/location";
 import { LocalDatabase } from "../../src/infrastructure/database/localDatabase";
+import { NoteRepository } from "../../src/infrastructure/database/noteRepository";
+import { NoteService } from "../../src/application/services/noteService";
 
 const directories: string[] = [];
 const page: ConfluencePage = {
@@ -45,10 +47,10 @@ class FakeClient implements ConfluenceClient {
       ? Promise.reject(Object.assign(new Error("offline"), { status: 503 }))
       : Promise.resolve();
   }
-  public searchPages() {
+  public searchPages(query: string) {
     return this.fail
       ? Promise.reject(new Error("offline"))
-      : Promise.resolve([page]);
+      : Promise.resolve(query === "no matches" ? [] : [page]);
   }
   public readPage() {
     return this.fail
@@ -77,6 +79,113 @@ void afterEach(async () => {
 });
 
 void describe("Confluence integration", () => {
+  void it("opens persisted bookmarks after search replacement, cache expiry and restart without trusting webview URLs", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "devworkspace-bookmark-"));
+    directories.push(directory);
+    const path = getDatabasePath(directory);
+    let database = await LocalDatabase.open(path);
+    const secrets = new MemorySecrets();
+    const factory = new FakeFactory();
+    let now = 1000;
+    let service = new ConfluenceService(
+      new ConfluenceRepository(database),
+      secrets,
+      factory,
+      () => now,
+    );
+    const notes = new NoteRepository(database);
+    const noteService = new NoteService(notes);
+    await service.connect(
+      "Docs",
+      "https://confluence.example.test",
+      "fake-token",
+    );
+    await service.search("runbook");
+    const url = service.getPageUrl(page.id);
+    const id = await noteService.createNote(
+      page.title,
+      `CONFLUENCE REFERENCE BOOKMARK\n\nDocument ID: ${page.id}\nURL: ${url}`,
+    );
+    let bookmark = notes.get(id);
+    await service.readPage(page.id, undefined, bookmark);
+    await service.search("no matches");
+    now += 300_001;
+    assert.throws(() => service.getPageUrl(page.id), /not found/u);
+    assert.equal(service.getPageUrl(page.id, bookmark), url);
+    assert.equal(
+      (await service.readPage(page.id, undefined, bookmark)).page.id,
+      page.id,
+    );
+    database.close();
+    database = await LocalDatabase.open(path);
+    service = new ConfluenceService(
+      new ConfluenceRepository(database),
+      secrets,
+      factory,
+      () => now,
+    );
+    bookmark = new NoteRepository(database).get(id);
+    assert.throws(
+      () => new NoteRepository(database).get("missing-note"),
+      /Note not found/u,
+    );
+    assert.equal(
+      (await service.readPage(page.id, undefined, bookmark)).headings[0]?.text,
+      "Runbook",
+    );
+    assert.equal(service.getPageUrl(page.id, bookmark), url);
+    assert.throws(
+      () =>
+        service.getPage(page.id, {
+          ...bookmark,
+          content: bookmark.content.replace(
+            "Document ID: 42",
+            "Document ID: 43",
+          ),
+        }),
+      /invalid/u,
+    );
+    for (const replacement of [
+      "https://evil.test/page",
+      "https://user:fake@confluence.example.test/page",
+      "http://confluence.example.test/page",
+      "javascript:alert(1)",
+      "",
+    ]) {
+      assert.throws(
+        () =>
+          service.getPage(page.id, {
+            ...bookmark,
+            content: bookmark.content.replace(url, replacement),
+          }),
+        /trusted|invalid/u,
+      );
+    }
+    const requests = factory.credentials.length;
+    secrets.values.clear();
+    await assert.rejects(
+      service.readPage(page.id, undefined, bookmark),
+      /credentials/u,
+    );
+    assert.equal(service.getPageUrl(page.id, bookmark), url);
+    assert.equal(factory.credentials.length, requests); // Browser links never make provider requests.
+    await service.connect(
+      "Other site",
+      "https://other.example.test",
+      "fake-other-token",
+    );
+    await assert.rejects(
+      service.readPage(page.id, undefined, bookmark),
+      /not trusted/u,
+    );
+    assert.throws(() => service.getPageUrl(page.id, bookmark), /not trusted/u);
+    await service.disconnect();
+    assert.throws(
+      () => service.getPageUrl(page.id, bookmark),
+      /not connected/u,
+    );
+    database.close();
+  });
   void it("deduplicates and bounds short-lived full-text searches, rejects stale connection results and requires credentials on cache hits", async () => {
     const directory = await mkdtemp(
       join(tmpdir(), "devworkspace-search-cache-"),

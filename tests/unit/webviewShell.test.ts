@@ -366,6 +366,15 @@ void describe("Webview shell", () => {
     assert.doesNotMatch(html, /id="note-pin"|id="note-archive"/);
     assert.match(html, /id="note-bookmark"/);
     assert.match(html, /Confluence reference bookmark/);
+    assert.match(
+      html,
+      /requestFocusReader\(details\.id,note\.title,note\.id\)/u,
+    );
+    assert.match(
+      html,
+      /type:"confluence.open",id:details\.id,noteId:note\.id/u,
+    );
+    assert.match(html, /readerNoteId\?\{noteId:readerNoteId\}/u);
     assert.match(html, /id="note-delete"/);
   });
 
