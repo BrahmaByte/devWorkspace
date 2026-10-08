@@ -1,0 +1,21 @@
+DevDashboardV1 0.1.14
+
+Local calendar planner
+- Plan timed agendas in Day, Week and Month views, with a day timeline and
+  twelve-month yearly calendar alongside.
+- Add inclusive holiday ranges and record leave in days or hours, including
+  half days. Set annual leave allowances; saved leave reduces the balance,
+  and edits or deletions recalculate it.
+- Choose custom colors with native color pickers. Holidays have independent
+  colors, gold by default, and diamond markers; leave uses its type color
+  and circular markers.
+- Aligned calendar card sizes and simplified leave-management forms. Saved
+  manual card sizes and order are preserved.
+
+Data safety
+- Calendar data stays local and is included in existing database snapshots.
+  Migrations preserve saved entries, leave types and legacy units/colors.
+- Quantities are recorded as entered; weekends and holidays are not deducted
+  automatically. Allowances repeat annually without carryover. Split overnight
+  plans and cross-year leave into separate entries.
+- The starter guide and update highlights now cover the calendar planner.

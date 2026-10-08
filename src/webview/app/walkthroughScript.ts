@@ -16,8 +16,8 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Choose your proxy route",text:"Saved custom proxies still work. To use VS Code's proxy instead, select Use VS Code proxy (default) in Network proxy."},
- {page:"workspace",title:"Set a user environment variable",text:"Search by name, then use plus or edit. Enter values in masked VS Code prompts and choose overwrite or append. Restart affected apps or shells; on macOS/Linux, changes apply to supported user shells only."}
+ {page:"calendar",title:"Plan your day, week or month",text:"Switch the Planner between Day, Week and Month and add an agenda with Quick plan. Select a date in the yearly calendar to update the day planner."},
+ {page:"calendar",title:"Track holidays and leave",text:"Open Manage leave types to set Days or Hours, an Annual type count and a color. Record 0.5 days for half-day leave, or choose Holiday for separately colored holidays; quantities are recorded as entered."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

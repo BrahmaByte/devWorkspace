@@ -16,12 +16,12 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.13
+## Version 0.1.14
 
-- Added a Jira-style board search and field filter for Parent, Assignee, Status,
-  Work type and Labels without changing saved JQL.
-- The dock launcher now closes its empty primary pane before opening the dashboard.
-- URL-group details show the group name once with compact actions.
+- Added a local Calendar with Day, Week and Month planning, a day timeline and
+  a yearly overview.
+- Track holidays and leave with annual allowances, days or hours, and half days.
+- Choose custom colors; holidays use diamond markers to distinguish them from leave.
 
 ## Screenshots
 

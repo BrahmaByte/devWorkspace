@@ -181,11 +181,14 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(page, "notes");
     send("update");
     assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
-    assert.match(panel.children[1]!.textContent, /Choose your proxy route/u);
-    assert.equal(page, "settings");
+    assert.match(
+      panel.children[1]!.textContent,
+      /Plan your day, week or month/u,
+    );
+    assert.equal(page, "calendar");
     next!.click();
-    assert.equal(page, "workspace");
-    assert.match(panel.children[2]!.textContent, /masked VS Code prompts/u);
+    assert.equal(page, "calendar");
+    assert.match(panel.children[2]!.textContent, /Manage leave types/u);
     skip!.click();
     assert.equal(page, "notes");
     send("tour");
