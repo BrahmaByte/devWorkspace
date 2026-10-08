@@ -3,8 +3,40 @@ import { describe, it } from "node:test";
 import { Script } from "node:vm";
 
 import { createWebviewHtml } from "../../src/webview/app/shell";
+import { dashboardInteractionsScript } from "../../src/webview/app/dashboardInteractionsScript";
 
 void describe("Webview shell", () => {
+  void it("runs saved-filter loading, text-only labels, selection, failure recovery and connection clearing", () => {
+    const harness = String.raw`
+      const controls=new Map(),messages=[],handlers={};
+      const element=()=>({value:"",textContent:"",children:[],disabled:false,listeners:{},addEventListener(name,fn){this.listeners[name]=fn},append(child){this.children.push(child)},replaceChildren(){this.children=[]}});
+      const document={querySelector(id){if(!controls.has(id))controls.set(id,element());return controls.get(id)},createElement:element};
+      const window={addEventListener(name,fn){handlers[name]=fn}},vscode={postMessage(message){messages.push(message)}};
+    `;
+    const source = dashboardInteractionsScript.slice(
+      dashboardInteractionsScript.indexOf("const savedFilters ="),
+    );
+    new Script(
+      harness +
+        source +
+        String.raw`
+      loadFilters.listeners.click();assert.equal(loadFilters.disabled,true);assert.equal(messages[0].type,"jira.filters");
+      handlers.message({data:{type:"jira.filters",filters:[{id:"42",name:"<img onerror=bad()>"}]}});
+      assert.equal(loadFilters.disabled,false);assert.equal(savedFilters.children[1].textContent,"<img onerror=bad()>");
+      savedFilters.value="42";savedFilters.listeners.change();assert.equal(messages[1].query,"filter = 42");
+      savedFilters.value="42 OR true";savedFilters.listeners.change();assert.equal(messages.length,2);
+      handlers.message({data:{type:"jira.filters",filters:[],message:"Denied"}});assert.equal(document.querySelector("#jira-message").textContent,"Denied");
+      handlers.message({data:{type:"jira.state",state:{connection:{id:"other",baseUrl:"https://other.test"}}}});assert.equal(savedFilters.children.length,1);
+    `,
+    ).runInNewContext({ assert });
+  });
+  void it("renders saved filter labels as text and keeps both macro sanitizers aligned", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /id="jira-saved-filters"/u);
+    assert.match(html, /option.textContent = filter.name/u);
+    assert.match(html, /reader-macro-\(panel\|status\|code\)/u);
+    assert.match(html, /"DETAILS","SUMMARY"/u);
+  });
   void it("aligns board search and field filters without a preset dropdown or duplicate group heading", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /id="jira-board-search"[^>]+maxlength="200"/u);

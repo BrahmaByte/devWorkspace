@@ -4,6 +4,7 @@ import { afterEach, describe, it } from "node:test";
 import {
   ConfluenceRequestError,
   FetchConfluenceClient,
+  sanitizeConfluenceHtml,
 } from "../../src/infrastructure/confluence/fetchConfluenceClient";
 
 const originalFetch = globalThis.fetch;
@@ -12,6 +13,43 @@ void afterEach(() => {
 });
 
 void describe("Confluence REST provider", () => {
+  void it("identifies interactive macros instead of silently omitting them", async () => {
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: "42",
+            title: "Wiki",
+            body: {
+              export_view: {
+                value:
+                  '<p>Before</p><iframe src="https://external.test">Active content</iframe><p>After</p>',
+              },
+            },
+            _links: { webui: "/pages/42" },
+          }),
+        ),
+      );
+    const document = await new FetchConfluenceClient(
+      "https://wiki.example.test",
+      { type: "bearer", token: "fake-token" },
+    ).readPage("42");
+    assert.match(document.html, /Interactive macro unavailable/u);
+    assert.doesNotMatch(document.html, /iframe|external.test|Active content/u);
+    assert.match(document.mediaWarnings?.join(" ") ?? "", /original page/u);
+  });
+  void it("retains static macro semantics while removing arbitrary attributes and active content", () => {
+    const rendered = sanitizeConfluenceHtml(
+      '<div class="confluence-information-macro evil" onclick="bad()"><p>Information</p></div><span class="status-macro" style="color:red">Ready</span><details open><summary>Expand</summary><dl><dt>Key</dt><dd>Value</dd></dl></details><script>bad()</script><iframe src="https://evil.test">bad()</iframe>',
+    );
+    assert.match(rendered.html, /class="reader-macro-panel"/u);
+    assert.match(rendered.html, /class="reader-macro-status"/u);
+    assert.match(rendered.html, /<details><summary>Expand<\/summary><dl>/u);
+    assert.doesNotMatch(
+      rendered.html,
+      /onclick|style=|evil|script|iframe|bad\(\)| open/u,
+    );
+  });
   void it("uses bearer authentication and performs bounded metadata search", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {

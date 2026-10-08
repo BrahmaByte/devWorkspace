@@ -70,3 +70,7 @@ export interface JiraState {
   readonly message?: string;
   readonly filter: string;
 }
+export interface JiraSavedFilter {
+  readonly id: string;
+  readonly name: string;
+}

@@ -36,4 +36,49 @@ function editUrlGroup(group){const form=document.querySelector("#url-group-form"
 function highlightJiraRow(){document.querySelectorAll("#jira-issues [data-issue-key]").forEach(row=>{const selected=row.dataset.issueKey===highlightedJiraIssue?.key;row.classList.toggle("jira-highlighted",selected);row.setAttribute("aria-pressed",String(selected))});if(highlightedJiraIssue&&!document.querySelector('[data-view="jira"]').hidden){const row=[...document.querySelectorAll("#jira-issues [data-issue-key]")].find(item=>item.dataset.issueKey===highlightedJiraIssue.key);row?.scrollIntoView({block:"nearest"});row?.focus({preventScroll:true})}}
 function renderRecentJira(issues,message){const home=document.querySelector("#home-jira");home.replaceChildren();if(message)homeEmpty(home,message);if(!issues.length){if(!message)homeEmpty(home,"No recent assigned Jira issues. Connect or sync Jira from Settings.");return}issues.slice(0,5).forEach(issue=>home.append(homeRow("task",issue.key,issue.summary+" · "+issue.status+" · Updated "+new Date(issue.updatedAt).toLocaleString(),()=>{highlightedJiraIssue=issue;selectPage("jira");if(latestJiraState)renderJira(latestJiraState);vscode.postMessage({type:"navigation.select",page:"jira"})},"Show and highlight "+issue.key+" on the Jira board")))}
 window.addEventListener("message",event=>{const message=event.data;if(message?.type==="urls.saved"){const form=document.querySelector("#url-group-form");form?.reset();if(form)form.hidden=true;urlGroupEditingId=undefined}else if(message?.type==="jira.state"&&!message.state.connection){highlightedJiraIssue=undefined;jiraBoardSearch="";jiraBoardSelections={};document.querySelector("#jira-board-search").value="";document.querySelector("#jira-filter-count").textContent="";latestJiraState=message.state;document.querySelector("#home-jira").replaceChildren();homeEmpty(document.querySelector("#home-jira"),"Connect Jira from Settings to load recent work.")}});
+const savedFilters = document.querySelector("#jira-saved-filters"),
+  loadFilters = document.querySelector("#jira-load-filters");
+let savedFiltersConnection;
+loadFilters.addEventListener("click", () => {
+  loadFilters.disabled = true;
+  document.querySelector("#jira-message").textContent =
+    "Loading saved filters…";
+  vscode.postMessage({ type: "jira.filters" });
+});
+savedFilters.addEventListener("change", () => {
+  if (/^[1-9][0-9]{0,19}$/.test(savedFilters.value)) {
+    const query = "filter = " + savedFilters.value;
+    document.querySelector("#jira-search-query").value = query;
+    vscode.postMessage({ type: "jira.search", query });
+  }
+});
+window.addEventListener("message", (event) => {
+  const message = event.data;
+  if (message?.type === "jira.filters") {
+    loadFilters.disabled = false;
+    savedFilters.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Saved filters";
+    savedFilters.append(placeholder);
+    for (const filter of message.filters || []) {
+      const option = document.createElement("option");
+      option.value = filter.id;
+      option.textContent = filter.name;
+      savedFilters.append(option);
+    }
+    document.querySelector("#jira-message").textContent =
+      message.message ||
+      (message.filters?.length
+        ? ""
+        : "No saved filters available. On Data Center, mark filters as favourites in Jira.");
+  } else if (message?.type === "jira.state" && savedFiltersConnection !== JSON.stringify([message.state.connection?.id,message.state.connection?.baseUrl,message.state.currentUser?.accountId])) {
+    savedFiltersConnection = JSON.stringify([message.state.connection?.id,message.state.connection?.baseUrl,message.state.currentUser?.accountId]);
+    savedFilters.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Saved filters";
+    savedFilters.append(placeholder);
+  }
+});
 `;

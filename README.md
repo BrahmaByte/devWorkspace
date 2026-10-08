@@ -71,6 +71,8 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
+- Load **Saved filters** with its refresh icon, then select a filter to apply it.
+  Cloud lists up to 500 accessible filters; Data Center lists favourites.
 - Search the loaded board by issue key or summary. Open **Filter** to select
   Parent, Assignee, Status, Work type or Labels; **Clear all** resets these
   board filters without changing your saved JQL.
@@ -168,6 +170,9 @@ and diagrams load in parallel.
 4. Use the bookmark icon to save the page as a local note reference.
 5. Use the external-open icon to open the original page in your default browser.
 
+Server-rendered macro content retains panels, status badges, code blocks,
+tables and expandable sections when provided by Confluence. Interactive app
+macros requiring scripts or frames must be viewed in the original browser page.
 Images and static diagrams appear in both reading views. Unavailable or blocked
 media is clearly identified; use the external-open icon for active macros or
 unsupported embeds. Page bodies and images are loaded on selection and are not

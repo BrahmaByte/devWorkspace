@@ -3,6 +3,18 @@ import { describe, it } from "node:test";
 
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
+void it("accepts saved-filter discovery without webview-supplied endpoints or credentials", () => {
+  assert.equal(parseWebviewRequest({ type: "jira.filters" }).ok, true);
+  assert.equal(
+    parseWebviewRequest({ type: "jira.filters", url: "https://evil.test" }).ok,
+    false,
+  );
+  assert.equal(
+    parseWebviewRequest({ type: "jira.filters", token: "fake" }).ok,
+    false,
+  );
+});
+
 void describe("Webview protocol validation", () => {
   void it("validates saved group edits and whitelists Jira presets", () => {
     const request = {

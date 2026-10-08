@@ -15,6 +15,7 @@ import type {
   JiraComment,
   JiraCommentPage,
   JiraIssue,
+  JiraSavedFilter,
   JiraState,
   JiraQuickFilter,
 } from "../../domain/jira/models";
@@ -128,6 +129,7 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.open"; readonly issueKey: string }
   | { readonly type: "jira.search"; readonly query: string }
+  | { readonly type: "jira.filters" }
   | { readonly type: "jira.preset"; readonly preset: JiraQuickFilter }
   | {
       readonly type: "jira.local.create";
@@ -226,6 +228,11 @@ export type ExtensionResponse =
       readonly state: HomeState;
     }
   | { readonly type: "jira.state"; readonly state: JiraState }
+  | {
+      readonly type: "jira.filters";
+      readonly filters: readonly JiraSavedFilter[];
+      readonly message?: string;
+    }
   | { readonly type: "confluence.state"; readonly state: ConfluenceState }
   | {
       readonly type: "confluence.reader" | "confluence.preview";

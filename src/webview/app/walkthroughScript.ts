@@ -7,7 +7,7 @@ export const walkthroughScript = String.raw`
 const tourSteps=[
  {page:"home",title:"Keep frequently used tools here",text:"Add a sticky note with plus. Open a recent Jira issue, edit a URL group with the pencil, or launch an app from its tile."},
  {page:"settings",title:"Connect Jira and Confluence",text:"Enter your site URL, then your credentials in the VS Code prompts. If your network needs a proxy, configure it in Network proxy."},
- {page:"jira",title:"Filter your board",text:"Use board search and Filter to narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
+ {page:"jira",title:"Filter your board",text:"Load Saved filters with its refresh icon and choose one to apply. Board search and Filter narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
  {page:"calendar",title:"Plan your time",text:"Switch Planner between Day, Week, Month and Year. Add a plan or holiday with Quick plan. Use Leave manager for day-based allowances and colors; Choose dates for leave; Duration offers Half day. Leave balances shows availed and remaining."},
  {page:"workspace",title:"Open a project or run a command",text:"Choose a project folder or run a saved command shortcut. For GitHub repositories, configure a PAT in Settings, refresh, select an owner and use the clone icon to choose a folder and confirm."},
  {page:"notes",title:"Write a note",text:"Use the new-note icon and start typing. Notes save automatically. Select an existing note to edit it."},

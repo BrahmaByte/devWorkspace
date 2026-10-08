@@ -102,6 +102,18 @@ export class FetchConfluenceClient implements ConfluenceClient {
     }> = [];
     const warnings: string[] = [];
     let sourceHtml = view.value;
+    if (
+      /<(?:script|iframe|object|embed)\b|data-macro-name\s*=\s*["'](?:jira|widget|include|excerpt-include)["']/iu.test(
+        sourceHtml,
+      )
+    )
+      warnings.push(
+        "Some interactive or unresolved macros may be unavailable. Open the original page in your browser for the complete view.",
+      );
+    sourceHtml = sourceHtml.replace(
+      /<(iframe|object)\b[^>]*>[\s\S]*?<\/\1\s*>|<embed\b[^>]*>/giu,
+      "<p>Interactive macro unavailable in the reader. Open the original page in your browser.</p>",
+    );
     const inline = new Map<string, string>();
     sourceHtml = sourceHtml.replace(
       /<svg\b[^>]*>[\s\S]*?<\/svg\s*>/giu,
@@ -296,6 +308,19 @@ export class FetchConfluenceClient implements ConfluenceClient {
 }
 
 const allowedTags = new Set([
+  "div",
+  "span",
+  "details",
+  "summary",
+  "dl",
+  "dt",
+  "dd",
+  "figure",
+  "figcaption",
+  "caption",
+  "tfoot",
+  "sub",
+  "sup",
   "a",
   "b",
   "blockquote",
@@ -366,6 +391,20 @@ export function sanitizeConfluenceHtml(
       }
       if (!allowedTags.has(tag)) return "";
       if (match[1]) return voidTags.has(tag) ? "" : `</${tag}>`;
+      if (tag === "div" || tag === "span") {
+        const classes = /\sclass\s*=\s*(?:"([^"]*)"|'([^']*)')/iu.exec(token);
+        const known = (classes?.[1] ?? classes?.[2] ?? "").split(/\s+/u);
+        const kind =
+          known.includes("confluence-information-macro") ||
+          known.includes("panel")
+            ? "panel"
+            : known.includes("status-macro")
+              ? "status"
+              : known.includes("code")
+                ? "code"
+                : undefined;
+        return `<${tag}${kind ? ` class="reader-macro-${kind}"` : ""}>`;
+      }
       if (tag === "td" || tag === "th") {
         const spans: string[] = [];
         for (const attribute of token.matchAll(

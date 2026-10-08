@@ -7,6 +7,7 @@ import type {
   JiraUser,
   JiraComment,
   JiraCommentPage,
+  JiraSavedFilter,
 } from "../../domain/jira/models";
 import {
   authorizationHeader,
@@ -50,6 +51,48 @@ export class FetchJiraClient implements JiraClient {
         ? { emailAddress: data.emailAddress }
         : {}),
     };
+  }
+
+  public async getSavedFilters(): Promise<readonly JiraSavedFilter[]> {
+    const filters = new Map<string, JiraSavedFilter>();
+    let startAt = 0;
+    for (let page = 0; page < 20 && startAt < 500; page++) {
+      const hostname = new URL(this.baseUrl).hostname;
+      const cloud =
+        this.apiVersion === 3 ||
+        hostname.endsWith(".atlassian.net") ||
+        hostname === "api.atlassian.com";
+      const result = await this.request(
+        cloud
+          ? `/rest/api/${this.apiVersion}/filter/search?startAt=${startAt}&maxResults=50&orderBy=name`
+          : "/rest/api/2/filter/favourite",
+        {},
+        !cloud,
+      );
+      if (!Array.isArray(result.values))
+        throw new Error("Invalid saved filter response.");
+      for (const value of result.values.slice(0, 500 - startAt)) {
+        if (
+          !isRecord(value) ||
+          typeof value.id !== "string" ||
+          !/^[1-9][0-9]{0,19}$/u.test(value.id) ||
+          typeof value.name !== "string" ||
+          !value.name.trim() ||
+          value.name.length > 200
+        )
+          throw new Error("Invalid saved filter.");
+        filters.set(value.id, { id: value.id, name: value.name });
+      }
+      startAt += result.values.length;
+      if (
+        !cloud ||
+        result.isLast === true ||
+        result.values.length === 0 ||
+        (typeof result.total === "number" && startAt >= result.total)
+      )
+        break;
+    }
+    return [...filters.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   public async getAssignedIssues(): Promise<readonly JiraIssue[]> {
@@ -146,6 +189,7 @@ export class FetchJiraClient implements JiraClient {
   private async request(
     path: string,
     init: RequestInit = {},
+    arrayResponse = false,
   ): Promise<JsonRecord> {
     const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
       ...init,
@@ -162,6 +206,7 @@ export class FetchJiraClient implements JiraClient {
     const body = await response.text();
     if (body.length > 2_000_000) throw new Error("Jira response is too large.");
     const parsed: unknown = JSON.parse(body);
+    if (arrayResponse && Array.isArray(parsed)) return { values: parsed };
     if (!isRecord(parsed)) throw new Error("Invalid Jira response.");
     return parsed;
   }

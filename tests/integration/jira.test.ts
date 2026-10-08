@@ -43,6 +43,9 @@ class MemorySecrets implements SecretStore {
 }
 
 class FakeClient implements JiraClient {
+  public getSavedFilters() {
+    return Promise.resolve([{ id: "42", name: "Team work" }]);
+  }
   public constructor(
     private readonly fail = false,
     private readonly issueFailure?: Error,
@@ -99,6 +102,55 @@ void afterEach(async () => {
 });
 
 void describe("Jira integration", () => {
+  void it("rejects saved filters returned after the connection is removed", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-stale-filters-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const factory = new FakeFactory();
+    const service = new JiraService(
+      new JiraRepository(database),
+      new MemorySecrets(),
+      factory,
+    );
+    await service.connect("Jira", "https://jira.example.test", "fake-token");
+    let finish!: (value: { id: string; name: string }[]) => void;
+    let started!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const client = new FakeClient();
+    client.getSavedFilters = () => {
+      started();
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    };
+    factory.create = () => client;
+    const pending = service.getSavedFilters();
+    await ready;
+    await service.disconnect();
+    finish([{ id: "42", name: "Old filter" }]);
+    await assert.rejects(pending, /connection changed/u);
+  });
+  void it("fetches saved filters without rewriting JQL and persists filter-ID queries", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-saved-filters-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new JiraRepository(database);
+    const secrets = new MemorySecrets();
+    const service = new JiraService(repository, secrets, new FakeFactory());
+    await assert.rejects(service.getSavedFilters(), /Connect Jira/u);
+    await service.connect("Jira", "https://jira.example.test", "fake-token");
+    await service.search("project = DEV");
+    assert.deepEqual(await service.getSavedFilters(), [
+      { id: "42", name: "Team work" },
+    ]);
+    assert.equal(repository.getFilter(), "project = DEV");
+    await service.search("filter = 42");
+    assert.equal((await service.refresh()).filter, "filter = 42");
+    await service.disconnect();
+    await assert.rejects(service.getSavedFilters(), /Connect Jira/u);
+  });
   void it("loads five recent assigned issues independently of the saved board filter", async () => {
     const directory = await mkdtemp(join(tmpdir(), "dashboard-recent-jira-"));
     directories.push(directory);

@@ -7,7 +7,7 @@ function wikiMetadata(documentData) {
   add("Page ID",page.id);add("Space",meta.spaceKey?((page.spaceName||"")+" ("+meta.spaceKey+")"):(page.spaceName||""));add("Version",meta.version);add("Status",meta.status);add("Created by",meta.createdBy);add("Updated by",meta.updatedBy);add("Created",meta.createdAt?new Date(meta.createdAt).toLocaleString():undefined);add("Updated",page.updatedAt?new Date(page.updatedAt).toLocaleString():undefined);add("Labels",meta.labels?.join(", "));
   return dl;
 }
-const safeReaderTags=new Set(["A","B","BLOCKQUOTE","BR","CODE","DEL","EM","H1","H2","H3","H4","H5","H6","HR","I","IMG","LI","OL","P","PRE","S","STRONG","TABLE","TBODY","TD","TH","THEAD","TR","U","UL"]);
+const safeReaderTags=new Set(["DIV","SPAN","DETAILS","SUMMARY","DL","DT","DD","FIGURE","FIGCAPTION","CAPTION","TFOOT","SUB","SUP","A","B","BLOCKQUOTE","BR","CODE","DEL","EM","H1","H2","H3","H4","H5","H6","HR","I","IMG","LI","OL","P","PRE","S","STRONG","TABLE","TBODY","TD","TH","THEAD","TR","U","UL"]);
 function cloneReaderNode(node,media,prefix,loading=false) {
   if(node.nodeType===Node.TEXT_NODE)return document.createTextNode(node.textContent||"");
   if(node.nodeType!==Node.ELEMENT_NODE||!safeReaderTags.has(node.tagName))return document.createDocumentFragment();
@@ -17,6 +17,7 @@ function cloneReaderNode(node,media,prefix,loading=false) {
     const img=document.createElement("img");img.src=image.dataUrl;img.alt=image.alt||"Embedded image or diagram";img.loading="lazy";img.decoding="async";return img;
   }
   const clone=document.createElement(node.tagName.toLowerCase());
+  if(/^reader-macro-(panel|status|code)$/u.test(node.className))clone.className=node.className;
   if(/^H[1-6]$/u.test(node.tagName)){const id=node.getAttribute("data-reader-id");if(/^reader-section-[0-9]+$/u.test(id||""))clone.id=prefix+id}
   if(node.tagName==="TD"||node.tagName==="TH")["colspan","rowspan"].forEach(name=>{const value=node.getAttribute(name);if(/^[1-9][0-9]?$/u.test(value||""))clone.setAttribute(name,value)});
   node.childNodes.forEach(child=>clone.append(cloneReaderNode(child,media,prefix,loading)));return clone;

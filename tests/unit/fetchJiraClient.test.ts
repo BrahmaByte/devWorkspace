@@ -13,6 +13,88 @@ void afterEach(() => {
 });
 
 void describe("Jira REST provider", () => {
+  void it("loads paginated Cloud saved filters, deduplicates and rejects unsafe IDs", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = (input) => {
+      urls.push(
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url,
+      );
+      return Promise.resolve(
+        new Response(
+          JSON.stringify(
+            urls.length === 1
+              ? { values: [{ id: "12", name: "Zebra" }], total: 3 }
+              : {
+                  values: [
+                    { id: "12", name: "Zebra" },
+                    { id: "13", name: "<b>Alpha</b>" },
+                  ],
+                  isLast: true,
+                },
+          ),
+        ),
+      );
+    };
+    const client = new FetchJiraClient("https://team.atlassian.net", {
+      type: "basic",
+      email: "fake@example.test",
+      token: "fake-token",
+    });
+    assert.deepEqual(await client.getSavedFilters(), [
+      { id: "13", name: "<b>Alpha</b>" },
+      { id: "12", name: "Zebra" },
+    ]);
+    assert.match(urls[1]!, /startAt=1/u);
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ values: [{ id: "1 OR true", name: "Bad" }] }),
+        ),
+      );
+    await assert.rejects(
+      new FetchJiraClient("https://team.atlassian.net", {
+        type: "basic",
+        email: "fake@example.test",
+        token: "fake-token",
+      }).getSavedFilters(),
+      /Invalid saved filter/u,
+    );
+  });
+  void it("uses Data Center favourites and propagates authentication failures", async () => {
+    let url = "";
+    globalThis.fetch = (input) => {
+      url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      return Promise.resolve(
+        new Response(JSON.stringify([{ id: "7", name: "Favourite" }])),
+      );
+    };
+    const client = new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    });
+    assert.deepEqual(await client.getSavedFilters(), [
+      { id: "7", name: "Favourite" },
+    ]);
+    assert.match(url, /\/rest\/api\/2\/filter\/favourite$/u);
+    globalThis.fetch = () =>
+      Promise.resolve(new Response("denied", { status: 401 }));
+    await assert.rejects(
+      new FetchJiraClient("https://jira.example.test", {
+        type: "bearer",
+        token: "fake-token",
+      }).getSavedFilters(),
+      { status: 401 },
+    );
+  });
   void it("paginates sanitized comments and uses Cloud ADF versus Data Center text", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     const comment = {

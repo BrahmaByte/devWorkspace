@@ -391,6 +391,11 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: value.type, issueKey: value.issueKey } }
       : { ok: false, error: `${value.type} is invalid.` };
   }
+  if (value.type === "jira.filters") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "jira.filters" } }
+      : { ok: false, error: "Invalid saved filter request." };
+  }
   if (value.type === "jira.search") {
     return hasOnlyKeys(value, ["type", "query"]) &&
       typeof value.query === "string" &&

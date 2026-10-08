@@ -904,6 +904,31 @@ export async function activate(
                 state: await jiraService.search(request.query),
               } satisfies ExtensionResponse);
               return;
+            case "jira.filters":
+              try {
+                await panel.webview.postMessage({
+                  type: "jira.filters",
+                  filters: await jiraService.getSavedFilters(),
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                await panel.webview.postMessage({
+                  type: "jira.filters",
+                  filters: [],
+                  message:
+                    typeof error === "object" &&
+                    error !== null &&
+                    "status" in error &&
+                    error.status === 401
+                      ? "Jira credentials were rejected. Reconnect Jira in Settings."
+                      : typeof error === "object" &&
+                          error !== null &&
+                          "status" in error &&
+                          error.status === 403
+                        ? "Jira denied access to saved filters. Check filter permissions."
+                        : "Saved filters could not load. Check the Jira connection and network in Settings.",
+                } satisfies ExtensionResponse);
+              }
+              return;
             case "jira.preset":
               await panel.webview.postMessage({
                 type: "jira.state",

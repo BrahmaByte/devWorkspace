@@ -8,6 +8,7 @@ import type {
   JiraIssue,
   JiraState,
   JiraUser,
+  JiraSavedFilter,
 } from "../../domain/jira/models";
 import type { JiraRepository } from "../../infrastructure/database/jiraRepository";
 import {
@@ -18,6 +19,7 @@ import {
 } from "./atlassianAuth";
 
 export interface JiraClient {
+  getSavedFilters?(): Promise<readonly JiraSavedFilter[]>;
   getCurrentUser(): Promise<JiraUser>;
   getAssignedIssues(): Promise<readonly JiraIssue[]>;
   searchIssues(query: string): Promise<readonly JiraIssue[]>;
@@ -42,6 +44,28 @@ const secretKey = (connectionId: string) =>
   `devworkspace.jira.${connectionId}.pat`;
 
 export class JiraService {
+  public async getSavedFilters(): Promise<readonly JiraSavedFilter[]> {
+    const generation = this.recentGeneration;
+    const connection = this.repository.getConnection();
+    if (!connection)
+      throw new Error("Connect Jira before loading saved filters.");
+    const stored = await this.secrets.get(secretKey(connection.id));
+    if (!stored) throw new Error("Reconnect Jira to load saved filters.");
+    const client = this.clients.create(
+      connection.baseUrl,
+      deserializeCredential(stored),
+    );
+    if (!client.getSavedFilters)
+      throw new Error("Saved filters are unavailable.");
+    const filters = await client.getSavedFilters();
+    if (
+      generation !== this.recentGeneration ||
+      this.repository.getConnection()?.id !== connection.id ||
+      (await this.secrets.get(secretKey(connection.id))) !== stored
+    )
+      throw new Error("Jira connection changed. Reload saved filters.");
+    return filters;
+  }
   private recentConnectionId: string | undefined;
   private recentIssues: readonly JiraIssue[] = [];
   private recentGeneration = 0;
