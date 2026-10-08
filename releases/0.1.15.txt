@@ -16,7 +16,8 @@ Calendar and leave safety
 Developer workflow
 - Connect GitHub.com in Settings, browse authorized account and organization
   repositories, clone with native Git after folder selection and confirmation,
-  and add successful clones directly to Project launcher.
+  and add successful clones directly to Project launcher. Personal and
+  Enterprise Managed User account names are supported.
 - Load accessible Jira saved filters while keeping board field filters separate
   from the saved JQL.
 - Preserve supported static Confluence macro formatting while continuing to

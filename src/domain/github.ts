@@ -16,6 +16,6 @@ export interface GitHubState {
   readonly message: string;
 }
 export const githubOwner = (value: unknown): value is string =>
-  typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,38}$/iu.test(value);
+  typeof value === "string" && /^[a-z0-9][a-z0-9_-]{0,38}$/iu.test(value);
 export const githubRepositoryId = (value: unknown): value is string =>
   typeof value === "string" && /^[1-9][0-9]{0,19}$/u.test(value);

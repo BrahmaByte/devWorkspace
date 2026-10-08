@@ -132,6 +132,64 @@ void it("discovers organizations for limited fine-grained tokens and reports acc
   assert.equal(invalid.storage.size, 0);
   await assert.rejects(service.connect("fake token"), /without whitespace/u);
 });
+void it("supports Enterprise Managed User logins and repository owners", async () => {
+  const login = "managed-user_acme";
+  const { service } = fixture((url) => {
+    if (url.pathname === "/user") return json({ login });
+    if (url.pathname === "/user/orgs") return json([]);
+    return json([repo(1, login)]);
+  });
+  await service.connect("fake-managed-user-pat");
+  const state = await service.refresh();
+  assert.equal(state.login, login);
+  const repositories = await service.browse(login);
+  assert.equal(repositories.repositories[0]?.owner, login);
+  assert.equal(
+    parseWebviewRequest({
+      type: "github.repositories",
+      owner: login,
+      more: false,
+    }).ok,
+    true,
+  );
+});
+void it("bounds managed-user names and maps GitHub failures without exposing response bodies", async () => {
+  const validMaximum = "a" + "b".repeat(33) + "_acme";
+  assert.equal(validMaximum.length, 39);
+  for (const owner of ["_managed_acme", "managed/acme", "a".repeat(40)])
+    assert.equal(
+      parseWebviewRequest({
+        type: "github.repositories",
+        owner,
+        more: false,
+      }).ok,
+      false,
+    );
+  assert.equal(
+    parseWebviewRequest({
+      type: "github.repositories",
+      owner: validMaximum,
+      more: false,
+    }).ok,
+    true,
+  );
+
+  const rateLimited = fixture(
+    () =>
+      new Response('{"message":"fake-sensitive-body"}', {
+        status: 403,
+        headers: { "x-ratelimit-remaining": "0" },
+      }),
+  );
+  await assert.rejects(
+    rateLimited.service.connect("fake-rate-limited-pat"),
+    (error) =>
+      error instanceof Error &&
+      error.message.includes("rate-limited") &&
+      !error.message.includes("fake-sensitive-body"),
+  );
+  assert.equal(rateLimited.storage.size, 0);
+});
 void it("rejects off-origin credential redirects, invalid metadata and stale in-flight results", async () => {
   const redirected = fixture(
     () =>

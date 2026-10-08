@@ -108,7 +108,8 @@ Use Workspace to manage local development tools:
 - **GitHub repositories:** configure a GitHub.com PAT in Settings, refresh, and
   select your account or an organization. Search loaded repositories or use
   **Load more**. The clone icon opens a folder picker and confirmation; successful
-  clones are added to **Project launcher**. Git and workspace trust are required.
+  clones are added to **Project launcher**. Personal and Enterprise Managed User
+  accounts are supported. Git and workspace trust are required.
   The PAT needs repository metadata access and Contents read permission for
   private clones; organization SSO/admin policies may restrict results. Credentials
   remain in VS Code SecretStorage. Native Git uses its own proxy/credential settings.
