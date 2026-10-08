@@ -58,7 +58,7 @@ const message=(text,error=false)=>{for(const target of [status,root.querySelecto
 const lock=value=>{pending=value;root.querySelectorAll('form button,form input,form select,form textarea').forEach(control=>control.disabled=value);if(!value)unitChanged()};
 const request=request=>{if(pending)return;pendingAction=request.type;lock(true);message(request.type==='calendar.source.refresh'?'Refreshing calendar…':'Saving…');vscode.postMessage(request)};
 const overlaps=(entry,key)=>entry.startDate<=key&&entry.endDate>=key;
-const entryLabel=entry=>entry.sourceId?entry.title+' · '+entry.sourceName+' · '+(entry.startTime?entry.startTime+'–'+entry.endTime:'All day'):entry.title+' · '+(entry.kind==='plan'?entry.startTime+'–'+entry.endTime:entry.kind==='holiday'?'Holiday':entry.quantity+' '+(state.leaveTypes.find(type=>type.id===entry.leaveTypeId)?.unit||'')+' leave');
+const entryLabel=entry=>entry.sourceId?entry.title+' · '+entry.sourceName+' · '+(entry.startTime?entry.startTime+'–'+entry.endTime:'All day'):entry.kind==='plan'?entry.title+' · '+entry.startTime+'–'+entry.endTime:entry.title;
 const legacyColors={blue:'#3378e6',teal:'#159d89',amber:'#d58a16',pink:'#d65b79'};
 const colorHex=color=>Object.hasOwn(legacyColors,color)?legacyColors[color]:(/^#[a-f0-9]{6}$/i.test(color)?color:'#3378e6');
 const paint=(element,color)=>{element.dataset.color=color;element.style.setProperty('--event-color',colorHex(color))};

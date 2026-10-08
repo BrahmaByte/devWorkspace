@@ -87,13 +87,13 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 The **Planner** switches between Day, Week, Month and Year. Click a date or time slot, or choose **New entry**, to add a plan, holiday or leave in a popup. Dates and times are preselected; choose the type and save. Select a local entry to edit or delete it. Cancel or Escape closes the popup; failed saves retain your draft. Year highlights occupied dates in their colors and lists entries below each month; holidays have dashed outlines.
 
-Choose **Holiday** for an inclusive date range and pick its color (gold by default). In **Leave manager**, set a name, optional **Annual allowance (days)** and color. For day-based leave, pick the start and end dates; days are calculated automatically. Uncheck **Include weekends** to exclude Saturdays and Sundays. Holiday dates are always excluded; overlapping holidays count once. Choose **Half day** under **Duration** for one eligible date. Existing hour-based types retain their units and quantity field. The **Leave balances** table shows annual count, availed and remaining for the selected year. Editing or deleting leave recalculates balances. Allowances repeat each year without carryover. Split overnight plans or cross-year leave into separate entries.
+Choose **Holiday** for an inclusive date range and pick its color (gold by default). In **Leave manager**, set a name, optional **Annual allowance (days)** and color. For day-based leave, pick the start and end dates; days are calculated automatically. Uncheck **Include weekends** to exclude Saturdays and Sundays. Leave and holiday ranges cannot overlap another leave or holiday; plans may share dates. Choose **Half day** under **Duration** for one eligible date. Existing hour-based types retain their units and quantity field. The **Leave balances** table shows annual count, availed and remaining for the selected year. Editing or deleting leave recalculates balances. Allowances repeat each year without carryover. Split overnight plans or cross-year leave into separate entries.
 
 Local plans, holidays and leave stay in your database and its snapshots. Nothing is sent to external calendars.
 
 To display a Confluence Team Calendar, connect Confluence first. In **Settings → Confluence Team Calendars**, name it, choose a color and select **Events** or **Holidays**. Use the connect icon and paste its **Subscribe → iCal** URL into the private VS Code prompt. The URL must be HTTPS and from the connected site; Confluence Cloud requires Team Calendars access. Page and CalDAV URLs are not supported.
 
-On Calendar, select the connected calendar and refresh for the displayed year. Imported events are read-only and held only for the session; refresh again after restarting. Calendars classified as **Holidays** are excluded from new or edited leave counts. Refreshing does not retroactively change saved leave. Subscription links use VS Code SecretStorage, not the database. Up to five calendars, 2 MB per feed and 2,000 displayed events per calendar/year are supported. A failed refresh retains the last loaded events.
+On Calendar, select the connected calendar and refresh for the displayed year. Imported events are read-only and held only for the session; refresh again after restarting. Calendars classified as **Holidays** block new or edited leave on their dates. Refreshing does not retroactively change saved leave. Subscription links use VS Code SecretStorage, not the database. Up to five calendars, 2 MB per feed and 2,000 displayed events per calendar/year are supported. A failed refresh retains the last loaded events.
 
 ## Workspace
 
@@ -114,7 +114,7 @@ Use Workspace to manage local development tools:
   hidden). Use plus or edit, then enter a non-secret name and masked value in
   native VS Code prompts. Choose overwrite or append and confirm persistence.
   PATH append adds `;` on Windows or `:` on macOS/Linux; other variables append
-  the exact entered text. Old saved profile references remain in a collapsed list.
+  the exact entered text.
 
 Persistent edits require a trusted workspace and affect only your user, never
 machine settings. Windows writes the User environment registry. macOS/Linux use

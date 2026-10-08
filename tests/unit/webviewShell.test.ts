@@ -354,6 +354,8 @@ void describe("Webview shell", () => {
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
     );
+    assert.match(html, /toolbar\.append\(owner,filter,refresh\)/u);
+    assert.doesNotMatch(html, /heading\.append\(refresh\)/u);
   });
 
   void it("keeps user environment search minimal and values confined to native prompts", () => {
@@ -365,6 +367,10 @@ void describe("Webview shell", () => {
     assert.equal((form.match(/<input\b/gu) || []).length, 1);
     assert.match(form, /id="environment-query"/u);
     assert.match(form, /id="environment-add"/u);
+    assert.doesNotMatch(
+      html,
+      /Saved profile references|id="environment-list"/u,
+    );
     assert.doesNotMatch(
       html,
       /environment-project|environment-description|environment-name|environment-variables|environment-form|fillProjectSelect/u,

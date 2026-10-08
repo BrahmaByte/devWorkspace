@@ -267,23 +267,21 @@ void it("persists only subscription metadata, refreshes atomically, retains fail
       count: 20,
       color: "blue",
     });
-    await calendar.save({
-      kind: "leave",
-      title: "Leave",
-      startDate: "2026-10-08",
-      endDate: "2026-10-12",
-      startTime: "",
-      endTime: "",
-      agenda: "",
-      color: "blue",
-      leaveTypeId: calendar.getState(2026).leaveTypes[0]!.id,
-      quantity: 999,
-      includeWeekends: false,
-    });
-    assert.equal(
-      calendar.getState(2026).entries.find((entry) => entry.kind === "leave")
-        ?.quantity,
-      2,
+    await assert.rejects(
+      calendar.save({
+        kind: "leave",
+        title: "Leave",
+        startDate: "2026-10-08",
+        endDate: "2026-10-12",
+        startTime: "",
+        endTime: "",
+        agenda: "",
+        color: "blue",
+        leaveTypeId: calendar.getState(2026).leaveTypes[0]!.id,
+        quantity: 999,
+        includeWeekends: false,
+      }),
+      /cannot overlap/u,
     );
     await assert.rejects(calendar.save(team.entries(2026)[0]!), /Check dates/u);
     fail = true;

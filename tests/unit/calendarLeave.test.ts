@@ -28,6 +28,10 @@ function fixture() {
   const repository = {
     exists: (id: string) => entries.has(id),
     count: () => entries.size,
+    listOverlapping: (startDate: string, endDate: string) =>
+      [...entries.values()].filter(
+        (entry) => entry.startDate <= endDate && entry.endDate >= startDate,
+      ),
     getState: (year: number) => ({
       year,
       entries: [...entries.values()],
@@ -52,7 +56,7 @@ function fixture() {
     entries,
   };
 }
-void it("excludes weekends optionally and overlapping holidays once, with no zero-day or holiday half-day saves", async () => {
+void it("counts excluded dates and prevents leave or holiday collisions while plans may overlap", async () => {
   const { service, entries } = fixture();
   const holiday: CalendarEntry = {
     ...leave,
@@ -73,15 +77,56 @@ void it("excludes weekends optionally and overlapping holidays once, with no zer
     2,
   );
   assert.equal(calendarLeaveCount("invalid", "2026-10-12", false, []), 0);
+  await assert.rejects(
+    service.save({
+      ...leave,
+      endDate: "2026-10-12",
+      includeWeekends: false,
+      quantity: 999,
+    }),
+    /cannot overlap/u,
+  );
   await service.save({
     ...leave,
+    startDate: "2026-10-12",
     endDate: "2026-10-12",
-    includeWeekends: false,
-    quantity: 999,
   });
   const saved = [...entries.values()].find((entry) => entry.kind === "leave")!;
-  assert.equal(saved.quantity, 2);
-  assert.equal(saved.includeWeekends, false);
+  assert.equal(saved.quantity, 1);
+  await assert.rejects(
+    service.save({
+      ...leave,
+      title: "Another leave",
+      startDate: "2026-10-12",
+      endDate: "2026-10-12",
+      leaveTypeId: hourType,
+      quantity: 2,
+    }),
+    /cannot overlap/u,
+  );
+  await assert.rejects(
+    service.save({
+      ...leave,
+      kind: "holiday",
+      title: "Another holiday",
+      startDate: "2026-10-12",
+      endDate: "2026-10-12",
+      leaveTypeId: "",
+      quantity: 0,
+    }),
+    /cannot overlap/u,
+  );
+  await service.save({
+    ...leave,
+    kind: "plan",
+    title: "Handover",
+    startDate: "2026-10-12",
+    endDate: "2026-10-12",
+    startTime: "09:00",
+    endTime: "10:00",
+    leaveTypeId: "",
+    quantity: 0,
+  });
   for (const startDate of ["2026-10-09", "2026-10-11"]) {
     await assert.rejects(
       service.save({
@@ -103,8 +148,12 @@ void it("excludes weekends optionally and overlapping holidays once, with no zer
       /No leave days/u,
     );
   }
-  await service.save({ ...saved, includeWeekends: true });
-  assert.equal(entries.get(saved.id)?.quantity, 3);
+  await service.save({
+    ...saved,
+    title: "Updated leave",
+    includeWeekends: true,
+  });
+  assert.equal(entries.get(saved.id)?.title, "Updated leave");
 });
 for (const [name, startDate, endDate, expected] of [
   ["single day", "2026-10-08", "2026-10-08", 1],
@@ -137,7 +186,8 @@ void it("supports one half-day, rejects multi-date half-days and preserves legac
   await service.save({
     ...leave,
     leaveTypeId: hourType,
-    endDate: "2026-10-10",
+    startDate: "2026-10-11",
+    endDate: "2026-10-11",
     quantity: 2.25,
   });
   assert.equal([...entries.values()][1]?.quantity, 2.25);

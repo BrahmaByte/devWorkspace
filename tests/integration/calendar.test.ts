@@ -245,7 +245,13 @@ void it("persists date-derived leave and recalculates quantities after editing",
       title: "Three dates",
       endDate: "2026-10-10",
     });
-    await service.save({ ...leave, title: "Half day", quantity: 0.5 });
+    await service.save({
+      ...leave,
+      title: "Half day",
+      startDate: "2026-10-11",
+      endDate: "2026-10-11",
+      quantity: 0.5,
+    });
     database.close();
     database = await LocalDatabase.open(path);
     service = new CalendarService(new CalendarRepository(database));

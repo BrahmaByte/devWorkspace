@@ -353,6 +353,10 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     get("#calendar-agenda-list").children[0]?.style["--event-color"],
     "#824acb",
   );
+  assert.equal(
+    get("#calendar-agenda-list").children[0]?.textContent,
+    "Edited leave",
+  );
   field("kind").value = "holiday";
   field("kind").fire("change");
   assert.equal(field("color").value, "#e29b30");

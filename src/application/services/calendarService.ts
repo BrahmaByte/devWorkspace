@@ -66,6 +66,29 @@ export class CalendarService {
         quantity = quantity === 0.5 ? 0.5 : eligible;
       }
     }
+    if (input.kind !== "plan") {
+      const startYear = Number(input.startDate.slice(0, 4));
+      const endYear = Number(input.endDate.slice(0, 4));
+      const imported = Array.from(
+        { length: endYear - startYear + 1 },
+        (_, index) => this.imported(startYear + index),
+      ).flat();
+      if (
+        [
+          ...this.repository.listOverlapping(input.startDate, input.endDate),
+          ...imported,
+        ].some(
+          (entry) =>
+            entry.id !== input.id &&
+            ["leave", "holiday"].includes(entry.kind) &&
+            entry.startDate <= input.endDate &&
+            entry.endDate >= input.startDate,
+        )
+      )
+        throw new Error(
+          "Leave and holiday dates cannot overlap. Choose free dates; plans may overlap.",
+        );
+    }
     await this.repository.save({
       ...input,
       quantity,
