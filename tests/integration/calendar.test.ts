@@ -366,6 +366,13 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   const html = createWebviewHtml("vscode-webview://test");
   assert.match(html, /data-page="calendar"/u);
   assert.match(html, /data-view="calendar"/u);
+  assert.match(
+    html,
+    /<dialog id="calendar-entry-dialog"[^>]*aria-labelledby="calendar-form-heading"/u,
+  );
+  assert.doesNotMatch(html, /id="calendar-tools"/u);
+  for (const icon of ["search", "folder"])
+    assert.match(html, new RegExp('<symbol id="i-' + icon + '"', "u"));
   assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 3);
   assert.doesNotMatch(html, /select name="color"/u);
   for (const view of ["day", "week", "month", "year"])

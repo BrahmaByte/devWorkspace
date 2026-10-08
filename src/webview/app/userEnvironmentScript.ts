@@ -2,7 +2,7 @@
 export const userEnvironmentScript = String.raw`
 const environmentQuery=document.querySelector("#environment-query"),environmentResults=document.querySelector("#user-environment-results");
 let environmentSearchTimer;
-const searchUserEnvironment=()=>{const query=environmentQuery.value.trim();environmentResults.replaceChildren();if(!query){environmentResults.textContent="Search by name to see up to 50 matches. Values are never shown here.";return}vscode.postMessage({type:"environment.search",query})};
+const searchUserEnvironment=()=>{const query=environmentQuery.value.trim();environmentResults.replaceChildren();if(!query){environmentResults.textContent="Search to find user variable names.";return}vscode.postMessage({type:"environment.search",query})};
 document.querySelector("#environment-search").addEventListener("submit",event=>{event.preventDefault();clearTimeout(environmentSearchTimer);searchUserEnvironment()});
 environmentQuery.addEventListener("input",()=>{clearTimeout(environmentSearchTimer);environmentSearchTimer=setTimeout(searchUserEnvironment,300)});
 document.querySelector("#environment-add").addEventListener("click",()=>vscode.postMessage({type:"environment.configure"}));

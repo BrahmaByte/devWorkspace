@@ -6,6 +6,15 @@ import { calendarScript } from "../../src/webview/app/calendarScript";
 void it("navigates calendar views, retains failed drafts and keeps leave units separate", () => {
   class Element {
     public value = "";
+    public open = false;
+    public prevented = false;
+    public parentElement: Element = this;
+    public showModal(): void {
+      this.open = true;
+    }
+    public close(): void {
+      this.open = false;
+    }
     public checked = false;
     public step = "";
     public hidden = false;
@@ -44,7 +53,12 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
       this.listeners.set(name, listener);
     }
     public fire(name: string): void {
-      this.listeners.get(name)?.({ preventDefault() {} });
+      this.prevented = false;
+      this.listeners.get(name)?.({
+        preventDefault: () => {
+          this.prevented = true;
+        },
+      });
     }
   }
   const elements = new Map<string, Element>();
@@ -171,6 +185,11 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
       ["Appointment (hours)", "8", "2", "6"],
     ],
   );
+  get("#calendar-add").fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, true);
+  assert.equal(field("startDate").value, date);
+  get("#calendar-dialog-close").fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, false);
   views[2]!.fire("click");
   get("#calendar-type-list").children[1]!.children[1]!.fire("click");
   assert.equal(get("type-count").step, "any");
@@ -179,6 +198,12 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   views[3]!.fire("click");
   assert.equal(get("#calendar-body").children[0]!.children.length, 12);
   views[0]!.fire("click");
+  const dayColumn =
+    get("#calendar-body").children[0]!.children[0]!.children[5]!;
+  dayColumn.children[10]!.fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, true);
+  assert.equal(field("startTime").value, "10:00");
+  assert.equal(field("endTime").value, "11:00");
   assert.equal(
     get("#calendar-body").children[0]!.children[0]!.className,
     "calendar-days day",
@@ -207,11 +232,16 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     field("endDate").value = end;
     field("endDate").fire("change");
     form.fire("submit");
+    get("#calendar-dialog-close").fire("click");
+    assert.equal(get("#calendar-entry-dialog").open, true);
+    get("#calendar-entry-dialog").fire("cancel");
+    assert.equal(get("#calendar-entry-dialog").prevented, true);
     assert.equal(
       (requests.at(-1)?.entry as { quantity: number }).quantity,
       expected,
     );
     onMessage({ data: { type: "calendar.error", message: "Retain draft" } });
+    assert.equal(get("#calendar-entry-dialog").open, true);
     assert.equal(field("quantity").disabled, true);
   }
   field("startDate").value = date;
@@ -379,4 +409,21 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     get("#calendar-totals").children[0]?.children[3]?.textContent,
     "20",
   );
+  const yearDate = months[0]!.children[1]!.children.find(
+    (day) => !!day.listeners.get("click"),
+  )!;
+  yearDate.fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, true);
+  assert.equal(field("startDate").value.slice(5, 7), "01");
+  get("#calendar-cancel").fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, false);
+  views[2]!.fire("click");
+  get("#calendar-body").children[0]!.children[7]!.children[0]!.fire("click");
+  assert.equal(get("#calendar-entry-dialog").open, true);
+  field("title").value = "Plan";
+  form.fire("submit");
+  onMessage({
+    data: { type: "calendar.saved", state: { ...state, entries: [] } },
+  });
+  assert.equal(get("#calendar-entry-dialog").open, false);
 });
