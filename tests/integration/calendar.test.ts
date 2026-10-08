@@ -261,6 +261,11 @@ void it("persists date-derived leave and recalculates quantities after editing",
         .entries.reduce((sum, entry) => sum + entry.quantity, 0),
       3.5,
     );
+    await assert.rejects(
+      service.saveType({ ...type, count: 3 }),
+      /cannot be lower than 3\.5/u,
+    );
+    await service.saveType({ ...type, count: 3.5 });
     const full = service
       .getState(2026)
       .entries.find((entry) => entry.title === "Three dates")!;

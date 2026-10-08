@@ -23,8 +23,24 @@ const leave: CalendarInput = {
   leaveTypeId: dayType,
   quantity: 1,
 };
-function fixture() {
+function fixture(dayCount: number | null = null) {
   const entries = new Map<string, CalendarEntry>();
+  const leaveTypes = [
+    {
+      id: dayType,
+      name: "Annual",
+      unit: "days",
+      count: dayCount,
+      color: "blue" as const,
+    },
+    {
+      id: hourType,
+      name: "Appointment",
+      unit: "hours",
+      count: 8,
+      color: "pink" as const,
+    },
+  ];
   const repository = {
     exists: (id: string) => entries.has(id),
     count: () => entries.size,
@@ -32,22 +48,26 @@ function fixture() {
       [...entries.values()].filter(
         (entry) => entry.startDate <= endDate && entry.endDate >= startDate,
       ),
+    listByLeaveType: (id: string) =>
+      [...entries.values()].filter((entry) => entry.leaveTypeId === id),
+    usedType: (id: string) =>
+      [...entries.values()].some((entry) => entry.leaveTypeId === id),
     getState: (year: number) => ({
       year,
-      entries: [...entries.values()],
-      leaveTypes: [
-        { id: dayType, name: "Annual", unit: "days", count: 20, color: "blue" },
-        {
-          id: hourType,
-          name: "Appointment",
-          unit: "hours",
-          count: 8,
-          color: "pink",
-        },
-      ],
+      entries: [...entries.values()].filter(
+        (entry) =>
+          entry.startDate <= `${year}-12-31` &&
+          entry.endDate >= `${year}-01-01`,
+      ),
+      leaveTypes,
     }),
     save: (entry: CalendarEntry) => {
       entries.set(entry.id, entry);
+      return Promise.resolve();
+    },
+    saveType: (type: (typeof leaveTypes)[number]) => {
+      const index = leaveTypes.findIndex((item) => item.id === type.id);
+      if (index >= 0) leaveTypes[index] = type;
       return Promise.resolve();
     },
   };
@@ -56,6 +76,89 @@ function fixture() {
     entries,
   };
 }
+void it("enforces annual allowances on new leave, edits and allowance changes", async () => {
+  const { service, entries } = fixture(3);
+  await service.save({ ...leave, endDate: "2026-10-10", quantity: 999 });
+  const saved = [...entries.values()][0]!;
+  assert.equal(saved.quantity, 3);
+  await assert.rejects(
+    service.save({
+      ...leave,
+      title: "Excess leave",
+      startDate: "2026-10-11",
+      endDate: "2026-10-11",
+    }),
+    /0 days remaining/u,
+  );
+  await service.save({ ...saved, title: "Renamed leave" });
+  await assert.rejects(
+    service.save({
+      ...saved,
+      startDate: "2027-10-08",
+      endDate: "2027-10-11",
+    }),
+    /3 days remaining/u,
+  );
+  await assert.rejects(
+    service.saveType({
+      id: dayType,
+      name: "Annual",
+      unit: "days",
+      count: 2.5,
+      color: "blue",
+    }),
+    /cannot be lower than 3/u,
+  );
+  await service.saveType({
+    id: dayType,
+    name: "Annual",
+    unit: "days",
+    count: 3,
+    color: "blue",
+  });
+});
+void it("allows legacy overbooking repairs without accepting another invalid allowance", async () => {
+  const { service, entries } = fixture(3);
+  const legacy: CalendarEntry = {
+    ...leave,
+    id: "00000000-0000-4000-8000-000000000004",
+    title: "Legacy overbooked leave",
+    startDate: "2026-10-01",
+    endDate: "2026-10-10",
+    quantity: 10,
+  };
+  entries.set(legacy.id, legacy);
+  await service.save({ ...legacy, title: "Renamed legacy leave" });
+  await service.save({ ...legacy, endDate: "2026-10-09" });
+  await assert.rejects(
+    service.save({ ...legacy, endDate: "2026-10-10" }),
+    /3 days remaining/u,
+  );
+  await service.saveType({
+    id: dayType,
+    name: "Renamed Annual",
+    unit: "days",
+    count: 3,
+    color: "blue",
+  });
+  await assert.rejects(
+    service.saveType({
+      id: dayType,
+      name: "Renamed Annual",
+      unit: "days",
+      count: 4,
+      color: "blue",
+    }),
+    /cannot be lower than 9/u,
+  );
+  await service.saveType({
+    id: dayType,
+    name: "Renamed Annual",
+    unit: "days",
+    count: 9,
+    color: "blue",
+  });
+});
 void it("counts excluded dates and prevents leave or holiday collisions while plans may overlap", async () => {
   const { service, entries } = fixture();
   const holiday: CalendarEntry = {

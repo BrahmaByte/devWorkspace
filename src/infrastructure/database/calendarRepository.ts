@@ -84,6 +84,14 @@ export class CalendarRepository {
       )
       .map((row) => JSON.parse(String(row.data)) as CalendarEntry);
   }
+  public listByLeaveType(id: string): readonly CalendarEntry[] {
+    return this.database
+      .query(
+        "SELECT data FROM calendar_entries WHERE leave_type_id=? ORDER BY start_date, id;",
+        [id],
+      )
+      .map((row) => JSON.parse(String(row.data)) as CalendarEntry);
+  }
   public async save(entry: CalendarEntry): Promise<void> {
     this.database.run(
       "INSERT INTO calendar_entries(id,start_date,end_date,leave_type_id,data) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET start_date=excluded.start_date,end_date=excluded.end_date,leave_type_id=excluded.leave_type_id,data=excluded.data;",

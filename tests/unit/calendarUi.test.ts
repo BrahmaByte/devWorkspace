@@ -357,6 +357,24 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     get("#calendar-agenda-list").children[0]?.textContent,
     "Edited leave",
   );
+  onMessage({
+    data: {
+      type: "calendar.state",
+      state: {
+        ...state,
+        leaveTypes: [{ ...state.leaveTypes[0], count: 1 }],
+      },
+    },
+  });
+  assert.equal(
+    get("#calendar-totals").children[0]?.children[3]?.textContent,
+    "Overbooked by 1",
+  );
+  assert.equal(
+    get("#calendar-totals").children[0]?.children[3]?.className,
+    "calendar-overbooked",
+  );
+  onMessage({ data: { type: "calendar.state", state } });
   field("kind").value = "holiday";
   field("kind").fire("change");
   assert.equal(field("color").value, "#e29b30");

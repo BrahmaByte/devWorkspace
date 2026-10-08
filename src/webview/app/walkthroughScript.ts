@@ -18,7 +18,7 @@ const tourSteps=[
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
  {page:"calendar",title:"Plan your day, week or month",text:"Switch Planner between Day, Week, Month and Year, and click a date or time slot to add an entry. Select a local entry to edit it."},
- {page:"calendar",title:"Track holidays and leave",text:"Use Leave manager to set an Annual allowance (days) and color. Choose dates for leave and Half day under Duration, or choose Holiday for separately colored holidays. Leave balances shows availed and remaining."}
+ {page:"calendar",title:"Track holidays and leave",text:"Use Leave manager to set an Annual allowance (days) and color. Choose dates for leave and Half day under Duration, or choose Holiday for separately colored holidays. Saved leave cannot exceed its annual allowance."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";
