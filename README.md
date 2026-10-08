@@ -16,16 +16,10 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.15
+## Version 0.1.16
 
-- Add plans, holidays, and date-derived leave from the Day, Week, Month, or Year
-  planner. Leave and holiday dates cannot overlap; plans can.
-- Enforce annual leave allowances, exclude selected weekends and known holidays,
-  and identify legacy overbooked balances without deleting saved data.
-- Connect read-only Confluence Team Calendars and display their events or holidays.
-- Load Jira saved filters and retain supported formatted Confluence macro content.
-- Browse authorized GitHub repositories, clone with native Git, and add successful
-  clones directly to Project launcher.
+- Connect GitHub Enterprise Managed User accounts whose managed login includes an
+  enterprise shortcode, then browse and clone authorized repositories normally.
 
 ## Screenshots
 

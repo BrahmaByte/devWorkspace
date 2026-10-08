@@ -1,0 +1,13 @@
+DevDashboardV1 0.1.16
+
+GitHub compatibility
+- Connect GitHub Enterprise Managed User accounts whose generated login includes
+  an enterprise shortcode.
+- Browse authorized account and organization repositories, then clone them through
+  the existing trusted native Git workflow.
+
+Security and validation
+- Keep PATs in VS Code SecretStorage and reject credentials, URLs and local paths
+  supplied by the dashboard Webview.
+- Bound managed account names and continue hiding GitHub response bodies from
+  user-facing errors.
