@@ -188,12 +188,89 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   assert.equal(get("#calendar-leave").hidden, false);
   field("title").value = "Keep this draft";
   field("leaveTypeId").value = annual;
-  field("quantity").value = "0.5";
+  field("leaveTypeId").fire("change");
+  assert.equal(field("quantity").required, false);
+  assert.equal(field("quantity").disabled, true);
+  assert.equal(get("#calendar-leave-quantity").hidden, true);
+  field("quantity").value = "";
+  for (const [start, end, expected] of [
+    ["2026-10-08", "2026-10-08", 1],
+    ["2026-01-31", "2026-02-02", 3],
+    ["2024-02-28", "2024-03-01", 3],
+    ["2026-03-07", "2026-03-09", 3],
+    ["2026-10-31", "2026-11-02", 3],
+  ] as const) {
+    field("startDate").value = start;
+    field("startDate").fire("change");
+    field("endDate").value = end;
+    field("endDate").fire("change");
+    form.fire("submit");
+    assert.equal(
+      (requests.at(-1)?.entry as { quantity: number }).quantity,
+      expected,
+    );
+    onMessage({ data: { type: "calendar.error", message: "Retain draft" } });
+    assert.equal(field("quantity").disabled, true);
+  }
+  field("startDate").value = date;
+  field("startDate").fire("change");
+  // Moving the start beyond a stale end selects a single date automatically.
+  field("startDate").value = "2026-12-20";
+  field("startDate").fire("change");
+  assert.equal(field("endDate").value, "2026-12-20");
+  field("startDate").value = "2026-12-18";
+  field("startDate").fire("change");
+  assert.equal(field("endDate").value, "2026-12-18");
+  field("endDate").value = "2026-12-22";
+  field("endDate").fire("change");
+  field("startDate").value = "2026-12-17";
+  field("startDate").fire("change");
+  assert.equal(field("endDate").value, "2026-12-22");
+  field("startDate").value = "2026-12-20";
+  field("startDate").fire("change");
+  const beforeInvalid = requests.length;
+  field("endDate").value = "2026-12-19";
+  field("endDate").fire("change");
+  form.fire("submit");
+  assert.equal(requests.length, beforeInvalid);
+  field("endDate").value = "2027-01-01";
+  field("endDate").fire("change");
+  form.fire("submit");
+  assert.equal(requests.length, beforeInvalid);
+  field("startDate").value = date;
+  field("endDate").value = date;
+  field("leaveTypeId").value = hourly;
+  field("leaveDuration").value = "half";
+  field("leaveTypeId").fire("change");
+  assert.equal(field("leaveDuration").value, "full");
+  assert.equal(field("quantity").required, true);
+  assert.equal(field("quantity").disabled, false);
+  assert.equal(get("#calendar-leave-duration").hidden, true);
+  field("quantity").value = "2.25";
+  form.fire("submit");
+  assert.equal((requests.at(-1)?.entry as { quantity: number }).quantity, 2.25);
+  onMessage({ data: { type: "calendar.error", message: "Retain draft" } });
+  assert.equal(field("quantity").disabled, false);
+  field("kind").value = "plan";
+  field("kind").fire("change");
+  assert.equal(field("quantity").required, false);
+  assert.equal(field("quantity").disabled, true);
+  field("kind").value = "leave";
+  field("kind").fire("change");
+  field("leaveTypeId").value = annual;
+  field("leaveTypeId").fire("change");
+  field("leaveDuration").value = "half";
+  field("leaveDuration").fire("change");
+  assert.equal(field("endDate").value, date);
   form.fire("submit");
   assert.equal(requests.at(-1)?.type, "calendar.save");
+  assert.equal((requests.at(-1)?.entry as { quantity: number }).quantity, 0.5);
   onMessage({ data: { type: "calendar.error", message: "Save failed" } });
   assert.equal(field("title").value, "Keep this draft");
   assert.equal(get("#calendar-status").textContent, "Save failed");
+  field("endDate").value = "2026-12-31";
+  field("endDate").fire("change");
+  assert.equal(field("leaveDuration").value, "full");
   const state = {
     year,
     leaveTypes: [

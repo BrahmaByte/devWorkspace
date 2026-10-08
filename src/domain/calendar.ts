@@ -46,6 +46,11 @@ export function calendarDate(value: unknown): value is string {
     calendarYear(date.getUTCFullYear())
   );
 }
+/** Inclusive date-only span, independent of local DST transitions. */
+export const calendarDayCount = (startDate: string, endDate: string): number =>
+  (Date.parse(endDate + "T00:00:00Z") - Date.parse(startDate + "T00:00:00Z")) /
+    86_400_000 +
+  1;
 const text = (value: unknown, max: number): value is string =>
   typeof value === "string" &&
   value.length <= max &&

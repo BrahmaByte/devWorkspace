@@ -8,7 +8,7 @@ const tourSteps=[
  {page:"home",title:"Keep frequently used tools here",text:"Add a sticky note with plus. Open a recent Jira issue, edit a URL group with the pencil, or launch an app from its tile."},
  {page:"settings",title:"Connect Jira and Confluence",text:"Enter your site URL, then your credentials in the VS Code prompts. If your network needs a proxy, configure it in Network proxy."},
  {page:"jira",title:"Filter your board",text:"Use board search and Filter to narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
- {page:"calendar",title:"Plan your time",text:"Switch Planner between Day, Week, Month and Year. Add a plan or holiday with Quick plan. Use Leave manager for day-based allowances and colors; 0.5 records half a day. Leave balances shows availed and remaining."},
+ {page:"calendar",title:"Plan your time",text:"Switch Planner between Day, Week, Month and Year. Add a plan or holiday with Quick plan. Use Leave manager for day-based allowances and colors; Choose dates for leave; Duration offers Half day. Leave balances shows availed and remaining."},
  {page:"workspace",title:"Open a project or run a command",text:"Choose a project folder or run a saved command shortcut. For GitHub repositories, configure a PAT in Settings, refresh, select an owner and use the clone icon to choose a folder and confirm."},
  {page:"notes",title:"Write a note",text:"Use the new-note icon and start typing. Notes save automatically. Select an existing note to edit it."},
  {page:"knowledge",title:"Read a Confluence page",text:"Search for a page and select a result. Use Focus Reader for a full-screen view, or Bookmark to save a reference in Notes."},
@@ -17,7 +17,7 @@ const tourSteps=[
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
  {page:"calendar",title:"Plan your day, week or month",text:"Switch Planner between Day, Week, Month and Year, and add an agenda with Quick plan. Select a date to plan that day."},
- {page:"calendar",title:"Track holidays and leave",text:"Use Leave manager to set an Annual type count and color. Record 0.5 days for half-day leave, or choose Holiday for separately colored holidays. Leave balances shows availed and remaining."}
+ {page:"calendar",title:"Track holidays and leave",text:"Use Leave manager to set an Annual type count and color. Choose dates for leave and Half day under Duration, or choose Holiday for separately colored holidays. Leave balances shows availed and remaining."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

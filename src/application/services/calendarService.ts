@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   calendarId,
+  calendarDayCount,
   calendarYear,
   validCalendarInput,
   validLeaveType,
@@ -28,15 +29,22 @@ export class CalendarService {
       throw new Error(
         "Calendar limit reached (5,000 entries). Remove old entries first.",
       );
-    if (
-      input.kind === "leave" &&
-      !this.repository
+    let quantity = input.quantity;
+    if (input.kind === "leave") {
+      const type = this.repository
         .getState(Number(input.startDate.slice(0, 4)))
-        .leaveTypes.some((type) => type.id === input.leaveTypeId)
-    )
-      throw new Error("Choose an existing leave type.");
+        .leaveTypes.find((type) => type.id === input.leaveTypeId);
+      if (!type) throw new Error("Choose an existing leave type.");
+      if (type.unit === "days") {
+        const days = calendarDayCount(input.startDate, input.endDate);
+        if (quantity === 0.5 && days !== 1)
+          throw new Error("Half-day leave requires a single date.");
+        quantity = quantity === 0.5 ? 0.5 : days;
+      }
+    }
     await this.repository.save({
       ...input,
+      quantity,
       id: input.id || randomUUID(),
       title: input.title.trim(),
     });

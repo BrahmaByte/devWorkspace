@@ -219,6 +219,68 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
   }
 });
 
+void it("persists date-derived leave and recalculates quantities after editing", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "calendar-date-leave-")),
+    path = join(directory, "workspace.sqlite");
+  let database = await LocalDatabase.open(path);
+  try {
+    let service = new CalendarService(new CalendarRepository(database));
+    await service.saveType({
+      name: "Annual",
+      unit: "days",
+      count: 20,
+      color: "blue",
+    });
+    const type = service.getState(2026).leaveTypes[0]!;
+    const leave = {
+      ...plan,
+      kind: "leave" as const,
+      startTime: "",
+      endTime: "",
+      leaveTypeId: type.id,
+      quantity: 1,
+    };
+    await service.save({
+      ...leave,
+      title: "Three dates",
+      endDate: "2026-10-10",
+    });
+    await service.save({ ...leave, title: "Half day", quantity: 0.5 });
+    database.close();
+    database = await LocalDatabase.open(path);
+    service = new CalendarService(new CalendarRepository(database));
+    assert.equal(
+      service
+        .getState(2026)
+        .entries.reduce((sum, entry) => sum + entry.quantity, 0),
+      3.5,
+    );
+    const full = service
+      .getState(2026)
+      .entries.find((entry) => entry.title === "Three dates")!;
+    await service.save({ ...full, endDate: full.startDate });
+    assert.equal(
+      service
+        .getState(2026)
+        .entries.reduce((sum, entry) => sum + entry.quantity, 0),
+      1.5,
+    );
+    const half = service
+      .getState(2026)
+      .entries.find((entry) => entry.title === "Half day")!;
+    await service.delete(half.id);
+    assert.equal(
+      service
+        .getState(2026)
+        .entries.reduce((sum, entry) => sum + entry.quantity, 0),
+      1,
+    );
+  } finally {
+    database.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 void it("rejects invalid calendar messages at the trust boundary", () => {
   const request = (entry: unknown) =>
     parseWebviewRequest({ type: "calendar.save", year: 2026, entry });
