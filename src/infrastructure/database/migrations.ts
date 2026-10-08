@@ -187,4 +187,13 @@ export const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 7,
+    name: "calendar_planner",
+    sql: `
+      CREATE TABLE calendar_leave_types (id TEXT PRIMARY KEY,name TEXT NOT NULL,unit TEXT NOT NULL);
+      CREATE TABLE calendar_entries (id TEXT PRIMARY KEY,start_date TEXT NOT NULL,end_date TEXT NOT NULL,leave_type_id TEXT REFERENCES calendar_leave_types(id) ON DELETE RESTRICT,data TEXT NOT NULL);
+      CREATE INDEX calendar_dates ON calendar_entries(start_date,end_date);
+    `,
+  },
 ];

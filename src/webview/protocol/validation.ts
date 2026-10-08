@@ -1,4 +1,10 @@
 import { shellPages, type ShellPage, type WebviewRequest } from "./messages";
+import {
+  calendarYear,
+  calendarId,
+  validCalendarInput,
+  validLeaveType,
+} from "../../domain/calendar";
 import { noteLimits } from "../../application/services/noteService";
 import { stickyColors, type StickyColor } from "../../domain/notes/models";
 import { workspaceLimits } from "../../application/services/workspaceService";
@@ -79,6 +85,42 @@ function isSearchResultType(value: unknown): value is SearchResultType {
 export function parseWebviewRequest(value: unknown): ParseResult {
   if (!isRecord(value) || typeof value.type !== "string") {
     return { ok: false, error: "Message must be an object with a type." };
+  }
+  if (value.type.startsWith("calendar.")) {
+    let request: WebviewRequest | undefined;
+    if (calendarYear(value.year)) {
+      if (
+        value.type === "calendar.refresh" &&
+        hasOnlyKeys(value, ["type", "year"])
+      )
+        request = { type: value.type, year: value.year };
+      else if (
+        value.type === "calendar.save" &&
+        hasOnlyKeys(value, ["type", "year", "entry"]) &&
+        validCalendarInput(value.entry)
+      )
+        request = { type: value.type, year: value.year, entry: value.entry };
+      else if (
+        (value.type === "calendar.delete" ||
+          value.type === "calendar.type.delete") &&
+        hasOnlyKeys(value, ["type", "year", "id"]) &&
+        calendarId(value.id)
+      )
+        request = { type: value.type, year: value.year, id: value.id };
+      else if (
+        value.type === "calendar.type.save" &&
+        hasOnlyKeys(value, ["type", "year", "leaveType"]) &&
+        validLeaveType(value.leaveType)
+      )
+        request = {
+          type: value.type,
+          year: value.year,
+          leaveType: value.leaveType,
+        };
+    }
+    return request
+      ? { ok: true, value: request }
+      : { ok: false, error: "Invalid calendar request." };
   }
   if (value.type === "shell.ready") {
     return hasOnlyKeys(value, ["type"])

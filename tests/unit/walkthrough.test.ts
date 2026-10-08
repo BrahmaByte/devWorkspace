@@ -166,6 +166,7 @@ void describe("Dashboard walkthrough", () => {
     for (const expected of [
       "settings",
       "jira",
+      "calendar",
       "workspace",
       "notes",
       "knowledge",

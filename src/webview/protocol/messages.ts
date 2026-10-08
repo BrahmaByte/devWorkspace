@@ -1,4 +1,9 @@
 import type { Note, StickyNote } from "../../domain/notes/models";
+import type {
+  CalendarInput,
+  CalendarState,
+  LeaveType,
+} from "../../domain/calendar";
 import type { HomeState } from "../../domain/home/models";
 import type {
   ConfluenceReaderDocument,
@@ -18,6 +23,7 @@ import type { WorkspaceState } from "../../domain/workspace/models";
 export const shellPages = [
   "home",
   "jira",
+  "calendar",
   "workspace",
   "notes",
   "knowledge",
@@ -28,6 +34,22 @@ export const shellPages = [
 export type ShellPage = (typeof shellPages)[number];
 
 export type WebviewRequest =
+  | { readonly type: "calendar.refresh"; readonly year: number }
+  | {
+      readonly type: "calendar.save";
+      readonly year: number;
+      readonly entry: CalendarInput;
+    }
+  | {
+      readonly type: "calendar.delete" | "calendar.type.delete";
+      readonly year: number;
+      readonly id: string;
+    }
+  | {
+      readonly type: "calendar.type.save";
+      readonly year: number;
+      readonly leaveType: Omit<LeaveType, "id"> & { readonly id?: string };
+    }
   | { readonly type: "walkthrough.open" }
   | { readonly type: "network.configure" }
   | { readonly type: "shell.ready" }
@@ -167,6 +189,11 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | {
+      readonly type: "calendar.state" | "calendar.saved";
+      readonly state: CalendarState;
+    }
+  | { readonly type: "calendar.error"; readonly message: string }
   | { readonly type: "urls.saved" }
   | {
       readonly type: "environment.results";

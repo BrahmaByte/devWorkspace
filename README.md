@@ -81,6 +81,14 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 - Add local-only cards at the bottom of the board. These cards stay on your
   computer and are never sent to Jira.
 
+## Calendar
+
+Use **Calendar** for Day, Week and Year views. Add a plan with a date, start/end time and optional agenda. Select an entry to edit or delete it; select a date in Year view to open its day.
+
+Choose **Holiday** for an inclusive date range. Under **Manage leave types**, add a name and unit (such as days or hours), then choose **Leave** and enter its date range and quantity. Fractional quantities are supported. Yearly totals stay separate by leave type and unit; weekends and holidays are not deducted automatically. A used unit cannot be changed until its leave entries are removed. Split overnight plans or leave spanning calendar years into separate entries.
+
+Calendar entries stay in your local database and are included in its snapshots; they do not sync to external calendars.
+
 ## Workspace
 
 Use Workspace to manage local development tools:

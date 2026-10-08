@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
+import { CalendarService } from "../application/services/calendarService";
+import { CalendarRepository } from "../infrastructure/database/calendarRepository";
 import {
   walkthroughMode,
   walkthroughVersionKey,
@@ -131,6 +133,7 @@ export async function activate(
   }
   const noteRepository = new NoteRepository(database);
   const noteService = new NoteService(noteRepository);
+  const calendarService = new CalendarService(new CalendarRepository(database));
   const platform = createPlatformService();
   const userEnvironment = new UserEnvironment(platform.operatingSystem);
   let environmentEditPending = false;
@@ -334,6 +337,53 @@ export async function activate(
         const request = parsed.value;
         try {
           switch (request.type) {
+            case "calendar.refresh":
+            case "calendar.save":
+            case "calendar.delete":
+            case "calendar.type.save":
+            case "calendar.type.delete":
+              try {
+                if (request.type === "calendar.save")
+                  await calendarService.save(request.entry);
+                if (request.type === "calendar.type.save")
+                  await calendarService.saveType(request.leaveType);
+                if (
+                  request.type === "calendar.delete" ||
+                  request.type === "calendar.type.delete"
+                ) {
+                  const choice = await vscode.window.showWarningMessage(
+                    "Delete this local calendar item?",
+                    { modal: true },
+                    "Delete",
+                  );
+                  if (choice !== "Delete") {
+                    await panel.webview.postMessage({
+                      type: "calendar.error",
+                      message: "Deletion cancelled.",
+                    } satisfies ExtensionResponse);
+                    return;
+                  }
+                  if (request.type === "calendar.delete")
+                    await calendarService.delete(request.id);
+                  else await calendarService.deleteType(request.id);
+                }
+                await panel.webview.postMessage({
+                  type:
+                    request.type === "calendar.refresh"
+                      ? "calendar.state"
+                      : "calendar.saved",
+                  state: calendarService.getState(request.year),
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                await panel.webview.postMessage({
+                  type: "calendar.error",
+                  message:
+                    error instanceof Error
+                      ? error.message
+                      : "Calendar operation failed. Your draft is retained.",
+                } satisfies ExtensionResponse);
+              }
+              return;
             case "network.configure":
               await extensionProxy.configure();
               confluenceSearchSequence++;
