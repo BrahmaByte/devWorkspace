@@ -33,6 +33,45 @@ export class FetchConfluenceClientFactory implements ConfluenceClientFactory {
   }
 }
 export class FetchConfluenceClient implements ConfluenceClient {
+  public async readCalendarFeed(value: string): Promise<string> {
+    const url = teamCalendarUrl(this.baseUrl, value);
+    const response = await this.transport.fetch(url, {
+      headers: {
+        Accept: "text/calendar",
+        Authorization: authorizationHeader(this.credential),
+      },
+    });
+    if (!response.ok) throw new ConfluenceRequestError(response.status);
+    if (Number(response.headers.get("content-length") ?? 0) > 2_000_000)
+      throw new TeamCalendarError("Calendar feed exceeds the 2 MB limit.");
+    const reader = response.body?.getReader();
+    if (!reader) throw new TeamCalendarError("Calendar feed is empty.");
+    const chunks: Uint8Array[] = [];
+    let bytes = 0;
+    try {
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        bytes += chunk.value.byteLength;
+        if (bytes > 2_000_000)
+          throw new TeamCalendarError("Calendar feed exceeds the 2 MB limit.");
+        chunks.push(chunk.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      Buffer.concat(chunks),
+    );
+    if (
+      !/^\s*BEGIN:VCALENDAR\s*$/imu.test(text) ||
+      !/END:VCALENDAR\s*$/iu.test(text)
+    )
+      throw new TeamCalendarError(
+        "The subscription did not return an iCalendar feed. Check its URL and calendar permissions.",
+      );
+    return text;
+  }
   public constructor(
     private readonly baseUrl: string,
     private readonly credential: AtlassianCredential,
@@ -493,3 +532,4 @@ function requiredString(value: unknown): string {
     throw new Error("Invalid Confluence response.");
   return value;
 }
+import { teamCalendarUrl, TeamCalendarError } from "../../domain/calendar";

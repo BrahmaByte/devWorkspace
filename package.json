@@ -127,6 +127,7 @@
     "typescript-eslint": "^8.71.0"
   },
   "dependencies": {
+    "node-ical": "0.26.1",
     "sql.js": "^1.14.2",
     "undici": "^7.30.0"
   }

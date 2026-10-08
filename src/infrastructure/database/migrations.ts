@@ -211,4 +211,9 @@ export const migrations: readonly Migration[] = [
       ALTER TABLE calendar_leave_types ADD COLUMN custom_color TEXT CHECK(custom_color IS NULL OR (length(custom_color)=7 AND substr(custom_color,1,1)='#' AND lower(substr(custom_color,2)) NOT GLOB '*[^0-9a-f]*'));
     `,
   },
+  {
+    version: 10,
+    name: "team_calendar_sources",
+    sql: `CREATE TABLE team_calendar_sources (id TEXT PRIMARY KEY, name TEXT NOT NULL, origin TEXT NOT NULL, color TEXT NOT NULL, holidays INTEGER NOT NULL CHECK(holidays IN (0,1)));`,
+  },
 ];

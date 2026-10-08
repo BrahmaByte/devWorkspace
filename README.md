@@ -87,9 +87,13 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 The **Planner** switches between Day, Week, Month and Year, with **Quick plan** alongside it. Select a date to plan that day, or select an entry to edit or delete it. Year highlights occupied dates in their colors and lists entries below each month; holidays have dashed outlines.
 
-Choose **Holiday** for an inclusive date range and pick its color (gold by default). In **Leave manager**, set a name, optional **Annual type count** and color. For day-based leave, pick the start and end dates; days are calculated automatically, including weekends and holidays. Choose **Half day** under **Duration** for a single date. Existing hour-based types retain their units and quantity field. The **Leave balances** table shows annual count, availed and remaining for the selected year. Editing or deleting leave recalculates balances. Allowances repeat each year without carryover. Split overnight plans or cross-year leave into separate entries.
+Choose **Holiday** for an inclusive date range and pick its color (gold by default). In **Leave manager**, set a name, optional **Annual type count** and color. For day-based leave, pick the start and end dates; days are calculated automatically. Uncheck **Include weekends** to exclude Saturdays and Sundays. Holiday dates are always excluded; overlapping holidays count once. Choose **Half day** under **Duration** for one eligible date. Existing hour-based types retain their units and quantity field. The **Leave balances** table shows annual count, availed and remaining for the selected year. Editing or deleting leave recalculates balances. Allowances repeat each year without carryover. Split overnight plans or cross-year leave into separate entries.
 
-Calendar entries stay in your local database and are included in its snapshots; they do not sync to external calendars.
+Local plans, holidays and leave stay in your database and its snapshots. Nothing is sent to external calendars.
+
+To display a Confluence Team Calendar, connect Confluence first. In **Settings → Confluence Team Calendars**, name it, choose a color and select **Events** or **Holidays**. Use the connect icon and paste its **Subscribe → iCal** URL into the private VS Code prompt. The URL must be HTTPS and from the connected site; Confluence Cloud requires Team Calendars access. Page and CalDAV URLs are not supported.
+
+On Calendar, select the connected calendar and refresh for the displayed year. Imported events are read-only and held only for the session; refresh again after restarting. Calendars classified as **Holidays** are excluded from new or edited leave counts. Refreshing does not retroactively change saved leave. Subscription links use VS Code SecretStorage, not the database. Up to five calendars, 2 MB per feed and 2,000 displayed events per calendar/year are supported. A failed refresh retains the last loaded events.
 
 ## Workspace
 

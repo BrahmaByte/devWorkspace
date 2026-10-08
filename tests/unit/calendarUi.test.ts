@@ -6,6 +6,7 @@ import { calendarScript } from "../../src/webview/app/calendarScript";
 void it("navigates calendar views, retains failed drafts and keeps leave units separate", () => {
   class Element {
     public value = "";
+    public checked = false;
     public step = "";
     public hidden = false;
     public disabled = false;
@@ -62,6 +63,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     reset: () => {
       fields.forEach((element) => (element.value = ""));
       field("kind").value = "plan";
+      field("includeWeekends").checked = true;
       field("color").value = "#3378e6";
     },
   });
@@ -214,6 +216,23 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   }
   field("startDate").value = date;
   field("startDate").fire("change");
+  field("includeWeekends").checked = false;
+  field("startDate").value = "2026-10-09";
+  field("endDate").value = "2026-10-12";
+  field("includeWeekends").fire("change");
+  form.fire("submit");
+  assert.equal((requests.at(-1)?.entry as { quantity: number }).quantity, 2);
+  assert.equal(
+    (requests.at(-1)?.entry as { includeWeekends: boolean }).includeWeekends,
+    false,
+  );
+  onMessage({ data: { type: "calendar.error", message: "Retain draft" } });
+  field("startDate").value = "2026-10-10";
+  field("endDate").value = "2026-10-11";
+  const beforeWeekend = requests.length;
+  form.fire("submit");
+  assert.equal(requests.length, beforeWeekend);
+  field("includeWeekends").checked = true;
   // Moving the start beyond a stale end selects a single date automatically.
   field("startDate").value = "2026-12-20";
   field("startDate").fire("change");

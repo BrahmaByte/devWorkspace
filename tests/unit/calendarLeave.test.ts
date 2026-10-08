@@ -3,6 +3,7 @@ import { it } from "node:test";
 import { CalendarService } from "../../src/application/services/calendarService";
 import {
   calendarDayCount,
+  calendarLeaveCount,
   type CalendarEntry,
   type CalendarInput,
 } from "../../src/domain/calendar";
@@ -51,6 +52,60 @@ function fixture() {
     entries,
   };
 }
+void it("excludes weekends optionally and overlapping holidays once, with no zero-day or holiday half-day saves", async () => {
+  const { service, entries } = fixture();
+  const holiday: CalendarEntry = {
+    ...leave,
+    id: "00000000-0000-4000-8000-000000000003",
+    kind: "holiday",
+    leaveTypeId: "",
+    quantity: 0,
+    startDate: "2026-10-09",
+    endDate: "2026-10-10",
+  };
+  entries.set(holiday.id, holiday);
+  assert.equal(
+    calendarLeaveCount("2026-10-08", "2026-10-12", true, [holiday, holiday]),
+    3,
+  );
+  assert.equal(
+    calendarLeaveCount("2026-10-08", "2026-10-12", false, [holiday, holiday]),
+    2,
+  );
+  assert.equal(calendarLeaveCount("invalid", "2026-10-12", false, []), 0);
+  await service.save({
+    ...leave,
+    endDate: "2026-10-12",
+    includeWeekends: false,
+    quantity: 999,
+  });
+  const saved = [...entries.values()].find((entry) => entry.kind === "leave")!;
+  assert.equal(saved.quantity, 2);
+  assert.equal(saved.includeWeekends, false);
+  for (const startDate of ["2026-10-09", "2026-10-11"]) {
+    await assert.rejects(
+      service.save({
+        ...leave,
+        startDate,
+        endDate: startDate,
+        includeWeekends: false,
+      }),
+      /No leave days/u,
+    );
+    await assert.rejects(
+      service.save({
+        ...leave,
+        startDate,
+        endDate: startDate,
+        includeWeekends: false,
+        quantity: 0.5,
+      }),
+      /No leave days/u,
+    );
+  }
+  await service.save({ ...saved, includeWeekends: true });
+  assert.equal(entries.get(saved.id)?.quantity, 3);
+});
 for (const [name, startDate, endDate, expected] of [
   ["single day", "2026-10-08", "2026-10-08", 1],
   ["inclusive range", "2026-10-08", "2026-10-10", 3],

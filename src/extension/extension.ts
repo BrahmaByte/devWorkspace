@@ -3,6 +3,8 @@ import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
 import { CalendarService } from "../application/services/calendarService";
+import { TeamCalendarService } from "../application/services/teamCalendarService";
+import { TeamCalendarError, teamCalendarUrl } from "../domain/calendar";
 import {
   GitHubService,
   GitHubError,
@@ -138,7 +140,7 @@ export async function activate(
   }
   const noteRepository = new NoteRepository(database);
   const noteService = new NoteService(noteRepository);
-  const calendarService = new CalendarService(new CalendarRepository(database));
+  const calendarRepository = new CalendarRepository(database);
   const platform = createPlatformService();
   const userEnvironment = new UserEnvironment(platform.operatingSystem);
   let environmentEditPending = false;
@@ -202,6 +204,27 @@ export async function activate(
     context.secrets,
     new FetchConfluenceClientFactory(httpTransport),
   );
+  const teamCalendars = new TeamCalendarService(
+    calendarRepository,
+    context.secrets,
+    confluenceService,
+  );
+  const calendarService = new CalendarService(
+    calendarRepository,
+    (year) => teamCalendars.entries(year),
+    () => teamCalendars.sources(),
+  );
+  let dashboardPanel: vscode.WebviewPanel | undefined;
+  context.subscriptions.push(
+    context.secrets.onDidChange((event) => {
+      if (event.key.startsWith("devworkspace.confluence.")) {
+        teamCalendars.clear();
+        void dashboardPanel?.webview.postMessage({
+          type: "calendar.invalidated",
+        } satisfies ExtensionResponse);
+      }
+    }),
+  );
   const searchService = new SearchService([
     new LocalSearchProvider(noteRepository, workspaceRepository),
     new JiraCacheSearchProvider(jiraRepository),
@@ -221,7 +244,6 @@ export async function activate(
     },
   });
 
-  let dashboardPanel: vscode.WebviewPanel | undefined;
   const showDevDashboardV1 = (
     initialPage: ShellPage,
     replayGuide = false,
@@ -393,6 +415,103 @@ export async function activate(
                 } satisfies ExtensionResponse);
               }
               return;
+            case "calendar.source.connect":
+            case "calendar.source.refresh":
+            case "calendar.source.remove":
+            case "calendar.source.event": {
+              try {
+                if (request.type === "calendar.source.connect") {
+                  const site = confluenceService.calendarSite();
+                  const url = await vscode.window.showInputBox({
+                    title: "Connect Confluence Team Calendar",
+                    prompt:
+                      "Paste Subscribe → iCal URL. Private links are credentials: stored only in SecretStorage.",
+                    password: true,
+                    ignoreFocusOut: true,
+                    validateInput: (value) => {
+                      try {
+                        teamCalendarUrl(site, value);
+                        return undefined;
+                      } catch {
+                        return "Use the iCal subscription URL from the connected Confluence site.";
+                      }
+                    },
+                  });
+                  if (url === undefined)
+                    throw new TeamCalendarError(
+                      "Calendar connection cancelled.",
+                    );
+                  const choice = await vscode.window.showInformationMessage(
+                    "Connect this read-only calendar? Events will be loaded for the selected year and held only for this session. No events or leave requests are sent to Confluence.",
+                    { modal: true },
+                    "Connect",
+                  );
+                  if (choice !== "Connect")
+                    throw new TeamCalendarError(
+                      "Calendar connection cancelled.",
+                    );
+                  await teamCalendars.connect(
+                    request.name,
+                    url,
+                    request.color,
+                    request.holidays,
+                    request.year,
+                  );
+                } else if (request.type === "calendar.source.refresh") {
+                  await teamCalendars.refresh(request.id, request.year);
+                } else if (request.type === "calendar.source.remove") {
+                  const choice = await vscode.window.showWarningMessage(
+                    "Remove this calendar connection and its private subscription link? Local plans and leave remain unchanged.",
+                    { modal: true },
+                    "Remove",
+                  );
+                  if (choice !== "Remove")
+                    throw new TeamCalendarError("Calendar removal cancelled.");
+                  await teamCalendars.remove(request.id);
+                } else {
+                  const entry = teamCalendars
+                    .entries(request.year)
+                    .find((item) => item.id === request.id);
+                  if (!entry)
+                    throw new TeamCalendarError(
+                      "Refresh the calendar before viewing this event.",
+                    );
+                  await vscode.window.showInformationMessage(entry.title, {
+                    modal: true,
+                    detail: `${entry.sourceName} · Read-only\n${entry.startDate} ${entry.startTime} – ${entry.endDate} ${entry.endTime}\n\n${entry.agenda}`,
+                  });
+                  return;
+                }
+                await panel.webview.postMessage({
+                  type: "calendar.sources",
+                  sources: teamCalendars.sources(),
+                  message:
+                    request.type === "calendar.source.remove"
+                      ? "Calendar removed."
+                      : "Calendar refreshed. Imported events are read-only.",
+                } satisfies ExtensionResponse);
+                await panel.webview.postMessage({
+                  type: "calendar.saved",
+                  state: calendarService.getState(request.year),
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                const message =
+                  error instanceof TeamCalendarError
+                    ? error.message
+                    : connectionErrorMessage("confluence", error);
+                await panel.webview.postMessage({
+                  type: "calendar.sources",
+                  sources: teamCalendars.sources(),
+                  message,
+                  error: true,
+                } satisfies ExtensionResponse);
+                await panel.webview.postMessage({
+                  type: "calendar.error",
+                  message,
+                } satisfies ExtensionResponse);
+              }
+              return;
+            }
             case "github.status":
               await panel.webview.postMessage({
                 type: "github.state",
@@ -496,6 +615,10 @@ export async function activate(
               await extensionProxy.configure();
               confluenceSearchSequence++;
               confluenceService.clearReaderCache();
+              teamCalendars.clear();
+              await panel.webview.postMessage({
+                type: "calendar.invalidated",
+              } satisfies ExtensionResponse);
               return;
             case "walkthrough.open":
               await panel.webview.postMessage({
@@ -506,6 +629,10 @@ export async function activate(
               return;
             case "shell.ready":
               await sendState();
+              await panel.webview.postMessage({
+                type: "calendar.sources",
+                sources: teamCalendars.sources(),
+              } satisfies ExtensionResponse);
               {
                 const mode = replayPending
                   ? "tour"
@@ -955,6 +1082,11 @@ export async function activate(
             case "navigation.select":
               activePage = request.page;
               await sendState();
+              if (activePage === "settings")
+                await panel.webview.postMessage({
+                  type: "calendar.sources",
+                  sources: teamCalendars.sources(),
+                } satisfies ExtensionResponse);
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
               if (activePage === "home") await sendHome(true);
@@ -1337,6 +1469,7 @@ export async function activate(
         const selected = await selectRestore();
         if (!selected) return;
         await database.restoreSnapshot(selected);
+        teamCalendars.clear();
         confluenceService.clearReaderCache();
         await vscode.commands.executeCommand("workbench.action.reloadWindow");
       } catch {

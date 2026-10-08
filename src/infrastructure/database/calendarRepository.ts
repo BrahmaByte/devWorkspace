@@ -2,10 +2,39 @@ import type {
   CalendarEntry,
   CalendarState,
   LeaveType,
+  TeamCalendarSource,
 } from "../../domain/calendar";
 import type { LocalDatabase } from "./localDatabase";
 
 export class CalendarRepository {
+  public listSources(): readonly TeamCalendarSource[] {
+    return this.database
+      .query("SELECT * FROM team_calendar_sources ORDER BY name;")
+      .map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        origin: String(row.origin),
+        color: String(row.color) as `#${string}`,
+        holidays: row.holidays === 1,
+      }));
+  }
+  public async saveSource(source: TeamCalendarSource): Promise<void> {
+    this.database.run(
+      "INSERT INTO team_calendar_sources(id,name,origin,color,holidays) VALUES(?,?,?,?,?);",
+      [
+        source.id,
+        source.name,
+        source.origin,
+        source.color,
+        source.holidays ? 1 : 0,
+      ],
+    );
+    await this.database.persist();
+  }
+  public async deleteSource(id: string): Promise<void> {
+    this.database.run("DELETE FROM team_calendar_sources WHERE id=?;", [id]);
+    await this.database.persist();
+  }
   public constructor(private readonly database: LocalDatabase) {}
   public getState(year: number): CalendarState {
     const entries = this.database

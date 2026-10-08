@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { teamCalendarUrl, TeamCalendarError } from "../../domain/calendar";
 
 import type {
   ConfluenceConnection,
@@ -18,6 +19,7 @@ import {
 } from "./atlassianAuth";
 
 export interface ConfluenceClient {
+  readCalendarFeed?(url: string): Promise<string>;
   testConnection(): Promise<void>;
   searchPages(
     query: string,
@@ -35,6 +37,40 @@ export const confluenceLimits = { name: 100, url: 2_000, search: 200 } as const;
 const secretKey = (id: string) => `devworkspace.confluence.${id}.pat`;
 
 export class ConfluenceService {
+  public calendarSite(): string {
+    const connection = this.repository.getConnection();
+    if (!connection)
+      throw new TeamCalendarError("Connect Confluence in Settings first.");
+    return connection.baseUrl;
+  }
+  public async readCalendarFeed(url: string): Promise<string> {
+    const generation = this.cacheGeneration;
+    const connection = this.repository.getConnection();
+    if (!connection)
+      throw new TeamCalendarError("Connect Confluence in Settings first.");
+    const trusted = teamCalendarUrl(connection.baseUrl, url);
+    const stored = await this.secrets.get(secretKey(connection.id));
+    if (!stored)
+      throw new TeamCalendarError("Reconnect Confluence in Settings first.");
+    const client = this.clients.create(
+      connection.baseUrl,
+      deserializeCredential(stored),
+    );
+    if (!client.readCalendarFeed)
+      throw new TeamCalendarError(
+        "Team Calendar subscriptions are unavailable.",
+      );
+    const feed = await client.readCalendarFeed(trusted);
+    if (
+      generation !== this.cacheGeneration ||
+      this.repository.getConnection()?.id !== connection.id ||
+      (await this.secrets.get(secretKey(connection.id))) !== stored
+    )
+      throw new TeamCalendarError(
+        "Confluence connection changed. Refresh the calendar again.",
+      );
+    return feed;
+  }
   private readonly readerCache = new Map<
     string,
     { document: ConfluenceReaderDocument; expires: number; bytes: number }

@@ -366,7 +366,7 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   const html = createWebviewHtml("vscode-webview://test");
   assert.match(html, /data-page="calendar"/u);
   assert.match(html, /data-view="calendar"/u);
-  assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 2);
+  assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 3);
   assert.doesNotMatch(html, /select name="color"/u);
   for (const view of ["day", "week", "month", "year"])
     assert.match(html, new RegExp('data-calendar-view="' + view + '"', "u"));

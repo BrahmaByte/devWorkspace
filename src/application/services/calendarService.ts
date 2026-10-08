@@ -2,23 +2,37 @@ import { randomUUID } from "node:crypto";
 import {
   calendarId,
   calendarDayCount,
+  calendarLeaveCount,
   calendarYear,
   validCalendarInput,
   validLeaveType,
   type CalendarInput,
+  type CalendarEntry,
+  type TeamCalendarSource,
   type CalendarState,
   type LeaveType,
 } from "../../domain/calendar";
 import type { CalendarRepository } from "../../infrastructure/database/calendarRepository";
 
 export class CalendarService {
-  public constructor(private readonly repository: CalendarRepository) {}
+  public constructor(
+    private readonly repository: CalendarRepository,
+    private readonly imported: (
+      year: number,
+    ) => readonly CalendarEntry[] = () => [],
+    private readonly sources: () => readonly TeamCalendarSource[] = () => [],
+  ) {}
   public getState(year: number): CalendarState {
     if (!calendarYear(year))
       throw new Error("Choose a year between 1900 and 2100.");
-    return this.repository.getState(year);
+    const state = this.repository.getState(year);
+    return {
+      ...state,
+      entries: [...state.entries, ...this.imported(year)],
+      sources: this.sources(),
+    };
   }
-  public async save(input: CalendarInput): Promise<void> {
+  public async save(input: CalendarInput | CalendarEntry): Promise<void> {
     if (!validCalendarInput(input))
       throw new Error(
         "Check dates, times and leave quantity. Plans need an end time after their start; split leave across calendar years.",
@@ -39,7 +53,17 @@ export class CalendarService {
         const days = calendarDayCount(input.startDate, input.endDate);
         if (quantity === 0.5 && days !== 1)
           throw new Error("Half-day leave requires a single date.");
-        quantity = quantity === 0.5 ? 0.5 : days;
+        const eligible = calendarLeaveCount(
+          input.startDate,
+          input.endDate,
+          input.includeWeekends !== false,
+          this.getState(Number(input.startDate.slice(0, 4))).entries,
+        );
+        if (!eligible)
+          throw new Error(
+            "No leave days remain after excluding holidays and selected weekends.",
+          );
+        quantity = quantity === 0.5 ? 0.5 : eligible;
       }
     }
     await this.repository.save({

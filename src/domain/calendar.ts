@@ -7,7 +7,10 @@ export interface LeaveType {
 }
 export interface CalendarEntry {
   readonly id: string;
-  readonly kind: "plan" | "holiday" | "leave";
+  readonly kind: "plan" | "holiday" | "leave" | "event";
+  readonly sourceId?: string;
+  readonly sourceName?: string;
+  readonly includeWeekends?: boolean;
   readonly title: string;
   readonly startDate: string;
   readonly endDate: string;
@@ -18,13 +21,80 @@ export interface CalendarEntry {
   readonly leaveTypeId: string;
   readonly quantity: number;
 }
-export type CalendarInput = Omit<CalendarEntry, "id"> & {
+export type CalendarInput = Omit<
+  CalendarEntry,
+  "id" | "kind" | "sourceId" | "sourceName"
+> & {
+  readonly kind: "plan" | "holiday" | "leave";
   readonly id?: string;
 };
 export interface CalendarState {
   readonly year: number;
   readonly entries: readonly CalendarEntry[];
   readonly leaveTypes: readonly LeaveType[];
+  readonly sources?: readonly TeamCalendarSource[];
+}
+export interface TeamCalendarSource {
+  readonly id: string;
+  readonly name: string;
+  readonly origin: string;
+  readonly color: `#${string}`;
+  readonly holidays: boolean;
+  readonly loadedYear?: number;
+}
+export class TeamCalendarError extends Error {}
+export function teamCalendarUrl(baseUrl: string, value: string): string {
+  if (value.length > 4000)
+    throw new TeamCalendarError("Calendar subscription URL is too long.");
+  let url: URL;
+  try {
+    url = new URL(value.replace(/^webcal:/iu, "https:"));
+  } catch {
+    throw new TeamCalendarError("Enter a valid iCal subscription URL.");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.origin !== new URL(baseUrl).origin ||
+    url.username ||
+    url.password ||
+    url.hash ||
+    !/^\/(?:[A-Za-z0-9_.~-]+\/)*rest\/calendar-services\/1\.0\/calendar\/export\/subcalendar\/(?:private\/)?[A-Za-z0-9_-]{1,200}\.ics$/u.test(
+      url.pathname,
+    )
+  )
+    throw new TeamCalendarError(
+      "Use the Team Calendar Subscribe → iCal URL from the connected Confluence site, not a page or CalDAV URL.",
+    );
+  return url.toString();
+}
+/** Date-only calculation: holiday overlaps count once; weekends use UTC weekdays. */
+export function calendarLeaveCount(
+  start: string,
+  end: string,
+  includeWeekends: boolean,
+  holidays: readonly CalendarEntry[],
+): number {
+  if (!calendarDate(start) || !calendarDate(end) || end < start) return 0;
+  let count = 0;
+  for (
+    const date = new Date(start + "T00:00:00Z");
+    date.toISOString().slice(0, 10) <= end;
+    date.setUTCDate(date.getUTCDate() + 1)
+  ) {
+    const key = date.toISOString().slice(0, 10);
+    if (
+      (!includeWeekends && [0, 6].includes(date.getUTCDay())) ||
+      holidays.some(
+        (holiday) =>
+          holiday.kind === "holiday" &&
+          holiday.startDate <= key &&
+          holiday.endDate >= key,
+      )
+    )
+      continue;
+    count++;
+  }
+  return count;
 }
 export const calendarId = (value: unknown): value is string =>
   typeof value === "string" && /^[a-f0-9-]{36}$/iu.test(value);
@@ -112,11 +182,14 @@ export function validCalendarInput(value: unknown): value is CalendarInput {
         "color",
         "leaveTypeId",
         "quantity",
+        "includeWeekends",
       ].includes(key),
     )
   )
     return false;
   if (v.id !== undefined && !calendarId(v.id)) return false;
+  if (v.includeWeekends !== undefined && typeof v.includeWeekends !== "boolean")
+    return false;
   if (
     !text(v.title, 200) ||
     !v.title.trim() ||

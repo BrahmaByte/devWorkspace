@@ -129,6 +129,50 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         "Invalid GitHub action. Credentials, URLs and paths cannot be supplied by the Webview.",
     };
   }
+  if (value.type === "calendar.source.connect") {
+    return hasOnlyKeys(value, ["type", "year", "name", "color", "holidays"]) &&
+      calendarYear(value.year) &&
+      typeof value.name === "string" &&
+      !!value.name.trim() &&
+      value.name.length <= 100 &&
+      typeof value.color === "string" &&
+      /^#[a-f0-9]{6}$/iu.test(value.color) &&
+      typeof value.holidays === "boolean"
+      ? {
+          ok: true,
+          value: {
+            type: value.type,
+            year: value.year,
+            name: value.name,
+            color: value.color as `#${string}`,
+            holidays: value.holidays,
+          },
+        }
+      : { ok: false, error: "Invalid Team Calendar connection." };
+  }
+  if (
+    [
+      "calendar.source.refresh",
+      "calendar.source.remove",
+      "calendar.source.event",
+    ].includes(value.type)
+  ) {
+    return hasOnlyKeys(value, ["type", "year", "id"]) &&
+      calendarYear(value.year) &&
+      calendarId(value.id)
+      ? {
+          ok: true,
+          value: {
+            type: value.type as
+              | "calendar.source.refresh"
+              | "calendar.source.remove"
+              | "calendar.source.event",
+            year: value.year,
+            id: value.id,
+          },
+        }
+      : { ok: false, error: "Invalid Team Calendar action." };
+  }
   if (value.type.startsWith("calendar.")) {
     let request: WebviewRequest | undefined;
     if (calendarYear(value.year)) {

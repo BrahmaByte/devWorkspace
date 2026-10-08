@@ -184,7 +184,7 @@ void describe("Local SQLite database", () => {
     await assert.rejects(database.restoreSnapshot(snapshot), /checksum/u);
     assert.deepEqual(await readFile(filePath), live);
     for (const sql of [
-      "INSERT INTO schema_migrations VALUES (10, 'future', '2026');",
+      "INSERT INTO schema_migrations VALUES (11, 'future', '2026');",
       "CREATE TRIGGER unexpected AFTER INSERT ON notes BEGIN DELETE FROM notes; END;",
       "PRAGMA foreign_keys = OFF; INSERT INTO environment_profiles (id, project_id, name) VALUES ('bad', 'missing', 'Fake');",
     ]) {
@@ -240,7 +240,7 @@ void describe("Local SQLite database", () => {
     database.close();
     await rewriteDatabase(
       filePath,
-      "DROP TABLE calendar_entries; DROP TABLE calendar_leave_types; DELETE FROM schema_migrations WHERE version IN (7,8,9); DROP TABLE developer_applications; DELETE FROM schema_migrations WHERE version = 6;",
+      "DROP TABLE team_calendar_sources; DROP TABLE calendar_entries; DROP TABLE calendar_leave_types; DELETE FROM schema_migrations WHERE version IN (7,8,9,10); DROP TABLE developer_applications; DELETE FROM schema_migrations WHERE version = 6;",
     );
     const oldBytes = await readFile(filePath);
     const migrated = await LocalDatabase.open(filePath);
@@ -255,7 +255,7 @@ void describe("Local SQLite database", () => {
     await migrated.restoreSnapshot(snapshot.name);
     migrated.close();
     const restored = await LocalDatabase.open(filePath);
-    assert.equal(new LocalStateRepository(restored).getSchemaVersion(), 9);
+    assert.equal(new LocalStateRepository(restored).getSchemaVersion(), 10);
     restored.close();
   });
 
@@ -298,7 +298,7 @@ void describe("Local SQLite database", () => {
     const { database } = await createDatabase();
     const repository = new LocalStateRepository(database);
 
-    assert.equal(repository.getSchemaVersion(), 9);
+    assert.equal(repository.getSchemaVersion(), 10);
     assert.equal(
       database.getScalar(
         "SELECT name FROM schema_migrations WHERE version = 1;",
@@ -324,6 +324,7 @@ void describe("Local SQLite database", () => {
       "relationships",
       "schema_migrations",
       "sticky_notes",
+      "team_calendar_sources",
       "url_groups",
     ]);
     for (const table of [
@@ -351,11 +352,11 @@ void describe("Local SQLite database", () => {
 
     const reopened = await LocalDatabase.open(filePath);
     const repository = new LocalStateRepository(reopened);
-    assert.equal(repository.getSchemaVersion(), 9);
+    assert.equal(repository.getSchemaVersion(), 10);
     assert.equal(repository.count("projects"), 1);
     assert.equal(
       reopened.getScalar("SELECT COUNT(*) FROM schema_migrations;"),
-      9,
+      10,
     );
     reopened.close();
   });
