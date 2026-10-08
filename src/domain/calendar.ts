@@ -2,6 +2,8 @@ export interface LeaveType {
   readonly id: string;
   readonly name: string;
   readonly unit: string;
+  readonly count: number | null;
+  readonly color: CalendarEntry["color"];
 }
 export interface CalendarEntry {
   readonly id: string;
@@ -58,12 +60,20 @@ export function validLeaveType(
     return false;
   const v = value as Record<string, unknown>;
   return (
-    Object.keys(v).every((key) => ["id", "name", "unit"].includes(key)) &&
+    Object.keys(v).every((key) =>
+      ["id", "name", "unit", "count", "color"].includes(key),
+    ) &&
     (v.id === undefined || calendarId(v.id)) &&
     text(v.name, 80) &&
     !!v.name.trim() &&
     text(v.unit, 24) &&
-    !!v.unit.trim()
+    !!v.unit.trim() &&
+    (v.count === null ||
+      (typeof v.count === "number" &&
+        Number.isFinite(v.count) &&
+        v.count >= 0 &&
+        v.count <= 10000)) &&
+    ["blue", "teal", "amber", "pink"].includes(String(v.color))
   );
 }
 export function validCalendarInput(value: unknown): value is CalendarInput {

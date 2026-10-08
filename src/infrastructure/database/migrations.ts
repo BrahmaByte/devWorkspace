@@ -196,4 +196,12 @@ export const migrations: readonly Migration[] = [
       CREATE INDEX calendar_dates ON calendar_entries(start_date,end_date);
     `,
   },
+  {
+    version: 8,
+    name: "leave_allowances_and_colors",
+    sql: `
+      ALTER TABLE calendar_leave_types ADD COLUMN allowance REAL CHECK(allowance IS NULL OR (allowance >= 0 AND allowance <= 10000));
+      ALTER TABLE calendar_leave_types ADD COLUMN color TEXT NOT NULL DEFAULT 'blue' CHECK(color IN ('blue','teal','amber','pink'));
+    `,
+  },
 ];

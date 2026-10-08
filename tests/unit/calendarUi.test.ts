@@ -6,6 +6,7 @@ import { calendarScript } from "../../src/webview/app/calendarScript";
 void it("navigates calendar views, retains failed drafts and keeps leave units separate", () => {
   class Element {
     public value = "";
+    public step = "";
     public hidden = false;
     public disabled = false;
     public required = false;
@@ -62,7 +63,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     elements: { namedItem: (name: string) => get("type-" + name) },
     reset: () => {},
   });
-  const views = ["day", "week", "year"].map((view) => {
+  const views = ["day", "week", "month"].map((view) => {
     const button = new Element();
     button.dataset.calendarView = view;
     return button;
@@ -110,8 +111,20 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
       state: {
         year,
         leaveTypes: [
-          { id: annual, name: "Annual", unit: "days" },
-          { id: hourly, name: "Appointment", unit: "hours" },
+          {
+            id: annual,
+            name: "Annual",
+            unit: "days",
+            count: 20,
+            color: "teal",
+          },
+          {
+            id: hourly,
+            name: "Appointment",
+            unit: "hours",
+            count: 8,
+            color: "pink",
+          },
         ],
         entries: [
           {
@@ -142,10 +155,21 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   });
   assert.deepEqual(
     get("#calendar-totals").children.map((child) => child.textContent),
-    ["Annual · 0.5 days", "Appointment · 2 hours"],
+    [
+      "Annual · 0.5 days used · 19.5 days remaining / 20",
+      "Appointment · 2 hours used · 6 hours remaining / 8",
+    ],
   );
   views[2]!.fire("click");
-  assert.equal(get("#calendar-body").children[0]!.children.length, 12);
+  get("#calendar-type-list").children[1]!.children[1]!.fire("click");
+  assert.equal(get("type-count").step, "any");
+  assert.equal(get("type-color").value, "pink");
+  assert.equal(get("#calendar-body").children[0]!.children.length, 49);
+  assert.equal(get("#calendar-year-body").children[0]!.children.length, 12);
+  assert.equal(
+    get("#calendar-day-body").children[0]!.children[0]!.className,
+    "calendar-days day",
+  );
   views[0]!.fire("click");
   assert.equal(
     get("#calendar-body").children[0]!.children[0]!.className,
@@ -164,4 +188,40 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   onMessage({ data: { type: "calendar.error", message: "Save failed" } });
   assert.equal(field("title").value, "Keep this draft");
   assert.equal(get("#calendar-status").textContent, "Save failed");
+  const state = {
+    year,
+    leaveTypes: [
+      { id: annual, name: "Annual", unit: "days", count: 20, color: "amber" },
+    ],
+    entries: [
+      {
+        id: "a",
+        kind: "leave",
+        title: "Edited leave",
+        startDate: date,
+        endDate: date,
+        startTime: "",
+        endTime: "",
+        leaveTypeId: annual,
+        quantity: 2,
+        color: "blue",
+      },
+    ],
+  };
+  onMessage({ data: { type: "calendar.state", state } });
+  assert.equal(
+    get("#calendar-totals").children[0]?.textContent,
+    "Annual · 2 days used · 18 days remaining / 20",
+  );
+  assert.equal(
+    get("#calendar-agenda-list").children[0]?.dataset.color,
+    "amber",
+  );
+  onMessage({
+    data: { type: "calendar.state", state: { ...state, entries: [] } },
+  });
+  assert.equal(
+    get("#calendar-totals").children[0]?.textContent,
+    "Annual · 0 days used · 20 days remaining / 20",
+  );
 });

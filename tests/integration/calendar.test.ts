@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import initSqlJs from "sql.js";
+import { migrations } from "../../src/infrastructure/database/migrations";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
@@ -24,6 +26,52 @@ const plan: CalendarInput = {
   quantity: 0,
 };
 
+void it("migrates saved leave types without inventing allowances or changing legacy units", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "calendar-upgrade-"));
+  const path = join(directory, "workspace.sqlite");
+  const SQL = await initSqlJs({
+    locateFile: () => require.resolve("sql.js/dist/sql-wasm.wasm"),
+  });
+  const legacy = new SQL.Database();
+  legacy.run(
+    "CREATE TABLE schema_migrations ( version INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL );",
+  );
+  for (const migration of migrations.slice(0, 7)) {
+    legacy.run(migration.sql);
+    legacy.run("INSERT INTO schema_migrations VALUES(?,?,?);", [
+      migration.version,
+      migration.name,
+      "2026-10-08",
+    ]);
+  }
+  const id = "00000000-0000-4000-8000-000000000099";
+  legacy.run("INSERT INTO calendar_leave_types VALUES(?,?,?);", [
+    id,
+    "Legacy",
+    "weeks",
+  ]);
+  await writeFile(path, legacy.export());
+  legacy.close();
+  const database = await LocalDatabase.open(path);
+  try {
+    const service = new CalendarService(new CalendarRepository(database));
+    const type = service.getState(2026).leaveTypes[0]!;
+    assert.deepEqual(type, {
+      id,
+      name: "Legacy",
+      unit: "weeks",
+      count: null,
+      color: "blue",
+    });
+    await service.saveType({ ...type, count: 4, color: "pink" });
+    assert.equal(service.getState(2026).leaveTypes[0]?.unit, "weeks");
+    assert.equal(service.getState(2026).leaveTypes[0]?.count, 4);
+  } finally {
+    database.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 void it("persists plans, inclusive holidays and fractional leave without mixing units", async () => {
   const directory = await mkdtemp(join(tmpdir(), "calendar-test-"));
   const path = join(directory, "workspace.sqlite");
@@ -40,10 +88,22 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
       startTime: "",
       endTime: "",
     });
-    await service.saveType({ name: "Annual", unit: "days" });
-    await service.saveType({ name: "Appointment", unit: "hours" });
+    await service.saveType({
+      name: "Annual",
+      unit: "days",
+      count: 20,
+      color: "teal",
+    });
+    await service.saveType({
+      name: "Appointment",
+      unit: "hours",
+      count: 8,
+      color: "pink",
+    });
     const types = service.getState(2026).leaveTypes;
     const annual = types.find((type) => type.name === "Annual")!;
+    assert.equal(annual.count, 20);
+    assert.equal(annual.color, "teal");
     await service.save({
       ...plan,
       kind: "leave",
@@ -59,7 +119,12 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
       /Create a new type/u,
     );
     await assert.rejects(
-      service.saveType({ name: "annual", unit: "days" }),
+      service.saveType({
+        name: "annual",
+        unit: "days",
+        count: 20,
+        color: "blue",
+      }),
       /already exists/u,
     );
     await assert.rejects(
@@ -82,6 +147,30 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
     service = new CalendarService(new CalendarRepository(database));
     assert.equal(service.getState(2026).entries.length, 3);
     assert.equal(service.getState(2027).entries.length, 1);
+    assert.deepEqual(
+      service.getState(2026).leaveTypes.find((type) => type.id === annual.id),
+      annual,
+    );
+    await service.saveType({ ...annual, count: 15, color: "amber" });
+    assert.equal(
+      service.getState(2026).leaveTypes.find((type) => type.id === annual.id)
+        ?.count,
+      15,
+    );
+    assert.equal(
+      service.getState(2026).leaveTypes.find((type) => type.id === annual.id)
+        ?.color,
+      "amber",
+    );
+    await assert.rejects(
+      service.saveType({
+        name: "Invalid",
+        unit: "weeks",
+        count: 20,
+        color: "blue",
+      }),
+      /days or hours/u,
+    );
     assert.equal(
       service.getState(2026).entries.find((value) => value.kind === "leave")
         ?.quantity,
@@ -133,6 +222,30 @@ void it("rejects invalid calendar messages at the trust boundary", () => {
     assert.equal(request(entry).ok, false);
   assert.equal(calendarDate("2024-02-29"), true);
   assert.equal(calendarDate("2025-02-29"), false);
+  const leaveType = { name: "Annual", unit: "days", count: 20, color: "pink" };
+  for (const value of [
+    { ...leaveType, count: -1 },
+    { ...leaveType, count: Infinity },
+    { ...leaveType, count: 10001 },
+    { ...leaveType, color: "red;script" },
+    { ...leaveType, remaining: 20 },
+  ])
+    assert.equal(
+      parseWebviewRequest({
+        type: "calendar.type.save",
+        year: 2026,
+        leaveType: value,
+      }).ok,
+      false,
+    );
+  assert.equal(
+    parseWebviewRequest({
+      type: "calendar.type.save",
+      year: 2026,
+      leaveType: { ...leaveType, count: null },
+    }).ok,
+    true,
+  );
   assert.equal(
     parseWebviewRequest({ type: "calendar.refresh", year: 2101 }).ok,
     false,
@@ -163,7 +276,7 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   const html = createWebviewHtml("vscode-webview://test");
   assert.match(html, /data-page="calendar"/u);
   assert.match(html, /data-view="calendar"/u);
-  for (const view of ["day", "week", "year"])
+  for (const view of ["day", "week", "month"])
     assert.match(html, new RegExp('data-calendar-view="' + view + '"', "u"));
   const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/u.exec(html)?.[1];
   assert.ok(script);

@@ -15,11 +15,15 @@ export class CalendarRepository {
       )
       .map((row) => JSON.parse(String(row.data)) as CalendarEntry);
     const leaveTypes = this.database
-      .query("SELECT id,name,unit FROM calendar_leave_types ORDER BY name;")
+      .query(
+        "SELECT id,name,unit,allowance,color FROM calendar_leave_types ORDER BY name;",
+      )
       .map((row) => ({
         id: String(row.id),
         name: String(row.name),
         unit: String(row.unit),
+        count: row.allowance === null ? null : Number(row.allowance),
+        color: String(row.color) as LeaveType["color"],
       }));
     return { year, entries, leaveTypes };
   }
@@ -59,8 +63,8 @@ export class CalendarRepository {
   }
   public async saveType(type: LeaveType): Promise<void> {
     this.database.run(
-      "INSERT INTO calendar_leave_types(id,name,unit) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,unit=excluded.unit;",
-      [type.id, type.name, type.unit],
+      "INSERT INTO calendar_leave_types(id,name,unit,allowance,color) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,unit=excluded.unit,allowance=excluded.allowance,color=excluded.color;",
+      [type.id, type.name, type.unit, type.count, type.color],
     );
     await this.database.persist();
   }

@@ -83,9 +83,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 ## Calendar
 
-Use **Calendar** for Day, Week and Year views. Add a plan with a date, start/end time and optional agenda. Select an entry to edit or delete it; select a date in Year view to open its day.
+The top **Planner** switches between Day, Week and Month, with **Quick plan** alongside it. The day planner and yearly calendar stay visible below. Select a date to update the day planner, or select an entry to edit or delete it.
 
-Choose **Holiday** for an inclusive date range. Under **Manage leave types**, add a name and unit (such as days or hours), then choose **Leave** and enter its date range and quantity. Fractional quantities are supported. Yearly totals stay separate by leave type and unit; weekends and holidays are not deducted automatically. A used unit cannot be changed until its leave entries are removed. Split overnight plans or leave spanning calendar years into separate entries.
+Choose **Holiday** for an inclusive date range. Under **Manage leave types**, set a name, Days or Hours, an optional **Annual type count** and a color. Record **Leave** with its date range and quantity; use **0.5 days** for a half day. Saved leave reduces that year's allowance; editing or deleting it recalculates the balance. The type's color appears in the planner, day planner and yearly calendar. Allowances repeat each calendar year, without carryover; overdrawn balances remain visible. Weekends and holidays are not deducted automatically. A used unit cannot be changed. Split overnight plans or cross-year leave into separate entries.
 
 Calendar entries stay in your local database and are included in its snapshots; they do not sync to external calendars.
 

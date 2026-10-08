@@ -51,10 +51,15 @@ export class CalendarService {
   ): Promise<void> {
     if (!validLeaveType(input))
       throw new Error(
-        "Enter a leave type name and unit (up to 24 characters).",
+        "Enter a leave type name, days or hours, a valid annual count and a color.",
       );
     const types = this.repository.getState(new Date().getFullYear()).leaveTypes;
     const existing = types.find((type) => type.id === input.id);
+    if (
+      !["days", "hours"].includes(input.unit) &&
+      input.unit !== existing?.unit
+    )
+      throw new Error("Choose days or hours for new leave types.");
     if (input.id && !existing) throw new Error("Leave type not found.");
     if (!input.id && types.length >= 50)
       throw new Error("Leave type limit reached (50).");
@@ -78,6 +83,8 @@ export class CalendarService {
       id: input.id || randomUUID(),
       name: input.name.trim(),
       unit: input.unit.trim(),
+      count: input.count,
+      color: input.color,
     });
   }
   public async deleteType(id: string): Promise<void> {
