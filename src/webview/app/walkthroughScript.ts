@@ -17,8 +17,11 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"calendar",title:"Plan your day, week or month",text:"Switch Planner between Day, Week, Month and Year, and click a date or time slot to add an entry. Select a local entry to edit it."},
- {page:"calendar",title:"Track holidays and leave",text:"Use Leave manager to set an Annual allowance (days) and color. Choose dates for leave and Half day under Duration, or choose Holiday for separately colored holidays. Saved leave cannot exceed its annual allowance."}
+ {page:"calendar",title:"Plan from the calendar",text:"Switch Planner between Day, Week, Month and Year. Click a date or time slot to add a plan, holiday or leave in the popup."},
+ {page:"calendar",title:"Track leave safely",text:"Use Leave manager to set an Annual allowance (days) and color. Leave counts come from the selected dates and cannot exceed the saved allowance."},
+ {page:"settings",title:"Connect a Team Calendar",text:"In Confluence Team Calendars, add an Events or Holidays subscription. On Calendar, select it and refresh the displayed year."},
+ {page:"jira",title:"Use your saved Jira filters",text:"Refresh Saved filters, choose one, then use the board Filter fields to refine the loaded issues without replacing its JQL."},
+ {page:"workspace",title:"Clone a GitHub repository",text:"After connecting GitHub in Settings, refresh GitHub repositories, choose an owner and use the clone icon. Successful clones are added to Project launcher."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

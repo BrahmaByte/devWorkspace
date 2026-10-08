@@ -1,0 +1,30 @@
+DevDashboardV1 0.1.15
+
+Calendar and leave safety
+- Add or edit plans, holidays and leave from a focused popup opened from Day,
+  Week, Month or Year. Failed saves retain the draft.
+- Day-based leave is calculated from selected dates, supports one half day, and
+  can exclude weekends and known holidays. Leave and holiday ranges cannot
+  overlap; plans may share dates.
+- Annual allowances are enforced for new leave, edits and allowance changes.
+  Existing overbooked records remain visible for safe correction and are clearly
+  identified rather than silently changed.
+- Connect up to five read-only Confluence Team Calendar iCal subscriptions.
+  Subscription URLs stay in VS Code SecretStorage; fetched events remain in the
+  current session and holiday calendars block conflicting leave.
+
+Developer workflow
+- Connect GitHub.com in Settings, browse authorized account and organization
+  repositories, clone with native Git after folder selection and confirmation,
+  and add successful clones directly to Project launcher.
+- Load accessible Jira saved filters while keeping board field filters separate
+  from the saved JQL.
+- Preserve supported static Confluence macro formatting while continuing to
+  block scripts, active frames and unsafe markup.
+
+Compatibility and data
+- Existing calendar entries, leave types, legacy hour units, colors and layouts
+  are preserved. Calendar records continue to use the local database and its
+  snapshot policy.
+- GitHub and Team Calendar credentials or subscription links never enter the
+  dashboard Webview or local database.

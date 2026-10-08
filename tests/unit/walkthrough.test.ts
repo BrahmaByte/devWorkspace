@@ -181,15 +181,22 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
     send("update");
-    assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
-    assert.match(
-      panel.children[1]!.textContent,
-      /Plan your day, week or month/u,
-    );
+    assert.match(panel.children[0]!.textContent, /What's new.*1 of 5/u);
+    assert.match(panel.children[1]!.textContent, /Plan from the calendar/u);
     assert.equal(page, "calendar");
     next!.click();
     assert.equal(page, "calendar");
     assert.match(panel.children[2]!.textContent, /Leave manager/u);
+    next!.click();
+    assert.equal(page, "settings");
+    assert.match(panel.children[2]!.textContent, /Confluence Team Calendars/u);
+    next!.click();
+    assert.equal(page, "jira");
+    assert.match(panel.children[2]!.textContent, /Saved filters/u);
+    next!.click();
+    assert.equal(page, "workspace");
+    assert.match(panel.children[2]!.textContent, /GitHub repositories/u);
+    assert.equal(next!.textContent, "Finish");
     skip!.click();
     assert.equal(page, "notes");
     send("tour");

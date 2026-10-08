@@ -16,12 +16,16 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.14
+## Version 0.1.15
 
-- Local Calendar with Day, Week, Month and Year planning.
-- Track holidays and fractional-day leave with annual allowances; legacy hour
-  records retain their units.
-- Choose custom colors; Year highlights occupied dates and lists month entries.
+- Add plans, holidays, and date-derived leave from the Day, Week, Month, or Year
+  planner. Leave and holiday dates cannot overlap; plans can.
+- Enforce annual leave allowances, exclude selected weekends and known holidays,
+  and identify legacy overbooked balances without deleting saved data.
+- Connect read-only Confluence Team Calendars and display their events or holidays.
+- Load Jira saved filters and retain supported formatted Confluence macro content.
+- Browse authorized GitHub repositories, clone with native Git, and add successful
+  clones directly to Project launcher.
 
 ## Screenshots
 

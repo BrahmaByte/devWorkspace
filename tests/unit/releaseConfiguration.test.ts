@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
 const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
+const packageIgnore = readFileSync(".vscodeignore", "utf8");
 const identityWorkflow = readFileSync(
   ".github/workflows/marketplace-identity.yml",
   "utf8",
@@ -115,5 +116,14 @@ void describe("Release validation configuration", () => {
       manifest.scripts["verify:vsix"] ?? "",
       /scripts\/verify-vsix\.mjs/u,
     );
+    for (const pattern of [
+      "node_modules/**/*.md",
+      "node_modules/**/*.ts",
+      "node_modules/**/*.map",
+    ])
+      assert.ok(
+        packageIgnore.split("\n").includes(pattern),
+        `Package ignore must exclude ${pattern}`,
+      );
   });
 });
