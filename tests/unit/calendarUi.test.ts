@@ -13,7 +13,14 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     public textContent = "";
     public className = "";
     public dataset: Record<string, string> = {};
-    public style: Record<string, string> = {};
+    public style: Record<
+      string,
+      string | ((name: string, value: string) => void)
+    > = {
+      setProperty: (name, value) => {
+        this.style[name] = value;
+      },
+    };
     public children: Element[] = [];
     public scrollTop = 0;
     public classList = { toggle: () => {} };
@@ -55,7 +62,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     reset: () => {
       fields.forEach((element) => (element.value = ""));
       field("kind").value = "plan";
-      field("color").value = "blue";
+      field("color").value = "#3378e6";
     },
   });
   const typeForm = get("#calendar-type-form");
@@ -163,7 +170,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   views[2]!.fire("click");
   get("#calendar-type-list").children[1]!.children[1]!.fire("click");
   assert.equal(get("type-count").step, "any");
-  assert.equal(get("type-color").value, "pink");
+  assert.equal(get("type-color").value, "#d65b79");
   assert.equal(get("#calendar-body").children[0]!.children.length, 49);
   assert.equal(get("#calendar-year-body").children[0]!.children.length, 12);
   assert.equal(
@@ -191,7 +198,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   const state = {
     year,
     leaveTypes: [
-      { id: annual, name: "Annual", unit: "days", count: 20, color: "amber" },
+      { id: annual, name: "Annual", unit: "days", count: 20, color: "#824acb" },
     ],
     entries: [
       {
@@ -215,7 +222,58 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   );
   assert.equal(
     get("#calendar-agenda-list").children[0]?.dataset.color,
-    "amber",
+    "#824acb",
+  );
+  assert.equal(
+    get("#calendar-agenda-list").children[0]?.style["--event-color"],
+    "#824acb",
+  );
+  field("kind").value = "holiday";
+  field("kind").fire("change");
+  assert.equal(field("color").value, "#e29b30");
+  onMessage({
+    data: {
+      type: "calendar.state",
+      state: {
+        ...state,
+        entries: [
+          ...state.entries,
+          {
+            ...state.entries[0],
+            id: "holiday",
+            kind: "holiday",
+            title: "Holiday",
+            color: "#e29b30",
+            leaveTypeId: "",
+            quantity: 0,
+          },
+        ],
+      },
+    },
+  });
+  const holidayButton = get("#calendar-agenda-list").children.find(
+    (child) => child.dataset.kind === "holiday",
+  )!;
+  assert.equal(holidayButton.style["--event-color"], "#e29b30");
+  const months = get("#calendar-year-body").children[0]!.children;
+  const markers = months.flatMap((month) =>
+    month.children[1]!.children.flatMap((day) =>
+      day.children.flatMap((dots) => dots.children),
+    ),
+  );
+  assert.ok(
+    markers.some(
+      (marker) =>
+        marker.dataset.kind === "holiday" &&
+        marker.style["--event-color"] === "#e29b30",
+    ),
+  );
+  assert.ok(
+    markers.some(
+      (marker) =>
+        marker.dataset.kind === "leave" &&
+        marker.style["--event-color"] === "#824acb",
+    ),
   );
   onMessage({
     data: { type: "calendar.state", state: { ...state, entries: [] } },

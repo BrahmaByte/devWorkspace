@@ -151,7 +151,7 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
       service.getState(2026).leaveTypes.find((type) => type.id === annual.id),
       annual,
     );
-    await service.saveType({ ...annual, count: 15, color: "amber" });
+    await service.saveType({ ...annual, count: 15, color: "#8a41cf" });
     assert.equal(
       service.getState(2026).leaveTypes.find((type) => type.id === annual.id)
         ?.count,
@@ -160,7 +160,30 @@ void it("persists plans, inclusive holidays and fractional leave without mixing 
     assert.equal(
       service.getState(2026).leaveTypes.find((type) => type.id === annual.id)
         ?.color,
-      "amber",
+      "#8a41cf",
+    );
+    const holiday = service
+      .getState(2026)
+      .entries.find((value) => value.kind === "holiday")!;
+    await service.save({ ...holiday, color: "#e29b30" });
+    database.close();
+    database = await LocalDatabase.open(path);
+    service = new CalendarService(new CalendarRepository(database));
+    assert.equal(
+      service.getState(2026).leaveTypes.find((type) => type.id === annual.id)
+        ?.color,
+      "#8a41cf",
+    );
+    assert.equal(
+      service.getState(2026).entries.find((value) => value.id === holiday.id)
+        ?.color,
+      "#e29b30",
+    );
+    assert.throws(() =>
+      database.run(
+        "UPDATE calendar_leave_types SET custom_color=? WHERE id=?;",
+        ["#gggggg", annual.id],
+      ),
     );
     await assert.rejects(
       service.saveType({
@@ -200,11 +223,15 @@ void it("rejects invalid calendar messages at the trust boundary", () => {
   const request = (entry: unknown) =>
     parseWebviewRequest({ type: "calendar.save", year: 2026, entry });
   assert.equal(request(plan).ok, true);
+  assert.equal(request({ ...plan, color: "#12abEF" }).ok, true);
   for (const entry of [
     { ...plan, startDate: "2026-02-30" },
     { ...plan, endTime: "08:00" },
     { ...plan, endTime: "24:00" },
     { ...plan, title: " " },
+    { ...plan, color: "#123" },
+    { ...plan, color: "#123456; background:url(https://example.com)" },
+    { ...plan, color: "#gggggg" },
     { ...plan, extra: "ignored?" },
     { ...plan, agenda: "a".repeat(5001) },
     { ...plan, kind: "leave", startTime: "", endTime: "", quantity: NaN },
@@ -228,6 +255,7 @@ void it("rejects invalid calendar messages at the trust boundary", () => {
     { ...leaveType, count: Infinity },
     { ...leaveType, count: 10001 },
     { ...leaveType, color: "red;script" },
+    { ...leaveType, color: "#12345g" },
     { ...leaveType, remaining: 20 },
   ])
     assert.equal(
@@ -276,6 +304,8 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   const html = createWebviewHtml("vscode-webview://test");
   assert.match(html, /data-page="calendar"/u);
   assert.match(html, /data-view="calendar"/u);
+  assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 2);
+  assert.doesNotMatch(html, /select name="color"/u);
   for (const view of ["day", "week", "month"])
     assert.match(html, new RegExp('data-calendar-view="' + view + '"', "u"));
   const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/u.exec(html)?.[1];

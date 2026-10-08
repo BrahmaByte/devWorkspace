@@ -14,7 +14,7 @@ export interface CalendarEntry {
   readonly startTime: string;
   readonly endTime: string;
   readonly agenda: string;
-  readonly color: "blue" | "teal" | "amber" | "pink";
+  readonly color: "blue" | "teal" | "amber" | "pink" | `#${string}`;
   readonly leaveTypeId: string;
   readonly quantity: number;
 }
@@ -30,6 +30,12 @@ export const calendarId = (value: unknown): value is string =>
   typeof value === "string" && /^[a-f0-9-]{36}$/iu.test(value);
 export const calendarYear = (value: unknown): value is number =>
   Number.isInteger(value) && Number(value) >= 1900 && Number(value) <= 2100;
+export const calendarColor = (
+  value: unknown,
+): value is CalendarEntry["color"] =>
+  typeof value === "string" &&
+  (/^#[a-f0-9]{6}$/iu.test(value) ||
+    ["blue", "teal", "amber", "pink"].includes(value));
 export function calendarDate(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(value))
     return false;
@@ -73,7 +79,7 @@ export function validLeaveType(
         Number.isFinite(v.count) &&
         v.count >= 0 &&
         v.count <= 10000)) &&
-    ["blue", "teal", "amber", "pink"].includes(String(v.color))
+    calendarColor(v.color)
   );
 }
 export function validCalendarInput(value: unknown): value is CalendarInput {
@@ -113,7 +119,7 @@ export function validCalendarInput(value: unknown): value is CalendarInput {
     !calendarDate(v.startDate) ||
     !calendarDate(v.endDate) ||
     v.endDate < v.startDate ||
-    !["blue", "teal", "amber", "pink"].includes(String(v.color))
+    !calendarColor(v.color)
   )
     return false;
   if (v.kind === "plan")
