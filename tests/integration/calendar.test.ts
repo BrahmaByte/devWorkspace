@@ -306,8 +306,12 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   assert.match(html, /data-view="calendar"/u);
   assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 2);
   assert.doesNotMatch(html, /select name="color"/u);
-  for (const view of ["day", "week", "month"])
+  for (const view of ["day", "week", "month", "year"])
     assert.match(html, new RegExp('data-calendar-view="' + view + '"', "u"));
+  assert.doesNotMatch(html, /id="calendar-(day|year)-planner"/u);
+  assert.doesNotMatch(html, /<select name="unit"/u);
+  assert.match(html, /<th scope="col">Availed<\/th>/u);
+  assert.match(html, /id="home-jira" class="home-list"/u);
   const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/u.exec(html)?.[1];
   assert.ok(script);
   assert.doesNotThrow(() => new Script(script));

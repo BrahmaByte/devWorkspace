@@ -188,7 +188,7 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(page, "calendar");
     next!.click();
     assert.equal(page, "calendar");
-    assert.match(panel.children[2]!.textContent, /Manage leave types/u);
+    assert.match(panel.children[2]!.textContent, /Leave manager/u);
     skip!.click();
     assert.equal(page, "notes");
     send("tour");

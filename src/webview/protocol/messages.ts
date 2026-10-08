@@ -19,6 +19,7 @@ import type {
   JiraQuickFilter,
 } from "../../domain/jira/models";
 import type { WorkspaceState } from "../../domain/workspace/models";
+import type { GitHubState } from "../../domain/github";
 
 export const shellPages = [
   "home",
@@ -34,6 +35,19 @@ export const shellPages = [
 export type ShellPage = (typeof shellPages)[number];
 
 export type WebviewRequest =
+  | {
+      readonly type:
+        | "github.configure"
+        | "github.disconnect"
+        | "github.refresh"
+        | "github.status";
+    }
+  | {
+      readonly type: "github.repositories";
+      readonly owner: string;
+      readonly more: boolean;
+    }
+  | { readonly type: "github.clone"; readonly id: string }
   | { readonly type: "calendar.refresh"; readonly year: number }
   | {
       readonly type: "calendar.save";
@@ -189,6 +203,7 @@ export type WebviewRequest =
   | { readonly type: "environments.delete"; readonly id: string };
 
 export type ExtensionResponse =
+  | { readonly type: "github.state"; readonly state: GitHubState }
   | {
       readonly type: "calendar.state" | "calendar.saved";
       readonly state: CalendarState;

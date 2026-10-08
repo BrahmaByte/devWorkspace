@@ -18,10 +18,10 @@ or Escape to dismiss it.
 
 ## Version 0.1.14
 
-- Added a local Calendar with Day, Week and Month planning, a day timeline and
-  a yearly overview.
-- Track holidays and leave with annual allowances, days or hours, and half days.
-- Choose custom colors; holidays use diamond markers to distinguish them from leave.
+- Local Calendar with Day, Week, Month and Year planning.
+- Track holidays and fractional-day leave with annual allowances; legacy hour
+  records retain their units.
+- Choose custom colors; Year highlights occupied dates and lists month entries.
 
 ## Screenshots
 
@@ -83,9 +83,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 ## Calendar
 
-The top **Planner** switches between Day, Week and Month, with **Quick plan** alongside it. The day planner and yearly calendar stay visible below. Select a date to update the day planner, or select an entry to edit or delete it.
+The **Planner** switches between Day, Week, Month and Year, with **Quick plan** alongside it. Select a date to plan that day, or select an entry to edit or delete it. Year highlights occupied dates in their colors and lists entries below each month; holidays have dashed outlines.
 
-Choose **Holiday** for an inclusive date range and pick its color. Holidays default to gold and use diamond markers in the yearly calendar; leave uses round markers. Under **Manage leave types**, set a name, Days or Hours, an optional **Annual type count** and any color using the color picker. Record **Leave** with its date range and quantity; use **0.5 days** for a half day. Saved leave reduces that year's allowance; editing or deleting it recalculates the balance. The type's color appears in the planner, day planner and yearly calendar. Allowances repeat each calendar year, without carryover; overdrawn balances remain visible. Weekends and holidays are not deducted automatically. A used unit cannot be changed. Split overnight plans or cross-year leave into separate entries.
+Choose **Holiday** for an inclusive date range and pick its color (gold by default). In **Leave manager**, set a name, optional **Annual type count** and color. New types use days; record **0.5** for half-day leave. Existing hour-based types retain their units. The **Leave balances** table shows annual count, availed and remaining for the selected year. Editing or deleting leave recalculates balances. Allowances repeat each year without carryover; weekends and holidays are not deducted automatically. Split overnight plans or cross-year leave into separate entries.
 
 Calendar entries stay in your local database and are included in its snapshots; they do not sync to external calendars.
 
@@ -95,6 +95,13 @@ Use Workspace to manage local development tools:
 
 - **Projects:** select folders with the VS Code folder picker, view the current
   Git branch, and open a VS Code terminal in a project.
+- **GitHub repositories:** configure a GitHub.com PAT in Settings, refresh, and
+  select your account or an organization. Search loaded repositories or use
+  **Load more**. The clone icon opens a folder picker and confirmation; successful
+  clones are added to **Project launcher**. Git and workspace trust are required.
+  The PAT needs repository metadata access and Contents read permission for
+  private clones; organization SSO/admin policies may restrict results. Credentials
+  remain in VS Code SecretStorage. Native Git uses its own proxy/credential settings.
 - **Command shortcuts:** save a command with an optional terminal folder. Running
   it opens a visible VS Code terminal and requires confirmation when appropriate.
 - **User environment:** search by variable name (up to 50 matches; values stay

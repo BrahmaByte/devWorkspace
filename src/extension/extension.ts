@@ -3,6 +3,11 @@ import { basename } from "node:path";
 
 import { NoteService } from "../application/services/noteService";
 import { CalendarService } from "../application/services/calendarService";
+import {
+  GitHubService,
+  GitHubError,
+} from "../application/services/githubService";
+import { VscodeGitHubClone } from "../infrastructure/vscode/vscodeGitHubClone";
 import { CalendarRepository } from "../infrastructure/database/calendarRepository";
 import {
   walkthroughMode,
@@ -183,6 +188,10 @@ export async function activate(
         networkOutput.appendLine(`${new Date().toISOString()} ${message}`),
     ),
   );
+  const githubService = new GitHubService(context.secrets, httpTransport);
+  const githubClone = new VscodeGitHubClone(context.secrets);
+  // ponytail: one GitHub operation per host; split locks only if concurrent clones are needed.
+  let githubOperationPending = false;
   const jiraService = new JiraService(
     jiraRepository,
     context.secrets,
@@ -384,6 +393,105 @@ export async function activate(
                 } satisfies ExtensionResponse);
               }
               return;
+            case "github.status":
+              await panel.webview.postMessage({
+                type: "github.state",
+                state: await githubService.state(),
+              } satisfies ExtensionResponse);
+              return;
+            case "github.configure":
+            case "github.disconnect":
+            case "github.refresh":
+            case "github.repositories":
+            case "github.clone": {
+              if (githubOperationPending) {
+                await panel.webview.postMessage({
+                  type: "github.state",
+                  state: await githubService.state(
+                    "A GitHub operation is already running.",
+                  ),
+                } satisfies ExtensionResponse);
+                return;
+              }
+              githubOperationPending = true;
+              try {
+                if (request.type === "github.configure") {
+                  const token = await vscode.window.showInputBox({
+                    title: "Connect GitHub.com",
+                    prompt:
+                      "GitHub PAT: grant read access to repository metadata and contents for private clones. Organization access may require SSO/admin approval. The PAT is stored only in VS Code SecretStorage.",
+                    password: true,
+                    ignoreFocusOut: true,
+                    validateInput: (value) =>
+                      !value.trim() || value.length > 1024 || /\s/u.test(value)
+                        ? "Enter a PAT without whitespace."
+                        : undefined,
+                  });
+                  if (token) {
+                    await githubService.connect(token);
+                    await githubService.refresh();
+                  }
+                } else if (request.type === "github.disconnect") {
+                  if (
+                    (await vscode.window.showWarningMessage(
+                      "Disconnect GitHub and remove its saved PAT? Local clones and projects will remain.",
+                      { modal: true },
+                      "Disconnect",
+                    )) === "Disconnect"
+                  )
+                    await githubService.disconnect();
+                } else if (request.type === "github.refresh") {
+                  await githubService.refresh();
+                } else if (request.type === "github.repositories") {
+                  await panel.webview.postMessage({
+                    type: "github.state",
+                    state: await githubService.browse(
+                      request.owner,
+                      request.more,
+                    ),
+                  } satisfies ExtensionResponse);
+                  return;
+                } else {
+                  if (request.type !== "github.clone") return;
+                  const repo = await githubService.repository(request.id);
+                  const localPath = await githubClone.clone(repo);
+                  if (localPath) {
+                    if (
+                      !workspaceRepository
+                        .getState()
+                        .projects.some(
+                          (project) => project.localPath === localPath,
+                        )
+                    )
+                      await workspaceService.createProject(
+                        repo.name,
+                        localPath,
+                      );
+                    await sendWorkspace();
+                    await vscode.window.showInformationMessage(
+                      "Cloned repository added to Project launcher.",
+                    );
+                  }
+                }
+                await panel.webview.postMessage({
+                  type: "github.state",
+                  state: await githubService.state(),
+                } satisfies ExtensionResponse);
+              } catch (error) {
+                const message =
+                  error instanceof GitHubError
+                    ? error.message
+                    : "GitHub operation could not finish. Check VS Code Git and network settings. No automatic retry was attempted.";
+                await panel.webview.postMessage({
+                  type: "github.state",
+                  state: await githubService.state(message),
+                } satisfies ExtensionResponse);
+                await vscode.window.showErrorMessage(message);
+              } finally {
+                githubOperationPending = false;
+              }
+              return;
+            }
             case "network.configure":
               await extensionProxy.configure();
               confluenceSearchSequence++;

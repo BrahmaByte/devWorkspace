@@ -70,7 +70,7 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     elements: { namedItem: (name: string) => get("type-" + name) },
     reset: () => {},
   });
-  const views = ["day", "week", "month"].map((view) => {
+  const views = ["day", "week", "month", "year"].map((view) => {
     const button = new Element();
     button.dataset.calendarView = view;
     return button;
@@ -161,10 +161,12 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     },
   });
   assert.deepEqual(
-    get("#calendar-totals").children.map((child) => child.textContent),
+    get("#calendar-totals").children.map((child) =>
+      child.children.map((cell) => cell.textContent),
+    ),
     [
-      "Annual · 0.5 days used · 19.5 days remaining / 20",
-      "Appointment · 2 hours used · 6 hours remaining / 8",
+      ["Annual (days)", "20", "0.5", "19.5"],
+      ["Appointment (hours)", "8", "2", "6"],
     ],
   );
   views[2]!.fire("click");
@@ -172,11 +174,8 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   assert.equal(get("type-count").step, "any");
   assert.equal(get("type-color").value, "#d65b79");
   assert.equal(get("#calendar-body").children[0]!.children.length, 49);
-  assert.equal(get("#calendar-year-body").children[0]!.children.length, 12);
-  assert.equal(
-    get("#calendar-day-body").children[0]!.children[0]!.className,
-    "calendar-days day",
-  );
+  views[3]!.fire("click");
+  assert.equal(get("#calendar-body").children[0]!.children.length, 12);
   views[0]!.fire("click");
   assert.equal(
     get("#calendar-body").children[0]!.children[0]!.className,
@@ -217,8 +216,8 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
   };
   onMessage({ data: { type: "calendar.state", state } });
   assert.equal(
-    get("#calendar-totals").children[0]?.textContent,
-    "Annual · 2 days used · 18 days remaining / 20",
+    get("#calendar-totals").children[0]?.children[3]?.textContent,
+    "18",
   );
   assert.equal(
     get("#calendar-agenda-list").children[0]?.dataset.color,
@@ -255,31 +254,33 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
     (child) => child.dataset.kind === "holiday",
   )!;
   assert.equal(holidayButton.style["--event-color"], "#e29b30");
-  const months = get("#calendar-year-body").children[0]!.children;
-  const markers = months.flatMap((month) =>
-    month.children[1]!.children.flatMap((day) =>
-      day.children.flatMap((dots) => dots.children),
+  views[3]!.fire("click");
+  const months = get("#calendar-body").children[0]!.children;
+  const markedDays = months
+    .flatMap((month) => month.children[1]!.children)
+    .filter((day) => day.dataset.holiday);
+  assert.ok(
+    markedDays.some(
+      (day) =>
+        day.dataset.holiday === "true" &&
+        typeof day.style.background === "string" &&
+        day.style.background.includes("#e29b30"),
     ),
   );
   assert.ok(
-    markers.some(
-      (marker) =>
-        marker.dataset.kind === "holiday" &&
-        marker.style["--event-color"] === "#e29b30",
-    ),
-  );
-  assert.ok(
-    markers.some(
-      (marker) =>
-        marker.dataset.kind === "leave" &&
-        marker.style["--event-color"] === "#824acb",
+    months.some((month) =>
+      month.children[2]!.children.some(
+        (entry) =>
+          entry.dataset.kind === "leave" &&
+          entry.style["--event-color"] === "#824acb",
+      ),
     ),
   );
   onMessage({
     data: { type: "calendar.state", state: { ...state, entries: [] } },
   });
   assert.equal(
-    get("#calendar-totals").children[0]?.textContent,
-    "Annual · 0 days used · 20 days remaining / 20",
+    get("#calendar-totals").children[0]?.children[3]?.textContent,
+    "20",
   );
 });

@@ -1,4 +1,5 @@
 import { shellPages, type ShellPage, type WebviewRequest } from "./messages";
+import { githubOwner, githubRepositoryId } from "../../domain/github";
 import {
   calendarYear,
   calendarId,
@@ -85,6 +86,48 @@ function isSearchResultType(value: unknown): value is SearchResultType {
 export function parseWebviewRequest(value: unknown): ParseResult {
   if (!isRecord(value) || typeof value.type !== "string") {
     return { ok: false, error: "Message must be an object with a type." };
+  }
+  if (value.type.startsWith("github.")) {
+    if (
+      [
+        "github.configure",
+        "github.disconnect",
+        "github.refresh",
+        "github.status",
+      ].includes(value.type) &&
+      hasOnlyKeys(value, ["type"])
+    )
+      return {
+        ok: true,
+        value: {
+          type: value.type as
+            | "github.configure"
+            | "github.disconnect"
+            | "github.refresh"
+            | "github.status",
+        },
+      };
+    if (
+      value.type === "github.repositories" &&
+      hasOnlyKeys(value, ["type", "owner", "more"]) &&
+      githubOwner(value.owner) &&
+      typeof value.more === "boolean"
+    )
+      return {
+        ok: true,
+        value: { type: value.type, owner: value.owner, more: value.more },
+      };
+    if (
+      value.type === "github.clone" &&
+      hasOnlyKeys(value, ["type", "id"]) &&
+      githubRepositoryId(value.id)
+    )
+      return { ok: true, value: { type: value.type, id: value.id } };
+    return {
+      ok: false,
+      error:
+        "Invalid GitHub action. Credentials, URLs and paths cannot be supplied by the Webview.",
+    };
   }
   if (value.type.startsWith("calendar.")) {
     let request: WebviewRequest | undefined;
