@@ -16,14 +16,12 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.18
+## Version 0.1.19
 
-- Connect GitHub through the same VS Code-managed proxy route used by Jira and
-  Confluence, with controls restored after failed requests so retry remains available.
-- Keep long recent Jira issues contained within the Home card without nested
-  horizontal or vertical scrollbars.
-- Preserve Jira Data Center context paths when opening an issue in the default
-  browser from the issue reader or global search.
+- Use VS Code's stable extension-host HTTPS transport for Jira, Confluence and
+  GitHub across managed Windows, macOS and Linux proxy configurations.
+- Distinguish provider-specific authentication failures from ambiguous HTTP
+  401/403 gateway responses in the network log.
 
 ## Screenshots
 

@@ -17,9 +17,7 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Retry GitHub connections",text:"GitHub now follows the same VS Code-managed proxy route as Jira and Confluence. A failed request restores the GitHub controls so you can retry."},
- {page:"home",title:"Scan recent Jira work",text:"Long issue keys and summaries stay contained in Current Jira task without adding nested scrollbars. Select an issue to highlight it on the board."},
- {page:"jira",title:"Open Jira in your browser",text:"From issue details, use Open in default browser. Jira Data Center context paths are preserved in the issue link."}
+ {page:"settings",title:"Connect through managed networks",text:"Jira, Confluence and GitHub now use VS Code's stable extension-host proxy route across supported desktop systems. Retry the connection after installing this update."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

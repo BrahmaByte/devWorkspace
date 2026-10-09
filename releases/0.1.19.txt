@@ -1,0 +1,9 @@
+DevDashboardV1 0.1.19
+
+Enterprise connectivity
+- Use VS Code's stable extension-host HTTPS transport for Jira, Confluence and
+  GitHub across managed Windows, macOS and Linux proxy configurations.
+- Remove the dependency on optional global fetch proxy support, which could
+  differ between VS Code installations and corporate policies.
+- Keep provider-specific PAT, SSO and rate-limit diagnostics separate from
+  ambiguous HTTP 401/403 gateway responses.

@@ -152,7 +152,7 @@ void describe("Dashboard walkthrough", () => {
       header.children[0]?.attributes.get("aria-label"),
       "Show starter guide",
     );
-    const [skip, back, next] = panel.children[3]!.children;
+    const [, back, next] = panel.children[3]!.children;
     assert.equal(panel.hidden, true);
     send("invalid");
     assert.equal(panel.hidden, true);
@@ -181,18 +181,11 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
     send("update");
-    assert.match(panel.children[0]!.textContent, /What's new.*1 of 3/u);
+    assert.match(panel.children[0]!.textContent, /What's new.*1 of 1/u);
     assert.equal(page, "settings");
-    assert.match(panel.children[2]!.textContent, /VS Code-managed proxy/u);
-    assert.equal(next!.textContent, "Next");
-    next!.click();
-    assert.equal(page, "home");
-    assert.match(panel.children[2]!.textContent, /nested scrollbars/u);
-    next!.click();
-    assert.equal(page, "jira");
-    assert.match(panel.children[2]!.textContent, /context paths/u);
+    assert.match(panel.children[2]!.textContent, /extension-host proxy route/u);
     assert.equal(next!.textContent, "Finish");
-    skip!.click();
+    next!.click();
     assert.equal(page, "notes");
     send("tour");
     documentListeners.get("keydown")!({
