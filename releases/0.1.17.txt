@@ -1,0 +1,23 @@
+DevDashboardV1 0.1.17
+
+Planning and integrations
+- Add plans, holidays and allowance-checked leave from the Calendar. Conflicting
+  leave and holiday dates are rejected while plans may overlap.
+- Connect read-only Confluence Team Calendars and refresh events for the displayed
+  year without persisting the feed contents.
+- Load Jira saved filters and retain supported Jira and Confluence rich content.
+
+GitHub repositories
+- Browse authorized personal and organization repositories, clone with the native
+  folder workflow, and add successful clones to Project launcher.
+- Connect Enterprise Managed User accounts whose generated login includes an
+  enterprise shortcode. GitHub PATs remain in VS Code SecretStorage.
+
+Project launching
+- Open a saved project in VS Code or choose a configured external IDE each time.
+- Add and remove external IDEs under Settings → Development with the native
+  application picker. Executable paths remain in the Extension Host.
+
+Interface
+- Present Settings as one categorized vertical list instead of separate cards.
+- Use a purpose-matched repository clone icon in GitHub repositories.

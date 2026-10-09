@@ -17,7 +17,11 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"workspace",title:"Clone a GitHub repository",text:"After connecting a personal or Enterprise Managed User account in Settings, refresh GitHub repositories, choose an owner and use the clone icon. Successful clones are added to Project launcher."}
+ {page:"calendar",title:"Plan time and track leave",text:"Click a Planner date or time slot to add a plan, holiday or allowance-checked leave. Connected Team Calendars can be refreshed for the displayed year."},
+ {page:"jira",title:"Use Jira saved filters",text:"Load Saved filters with its refresh icon, then choose one to apply it without replacing the filter until the load succeeds."},
+ {page:"workspace",title:"Clone an authorized repository",text:"After connecting GitHub in Settings, refresh GitHub repositories, choose an owner and use the clone icon. Enterprise Managed User accounts are supported."},
+ {page:"settings",title:"Add your project IDEs",text:"Under Development, choose Add an IDE and select an installed application. VS Code remains available without setup."},
+ {page:"workspace",title:"Choose an IDE when opening a project",text:"In Project launcher, use a project's open icon and choose VS Code or a configured IDE for that launch."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";
