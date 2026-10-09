@@ -142,6 +142,10 @@ export async function activate(
   const noteService = new NoteService(noteRepository);
   const calendarRepository = new CalendarRepository(database);
   const platform = createPlatformService();
+  const projectWorkspace = new VscodeProjectWorkspaceGateway(
+    context.globalState,
+    platform.operatingSystem,
+  );
   const userEnvironment = new UserEnvironment(platform.operatingSystem);
   let environmentEditPending = false;
   const workspaceRepository = new WorkspaceRepository(database);
@@ -311,6 +315,11 @@ export async function activate(
         projects,
       } satisfies ExtensionResponse);
     };
+    const sendIdeState = (): Thenable<boolean> =>
+      panel.webview.postMessage({
+        type: "ide.state",
+        ides: projectWorkspace.ides(),
+      } satisfies ExtensionResponse);
     const sendHome = async (refreshRecent = false): Promise<boolean> => {
       if (refreshRecent) await sendHome();
       const recent = await jiraService.getRecentIssues(refreshRecent);
@@ -629,6 +638,7 @@ export async function activate(
               return;
             case "shell.ready":
               await sendState();
+              await sendIdeState();
               await panel.webview.postMessage({
                 type: "calendar.sources",
                 sources: teamCalendars.sources(),
@@ -752,9 +762,7 @@ export async function activate(
               } else if (request.resultType === "project") {
                 const project = workspaceRepository.getProject(request.id);
                 if (!project) throw new Error("Project was not found.");
-                await new VscodeProjectWorkspaceGateway().openProject(
-                  project.localPath,
-                );
+                await projectWorkspace.openProject(project.localPath);
               } else if (request.resultType === "command") {
                 await commandExecutionService.execute(request.id);
               } else if (request.resultType === "jira_issue") {
@@ -1087,6 +1095,7 @@ export async function activate(
                   type: "calendar.sources",
                   sources: teamCalendars.sources(),
                 } satisfies ExtensionResponse);
+              if (activePage === "settings") await sendIdeState();
               if (activePage === "notes") await sendNotes();
               if (activePage === "workspace") await sendWorkspace();
               if (activePage === "home") await sendHome(true);
@@ -1138,6 +1147,14 @@ export async function activate(
               break;
             case "workspace.refresh":
               await sendWorkspace();
+              return;
+            case "ide.configure":
+              await projectWorkspace.configure();
+              await sendIdeState();
+              return;
+            case "ide.remove":
+              await projectWorkspace.remove(request.id);
+              await sendIdeState();
               return;
             case "projects.browse": {
               const selected = await vscode.window.showOpenDialog({
@@ -1204,6 +1221,12 @@ export async function activate(
                 platform.defaultShell,
               );
               break;
+            case "projects.open": {
+              const project = workspaceRepository.getProject(request.id);
+              if (!project) throw new Error("Project was not found.");
+              await projectWorkspace.openProject(project.localPath);
+              return;
+            }
             case "commands.create":
               if (
                 request.workingDirectory &&
@@ -1336,6 +1359,17 @@ export async function activate(
           else await sendWorkspace();
           await sendHome();
         } catch (error) {
+          if (
+            request.type.startsWith("ide.") ||
+            request.type === "projects.open"
+          ) {
+            await vscode.window.showErrorMessage(
+              error instanceof Error
+                ? error.message
+                : "DevDashboardV1 could not open the selected IDE.",
+            );
+            return;
+          }
           if (request.type.startsWith("environment.")) {
             const message =
               error instanceof UserEnvironmentError

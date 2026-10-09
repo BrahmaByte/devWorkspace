@@ -415,6 +415,29 @@ void describe("Webview protocol validation", () => {
       ok: true,
       value: { type: "commands.browse" },
     });
+    assert.equal(parseWebviewRequest({ type: "ide.configure" }).ok, true);
+    assert.equal(
+      parseWebviewRequest({
+        type: "ide.remove",
+        id: "00000000-0000-4000-8000-000000000001",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "projects.open",
+        id: "00000000-0000-4000-8000-000000000001",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "projects.open",
+        id: "bad",
+        executablePath: "/tmp/untrusted",
+      }).ok,
+      false,
+    );
     assert.equal(
       parseWebviewRequest({
         type: "projects.create",

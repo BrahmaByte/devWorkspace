@@ -121,4 +121,35 @@ export class NodeDeveloperApplicationProcessGateway implements DeveloperApplicat
     });
     return new ChildManagedApplicationProcess(child);
   }
+
+  public async openPath(
+    executablePath: string,
+    targetPath: string,
+  ): Promise<void> {
+    await this.inspect(executablePath);
+    const selectedPath = resolve(executablePath.trim());
+    const selectedTarget = resolve(targetPath);
+    if (!(await stat(selectedTarget)).isDirectory())
+      throw new Error("The project folder is no longer available.");
+    const command =
+      this.operatingSystem === "macos" &&
+      selectedPath.toLowerCase().endsWith(".app")
+        ? "/usr/bin/open"
+        : selectedPath;
+    const args =
+      command === "/usr/bin/open"
+        ? ["-a", selectedPath, selectedTarget]
+        : [selectedTarget];
+    const child = spawn(command, args, {
+      detached: true,
+      shell: false,
+      stdio: "ignore",
+      windowsHide: false,
+    });
+    await new Promise<void>((complete, reject) => {
+      child.once("spawn", complete);
+      child.once("error", reject);
+    });
+    child.unref();
+  }
 }

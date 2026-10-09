@@ -98,7 +98,8 @@ On Calendar, select the connected calendar and refresh for the displayed year. I
 Use Workspace to manage local development tools:
 
 - **Projects:** select folders with the VS Code folder picker, view the current
-  Git branch, and open a VS Code terminal in a project.
+  Git branch, open a VS Code terminal, or use the open icon to choose VS Code or
+  any IDE added in Settings. The IDE choice is made for each launch.
 - **GitHub repositories:** configure a GitHub.com PAT in Settings, refresh, and
   select your account or an organization. Search loaded repositories or use
   **Load more**. The clone icon opens a folder picker and confirmation; successful
@@ -216,7 +217,12 @@ encrypted backup of the folder, including the `.sha256` files, separately.
 
 ## Settings and Atlassian connections
 
-Open Settings with the icon at the bottom of the navigation rail. Enter the Jira
+Open Settings with the icon at the bottom of the navigation rail. Settings are
+arranged as one vertical, categorized list. Under **Development**, add installed
+IDE applications with the native picker; executable paths stay in the Extension
+Host and are never sent to the Webview. VS Code is always available.
+
+Enter the Jira
 or Confluence product root URL, not a board, project, space, or page URL.
 
 For Atlassian Cloud:

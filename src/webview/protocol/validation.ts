@@ -584,7 +584,8 @@ export function parseWebviewRequest(value: unknown): ParseResult {
   if (
     value.type === "workspace.refresh" ||
     value.type === "projects.browse" ||
-    value.type === "commands.browse"
+    value.type === "commands.browse" ||
+    value.type === "ide.configure"
   )
     return hasOnlyKeys(value, ["type"])
       ? { ok: true, value: { type: value.type } }
@@ -612,6 +613,8 @@ export function parseWebviewRequest(value: unknown): ParseResult {
     [
       "projects.delete",
       "projects.terminal",
+      "projects.open",
+      "ide.remove",
       "commands.delete",
       "commands.execute",
       "environments.delete",

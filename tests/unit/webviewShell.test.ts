@@ -189,12 +189,10 @@ void describe("Webview shell", () => {
     assert.match(html, /border:2px dotted/u);
     assert.match(html, /\.sticky::before/u);
     assert.match(html, /dashboard-grid>\.dashboard-card\{height:20rem/u);
-    assert.match(html, /settings-grid>\.jira-card\{height:22rem/u);
-    assert.match(html, /append\(networkCard\);initializeCardLayouts\(\)/u);
-    assert.match(
-      html,
-      /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,22rem\),1fr\)\)/u,
-    );
+    assert.match(html, /className="settings-surface"/u);
+    assert.match(html, /settingsCategory\("Connections"/u);
+    assert.match(html, /settingsCategory\("Development"/u);
+    assert.match(html, /settingsCategory\("Network"/u);
     assert.match(html, /vscode\.getState\(\)/);
     assert.match(html, /vscode\.setState/);
     assert.match(html, /setInterval\(updateClock,1000\)/);
@@ -341,7 +339,14 @@ void describe("Webview shell", () => {
     assert.match(html, /message\?\.type==="commands\.pathSelected"/);
     assert.match(html, /project\.gitBranch/);
     assert.match(html, /className="git-branch"/);
+    assert.match(
+      html,
+      /iconButton\("external","Open "\+project\.name\+" in an IDE"/,
+    );
     assert.match(html, /iconButton\("terminal","Open terminal"/);
+    assert.match(html, /type:"projects\.open"/);
+    assert.match(html, /type:"ide\.configure"/);
+    assert.match(html, /message\?\.type!=="ide\.state"/);
     assert.doesNotMatch(html, /id="project-ide"|projects\.favourite/);
     assert.doesNotMatch(
       html,

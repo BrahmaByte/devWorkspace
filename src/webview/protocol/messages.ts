@@ -189,6 +189,8 @@ export type WebviewRequest =
   | { readonly type: "workspace.refresh" }
   | { readonly type: "environment.search"; readonly query: string }
   | { readonly type: "environment.configure"; readonly name?: string }
+  | { readonly type: "ide.configure" }
+  | { readonly type: "ide.remove"; readonly id: string }
   | { readonly type: "projects.browse" }
   | { readonly type: "commands.browse" }
   | {
@@ -198,7 +200,7 @@ export type WebviewRequest =
       readonly localPath: string;
     }
   | {
-      readonly type: "projects.delete" | "projects.terminal";
+      readonly type: "projects.delete" | "projects.terminal" | "projects.open";
       readonly id: string;
     }
   | {
@@ -318,6 +320,10 @@ export type ExtensionResponse =
       readonly type: "projects.pathSelected";
       readonly localPath: string;
       readonly name: string;
+    }
+  | {
+      readonly type: "ide.state";
+      readonly ides: readonly { readonly id: string; readonly name: string }[];
     }
   | {
       readonly type: "commands.pathSelected";
