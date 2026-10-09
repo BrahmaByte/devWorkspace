@@ -221,6 +221,12 @@ void describe("Webview shell", () => {
 
     assert.match(homeMarkup, /class="dashboard-card sticky-widget"/);
     assert.match(homeMarkup, /Current Jira task/);
+    assert.match(html, /\.layout-card:has\(#home-jira\)\{overflow:hidden\}/u);
+    assert.match(
+      html,
+      /#home-jira \.home-row\{max-width:100%;min-width:0;overflow:hidden/u,
+    );
+    assert.match(html, /#home-jira \.home-row-copy\{flex:1;max-width:100%\}/u);
     assert.match(homeMarkup, /Developer apps/);
     assert.doesNotMatch(
       html,
