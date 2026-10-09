@@ -16,18 +16,14 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.17
+## Version 0.1.18
 
-- Plan events, holidays and allowance-checked leave in the Calendar, and display
-  read-only Confluence Team Calendar events after an explicit refresh.
-- Load Jira saved filters and render supported Jira and Confluence rich content.
-- Browse and clone authorized GitHub repositories, including Enterprise Managed
-  User accounts whose login contains an enterprise shortcode.
-- Open a saved project in VS Code or an external IDE selected for that launch.
-- Add or remove external IDEs under **Settings → Development** with the native
-  application picker; executable paths remain in the Extension Host.
-- Navigate the unified, categorized Settings list and use a purpose-matched
-  repository clone icon in GitHub repositories.
+- Connect GitHub through the same VS Code-managed proxy route used by Jira and
+  Confluence, with controls restored after failed requests so retry remains available.
+- Keep long recent Jira issues contained within the Home card without nested
+  horizontal or vertical scrollbars.
+- Preserve Jira Data Center context paths when opening an issue in the default
+  browser from the issue reader or global search.
 
 ## Screenshots
 

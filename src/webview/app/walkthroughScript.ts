@@ -17,11 +17,9 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"calendar",title:"Plan time and track leave",text:"Click a Planner date or time slot to add a plan, holiday or allowance-checked leave. Connected Team Calendars can be refreshed for the displayed year."},
- {page:"jira",title:"Use Jira saved filters",text:"Load Saved filters with its refresh icon, then choose one to apply it without replacing the filter until the load succeeds."},
- {page:"workspace",title:"Clone an authorized repository",text:"After connecting GitHub in Settings, refresh GitHub repositories, choose an owner and use the clone icon. Enterprise Managed User accounts are supported."},
- {page:"settings",title:"Add your project IDEs",text:"Under Development, choose Add an IDE and select an installed application. VS Code remains available without setup."},
- {page:"workspace",title:"Choose an IDE when opening a project",text:"In Project launcher, use a project's open icon and choose VS Code or a configured IDE for that launch."}
+ {page:"settings",title:"Retry GitHub connections",text:"GitHub now follows the same VS Code-managed proxy route as Jira and Confluence. A failed request restores the GitHub controls so you can retry."},
+ {page:"home",title:"Scan recent Jira work",text:"Long issue keys and summaries stay contained in Current Jira task without adding nested scrollbars. Select an issue to highlight it on the board."},
+ {page:"jira",title:"Open Jira in your browser",text:"From issue details, use Open in default browser. Jira Data Center context paths are preserved in the issue link."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

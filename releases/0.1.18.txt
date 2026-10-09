@@ -1,0 +1,13 @@
+DevDashboardV1 0.1.18
+
+Enterprise connectivity
+- Route GitHub through the same VS Code-managed proxy transport used by Jira and
+  Confluence, including corporate proxy and certificate handling.
+- Restore GitHub controls after failed requests so users can correct configuration
+  or retry without reloading the dashboard.
+
+Jira fixes
+- Keep long recent Jira issues inside the Home card without nested horizontal or
+  vertical scrollbars.
+- Preserve configured Jira Data Center context paths when opening issue links from
+  the issue reader or global search.
