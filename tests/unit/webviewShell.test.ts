@@ -309,6 +309,12 @@ void describe("Webview shell", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /class="svg-sprite"/);
+    assert.match(html, /<symbol id="i-repo-download"/);
+    assert.match(
+      html,
+      /iconButton\('repo-download','Clone '\+repo\.owner\+'\/'\+repo\.name\+' and add to Project launcher'/,
+    );
+    assert.doesNotMatch(html, /iconButton\('folder','Clone '/);
     assert.match(html, /aria-label="New note" title="New note"/);
     assert.match(html, /data-page="home"[^>]*title="Home"/);
     assert.doesNotMatch(html, />[⌂⌖⌫☾☀✎✓×＋▣▤◇]</);
