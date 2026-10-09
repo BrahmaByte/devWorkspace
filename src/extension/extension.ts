@@ -53,7 +53,10 @@ import { DeveloperApplicationRepository } from "../infrastructure/database/devel
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
-import { VscodeHttpTransport } from "../infrastructure/http/vscodeHttpTransport";
+import {
+  createVscodeHttpsFetch,
+  VscodeHttpTransport,
+} from "../infrastructure/http/vscodeHttpTransport";
 import { createExtensionProxyFetch } from "../infrastructure/http/extensionProxy";
 import { VscodeExtensionProxy } from "../infrastructure/vscode/vscodeExtensionProxy";
 import {
@@ -190,7 +193,7 @@ export async function activate(
         }
         return config;
       },
-      globalThis.fetch.bind(globalThis),
+      createVscodeHttpsFetch(),
       (message) =>
         networkOutput.appendLine(`${new Date().toISOString()} ${message}`),
     ),

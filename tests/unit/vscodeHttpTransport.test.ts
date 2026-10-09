@@ -1,13 +1,61 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { ClientRequest, IncomingMessage } from "node:http";
+import type { request as httpsRequest } from "node:https";
+import { Readable, Writable } from "node:stream";
 
 import {
+  createVscodeHttpsFetch,
   UnsafeNetworkRedirectError,
   VscodeHttpTransport,
   type FetchImplementation,
 } from "../../src/infrastructure/http/vscodeHttpTransport";
 
 void describe("VS Code HTTP transport", () => {
+  void it("uses the extension-host HTTPS path for managed proxy support", async () => {
+    let sentBody = "";
+    const request = ((
+      url: string | URL,
+      options: { method?: string; headers?: Record<string, string> },
+      callback: (response: IncomingMessage) => void,
+    ) => {
+      assert.equal(url.toString(), "https://api.github.com/user");
+      assert.equal(options.method, "POST");
+      assert.equal(options.headers?.authorization, "Bearer fake-token");
+      const outgoing = new Writable({
+        write(chunk, _encoding, done) {
+          sentBody += Buffer.from(chunk as Uint8Array).toString("utf8");
+          done();
+        },
+      });
+      outgoing.once("finish", () => {
+        const incoming = Readable.from([Buffer.from('{"login":"fake"}')]);
+        Object.assign(incoming, {
+          statusCode: 200,
+          statusMessage: "OK",
+          headers: { "x-github-request-id": "fake-request-id" },
+        });
+        callback(incoming as IncomingMessage);
+      });
+      return outgoing as ClientRequest;
+    }) as typeof httpsRequest;
+    const fetch = createVscodeHttpsFetch(request);
+
+    const response = await fetch("https://api.github.com/user", {
+      method: "POST",
+      headers: { Authorization: "Bearer fake-token" },
+      body: "fake-body",
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(
+      response.headers.get("x-github-request-id"),
+      "fake-request-id",
+    );
+    assert.equal(await response.text(), '{"login":"fake"}');
+    assert.equal(sentBody, "fake-body");
+  });
+
   void it("allows only approved public media redirects and strips provider credentials", async () => {
     const requests: Array<{ url: string; headers: Headers }> = [];
     const transport = new VscodeHttpTransport((input, init) => {

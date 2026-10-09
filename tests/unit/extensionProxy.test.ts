@@ -90,7 +90,7 @@ void describe("Extension-only proxy", () => {
     );
     const output = logs.join("\n");
     assert.match(output, /request 1.*HTTP 401; elapsed \d+ ms/);
-    assert.match(output, /Provider authentication\/permission rejected/);
+    assert.match(output, /provider-specific diagnostic/u);
     assert.match(output, /request 2.*ENOTFOUND: DNS lookup failed/);
     assert.match(output, /delegated to VS Code/);
     assert.match(

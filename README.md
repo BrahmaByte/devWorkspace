@@ -246,7 +246,9 @@ stored credential and cached provider metadata.
 
 Saved extension-only proxy settings remain active across updates, including older
 configurations. If no custom proxy is saved, Jira, Confluence and GitHub networking
-all delegate to the same VS Code-managed system proxy route.
+all use the extension-host HTTPS route patched by VS Code for managed proxy,
+PAC/bypass, certificate and supported authentication handling. This does not depend
+on the optional `http.fetchAdditionalSupport` setting.
 To switch to VS Code-managed networking, select **Settings → Network proxy →
 Use VS Code proxy (default)**. This delegates PAC/bypass rules and supported
 authentication negotiation to VS Code. The picker can open VS Code proxy settings;
@@ -286,6 +288,8 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
 - **GitHub PAT connection fails:** confirm the PAT is active and authorized for
   organization SSO. A gateway response without GitHub response headers is reported
   as a proxy/security-gateway failure rather than a PAT or GitHub rate-limit error.
+  Update to a release using the extension-host HTTPS route if the same connection
+  works on one machine but fails where VS Code global fetch proxy support is disabled.
 - **Jira or Confluence is blocked by a corporate network:** connect the required
   VPN, then use **Open Proxy Settings** from the error message. DevDashboardV1
   uses VS Code's proxy, proxy authentication, and trusted system certificates;
