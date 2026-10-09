@@ -53,7 +53,7 @@ export class VscodeExtensionProxy {
     const url = await vscode.window.showInputBox({
       title: "Extension-only proxy URL",
       prompt:
-        "HTTP or HTTPS proxy. HTTPS also encrypts proxy credentials. Applies only to Jira and Confluence; no direct fallback.",
+        "HTTP or HTTPS proxy. HTTPS also encrypts proxy credentials. Applies only to Jira, Confluence and GitHub; no direct fallback.",
       value: previous?.url,
       ignoreFocusOut: true,
       validateInput: (value) => {
@@ -69,7 +69,7 @@ export class VscodeExtensionProxy {
     const username = await vscode.window.showInputBox({
       title: "Proxy username (optional)",
       prompt:
-        "Enter your IT-provided proxy username for Basic authentication, not your Jira or Confluence credentials. Leave empty if authentication is not required.",
+        "Enter your IT-provided proxy username for Basic authentication, not your Jira, Confluence or GitHub credentials. Leave empty if authentication is not required.",
       ignoreFocusOut: true,
       validateInput: (value) =>
         /[:\r\n\0]/u.test(value)
@@ -117,7 +117,7 @@ export class VscodeExtensionProxy {
       }),
     );
     await vscode.window.showInformationMessage(
-      "Extension-only proxy saved. Sync Jira or refresh Confluence to retry; no reload needed.",
+      "Extension-only proxy saved. Sync Jira, refresh Confluence or reconnect GitHub to retry; no reload needed.",
     );
   }
 }

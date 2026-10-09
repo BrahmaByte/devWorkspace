@@ -223,7 +223,7 @@ provider does not erase older snapshots. Each database/snapshot is limited to
 These same-disk copies do not protect against disk loss: keep an IT-approved
 encrypted backup of the folder, including the `.sha256` files, separately.
 
-## Settings and Atlassian connections
+## Settings and connections
 
 Open Settings with the icon at the bottom of the navigation rail. Settings are
 arranged as one vertical, categorized list. Under **Development**, add installed
@@ -249,7 +249,8 @@ dashboard Webview or written to the local database. Disconnecting removes the
 stored credential and cached provider metadata.
 
 Saved extension-only proxy settings remain active across updates, including older
-configurations. If no custom proxy is saved, networking delegates to VS Code.
+configurations. If no custom proxy is saved, Jira, Confluence and GitHub networking
+all delegate to the same VS Code-managed system proxy route.
 To switch to VS Code-managed networking, select **Settings → Network proxy →
 Use VS Code proxy (default)**. This delegates PAC/bypass rules and supported
 authentication negotiation to VS Code. The picker can open VS Code proxy settings;
@@ -258,13 +259,13 @@ depends on your VS Code version, OS and corporate policy.
 
 If VS Code's proxy does not work, use **Settings → Network proxy** to configure
 an extension-only HTTP/HTTPS proxy. For Basic authentication, enter your
-IT-provided proxy username and password in the VS Code prompts, not your Jira
-or Confluence credentials. Leave the username empty if authentication is not
+IT-provided proxy username and password in the VS Code prompts, not your Jira,
+Confluence, or GitHub credentials. Leave the username empty if authentication is not
 required. Credentials are stored in SecretStorage. You can select an IT-approved
 PEM CA bundle for corporate TLS certificates. Certificate verification stays on.
-The override affects only Jira and Confluence, takes effect on the next request,
-and never falls back to a direct connection. Select **Use VS Code proxy (default)**
-to remove it. Other extensions and VS Code settings are unchanged.
+The override affects only Jira, Confluence and GitHub, takes effect on the next
+request, and never falls back to a direct connection. Select **Use VS Code proxy
+(default)** to remove it. Other extensions and VS Code settings are unchanged.
 
 ## Appearance and layout
 
@@ -286,16 +287,19 @@ to remove it. Other extensions and VS Code settings are unchanged.
 - **Open command is missing:** confirm the extension is installed, then reload VS Code.
 - **Jira or Confluence authentication fails:** confirm the product root URL,
   token type, and browse/view permissions.
+- **GitHub PAT connection fails:** confirm the PAT is active and authorized for
+  organization SSO. A gateway response without GitHub response headers is reported
+  as a proxy/security-gateway failure rather than a PAT or GitHub rate-limit error.
 - **Jira or Confluence is blocked by a corporate network:** connect the required
   VPN, then use **Open Proxy Settings** from the error message. DevDashboardV1
   uses VS Code's proxy, proxy authentication, and trusted system certificates;
   reload VS Code after changing managed proxy settings.
   Alternatively, configure **Settings → Network proxy** for this extension only.
 - **Proxy connection diagnostics:** open **View → Output**, select
-  **DevDashboardV1 Network**, then retry connecting, syncing Jira, or refreshing
-  Confluence. Logs show network mode, HTTP status, elapsed time and safe
-  DNS/TLS/proxy/timeout hints. URLs, credentials, headers and page content are
-  omitted. Cached pages do not trigger network logs.
+  **DevDashboardV1 Network**, then retry connecting, syncing Jira, refreshing
+  Confluence, or connecting/refreshing GitHub. Logs show network mode, HTTP status,
+  elapsed time and safe DNS/TLS/proxy/timeout hints. URLs, credentials, headers
+  and page content are omitted. Cached pages do not trigger network logs.
   **Proxy CONNECT HTTP 403** indicates proxy access policy, **3xx** may indicate
   a corporate sign-in redirect, **407** indicates proxy authentication, and
   **502/504** indicate a proxy/upstream failure, not a user cancellation; they

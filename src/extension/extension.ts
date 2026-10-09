@@ -9,6 +9,7 @@ import {
   GitHubService,
   GitHubError,
 } from "../application/services/githubService";
+import type { GitHubState } from "../domain/github";
 import { VscodeGitHubClone } from "../infrastructure/vscode/vscodeGitHubClone";
 import { CalendarRepository } from "../infrastructure/database/calendarRepository";
 import {
@@ -175,7 +176,7 @@ export async function activate(
   );
   context.subscriptions.push(networkOutput);
   networkOutput.appendLine(
-    "Network diagnostics: retry Jira connection/sync or Confluence connection/refresh. URLs, headers, credentials, content and raw errors are never logged.",
+    "Network diagnostics: retry Jira connection/sync, Confluence connection/refresh or GitHub connection/refresh. URLs, headers, credentials, content and raw errors are never logged.",
   );
   const httpTransport = new VscodeHttpTransport(
     createExtensionProxyFetch(
@@ -610,9 +611,23 @@ export async function activate(
                   error instanceof GitHubError
                     ? error.message
                     : "GitHub operation could not finish. Check VS Code Git and network settings. No automatic retry was attempted.";
+                let state: GitHubState;
+                try {
+                  state = await githubService.state(message);
+                } catch {
+                  state = {
+                    connected: false,
+                    login: "",
+                    organizations: [],
+                    owner: "",
+                    repositories: [],
+                    hasMore: false,
+                    message,
+                  };
+                }
                 await panel.webview.postMessage({
                   type: "github.state",
-                  state: await githubService.state(message),
+                  state,
                 } satisfies ExtensionResponse);
                 await vscode.window.showErrorMessage(message);
               } finally {

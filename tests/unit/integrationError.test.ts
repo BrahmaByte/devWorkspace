@@ -83,7 +83,7 @@ void describe("Integration connection errors", () => {
     assert.equal(shouldOfferProxySettings(new ProxyTunnelError(403)), true);
     assert.match(
       connectionErrorMessage("confluence", new ProxyTunnelError(403)),
-      /Proxy access denied, not a Jira\/Confluence credential error/,
+      /Proxy access denied, not a provider credential error/,
     );
     assert.match(
       connectionErrorMessage("jira", new ProxyTunnelError(302)),

@@ -43,7 +43,7 @@ export function networkDiagnosticHint(
       if (current.status === 407)
         return "HTTP 407: Proxy authentication rejected. Check proxy credentials; extension-only proxy supports Basic authentication.";
       if (current.status === 401 || current.status === 403)
-        return "Provider authentication/permission rejected. Check Jira/Confluence credentials and permissions, not proxy credentials.";
+        return "Provider authentication/permission rejected. Check the provider credential and permissions, not proxy credentials.";
       if (current.status === 404)
         return "HTTP 404: API endpoint not found. Check product base URL and proxy routing.";
       if (current.status === 429)

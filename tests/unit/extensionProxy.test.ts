@@ -130,7 +130,7 @@ void describe("Extension-only proxy", () => {
       "utf8",
     );
     assert.match(source, /IT-provided proxy username for Basic authentication/);
-    assert.match(source, /not your Jira or Confluence credentials/);
+    assert.match(source, /not your Jira, Confluence or GitHub credentials/);
     assert.match(source, /Leave empty if authentication is not required/);
     assert.match(
       source,
@@ -190,7 +190,7 @@ void describe("Extension-only proxy", () => {
       false,
     );
   });
-  void it("uses the supplied VS Code fetch when no override exists", async () => {
+  void it("uses the same supplied VS Code fetch for Atlassian and GitHub when no override exists", async () => {
     let calls = 0;
     const fetch = createExtensionProxyFetch(
       () => Promise.resolve(undefined),
@@ -203,7 +203,11 @@ void describe("Extension-only proxy", () => {
       await (await fetch("https://jira.example.test")).text(),
       "default",
     );
-    assert.equal(calls, 1);
+    assert.equal(
+      await (await fetch("https://api.github.com/user")).text(),
+      "default",
+    );
+    assert.equal(calls, 2);
   });
   void it("sends only proxy credentials to CONNECT and never falls back on rejection", async () => {
     const logs: string[] = [];

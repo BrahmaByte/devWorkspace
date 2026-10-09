@@ -6,6 +6,8 @@ import {
   type GitHubState,
 } from "../../domain/github";
 import type { VscodeHttpTransport } from "../../infrastructure/http/vscodeHttpTransport";
+import { networkDiagnosticHint } from "../../infrastructure/http/networkDiagnostics";
+import { proxyTunnelErrorMessage } from "./integrationError";
 
 export const githubSecretKey = "integrations.github.pat";
 const record = (value: unknown): Record<string, unknown> =>
@@ -24,6 +26,60 @@ export class GitHubError extends Error {
   ) {
     super(message);
   }
+}
+function githubResponseError(response: Response): GitHubError {
+  const status = response.status;
+  const fromGitHub =
+    response.headers.has("x-github-request-id") ||
+    response.headers.has("x-github-media-type");
+  if (status === 407)
+    return new GitHubError(
+      "The corporate proxy rejected authentication for the GitHub API. Check the system or VS Code proxy sign-in and retry.",
+    );
+  if (!fromGitHub) {
+    if (status === 401 || status === 403)
+      return new GitHubError(
+        `A network proxy or security gateway blocked the GitHub API request (HTTP ${status}). GitHub did not identify this as a PAT rejection. Check access to api.github.com with your IT team.`,
+      );
+    if (status === 429)
+      return new GitHubError(
+        "A network proxy or security gateway rate-limited the GitHub API request. Wait or check the corporate route to api.github.com.",
+      );
+    if ([502, 503, 504].includes(status))
+      return new GitHubError(
+        `The network proxy or security gateway could not reach the GitHub API (HTTP ${status}). Check VPN, DNS and api.github.com access with your IT team.`,
+      );
+  }
+  if (status === 401)
+    return new GitHubError(
+      "GitHub rejected the PAT. Update it in Settings.",
+      401,
+    );
+  if (status === 403) {
+    if (response.headers.get("x-ratelimit-remaining") === "0")
+      return new GitHubError(
+        "GitHub API rate limit reached. Wait until the limit resets, then retry.",
+        429,
+      );
+    if (/\brequired\b/iu.test(response.headers.get("x-github-sso") ?? ""))
+      return new GitHubError(
+        "GitHub requires organization SSO authorization for this PAT. Authorize the PAT for the organization, then retry.",
+        403,
+      );
+    return new GitHubError(
+      "GitHub denied access. Check PAT permissions, organization policy and SSO authorization.",
+      403,
+    );
+  }
+  if (status === 429)
+    return new GitHubError(
+      "GitHub API rate limit reached. Wait until the limit resets, then retry.",
+      429,
+    );
+  return new GitHubError(
+    `GitHub request failed (HTTP ${status}). Check repository access and retry when ready.`,
+    status,
+  );
 }
 export class GitHubService {
   private generation = 0;
@@ -77,26 +133,18 @@ export class GitHubService {
           "User-Agent": "DevDashboardV1",
         },
       });
-    } catch {
+    } catch (error) {
+      const proxy = proxyTunnelErrorMessage(error);
       throw new GitHubError(
-        "GitHub could not be reached. Check VS Code networking, proxy and TLS settings.",
+        proxy
+          ? `GitHub: ${proxy}`
+          : "GitHub API could not be reached through the same system or VS Code proxy route used by Jira and Confluence. " +
+              networkDiagnosticHint(error),
       );
     }
     if (!response.ok) {
       await response.body?.cancel();
-      throw new GitHubError(
-        response.status === 401
-          ? "GitHub rejected the PAT. Update it in Settings."
-          : response.status === 403 || response.status === 429
-            ? "GitHub denied access or rate-limited the request. Check token permissions, organization SSO approval and GitHub rate limits."
-            : "GitHub request failed (HTTP " +
-              response.status +
-              "). Check repository access and retry when ready.",
-        response.status === 403 &&
-          response.headers.get("x-ratelimit-remaining") === "0"
-          ? 429
-          : response.status,
-      );
+      throw githubResponseError(response);
     }
     // Bound response content before JSON parsing; raw bodies/errors never cross the Webview.
     const reader = response.body?.getReader();

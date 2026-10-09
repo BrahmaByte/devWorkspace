@@ -126,8 +126,20 @@ void describe("Webview shell", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /Network proxy/u);
     assert.match(html, /Configure extension-only proxy/u);
+    assert.match(html, /Jira, Confluence and GitHub/u);
     assert.match(html, /type:"network.configure"/u);
     assert.doesNotMatch(html, /id="proxy-password"/u);
+  });
+  void it("unlocks GitHub controls before validating an error response", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(
+      html,
+      /incoming\?\.type!=='github\.state'\)return;lock\(false\);if\(!Array\.isArray/u,
+    );
+    assert.match(
+      html,
+      /GitHub response could not be displayed\. Retry when ready/u,
+    );
   });
   void it("renders the extension logo from an authorized Webview URI", () => {
     const html = createWebviewHtml(

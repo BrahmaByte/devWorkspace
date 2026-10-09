@@ -18,7 +18,7 @@ export function proxyTunnelErrorMessage(error: unknown): string | undefined {
       "Proxy authentication rejected. Check proxy credentials; extension-only proxy supports Basic authentication, not NTLM/Kerberos/SSO. Use VS Code's managed proxy for corporate sign-in.";
   else if (status === 401 || status === 403)
     hint =
-      "Proxy access denied, not a Jira/Confluence credential error. Check corporate sign-in and permission to CONNECT to the destination on port 443.";
+      "Proxy access denied, not a provider credential error. Check corporate sign-in and permission to CONNECT to the destination on port 443.";
   else if (status >= 300 && status < 400)
     hint =
       "Proxy redirected the tunnel, possibly to a sign-in page. Check the proxy endpoint and corporate sign-in; CONNECT redirects are not followed.";

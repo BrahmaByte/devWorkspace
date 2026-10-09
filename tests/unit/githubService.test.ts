@@ -4,6 +4,7 @@ import {
   GitHubService,
   githubSecretKey,
 } from "../../src/application/services/githubService";
+import { ProxyTunnelError } from "../../src/application/services/integrationError";
 import { VscodeHttpTransport } from "../../src/infrastructure/http/vscodeHttpTransport";
 import { parseWebviewRequest } from "../../src/webview/protocol/validation";
 
@@ -48,7 +49,10 @@ function fixture(
   return { service: new GitHubService(secrets, transport), storage };
 }
 const json = (value: unknown, status = 200) =>
-  new Response(JSON.stringify(value), { status });
+  new Response(JSON.stringify(value), {
+    status,
+    headers: { "x-github-request-id": "fake-request-id" },
+  });
 void it("keeps the PAT in SecretStorage and lists authorized organizations with paginated repositories", async () => {
   const urls: string[] = [];
   const { service, storage } = fixture((url, headers) => {
@@ -178,17 +182,55 @@ void it("bounds managed-user names and maps GitHub failures without exposing res
     () =>
       new Response('{"message":"fake-sensitive-body"}', {
         status: 403,
-        headers: { "x-ratelimit-remaining": "0" },
+        headers: {
+          "x-github-request-id": "fake-request-id",
+          "x-ratelimit-remaining": "0",
+        },
       }),
   );
   await assert.rejects(
     rateLimited.service.connect("fake-rate-limited-pat"),
     (error) =>
       error instanceof Error &&
-      error.message.includes("rate-limited") &&
+      error.message.includes("rate limit") &&
       !error.message.includes("fake-sensitive-body"),
   );
   assert.equal(rateLimited.storage.size, 0);
+});
+void it("distinguishes corporate gateway failures, GitHub SSO and proxy tunnel rejection", async () => {
+  const gateway = fixture(
+    () => new Response("fake-sensitive-gateway-body", { status: 403 }),
+  );
+  await assert.rejects(
+    gateway.service.connect("fake-gateway-pat"),
+    (error) =>
+      error instanceof Error &&
+      error.message.includes("network proxy or security gateway") &&
+      error.message.includes("api.github.com") &&
+      !error.message.includes("fake-sensitive"),
+  );
+  const sso = fixture(
+    () =>
+      new Response("fake-sensitive-github-body", {
+        status: 403,
+        headers: {
+          "x-github-request-id": "fake-request-id",
+          "x-github-sso": "required; url=https://fake-sensitive.invalid",
+        },
+      }),
+  );
+  await assert.rejects(
+    sso.service.connect("fake-sso-pat"),
+    (error) =>
+      error instanceof Error &&
+      error.message.includes("SSO authorization") &&
+      !error.message.includes("fake-sensitive"),
+  );
+  const tunnel = fixture(() => Promise.reject(new ProxyTunnelError(407)));
+  await assert.rejects(
+    tunnel.service.connect("fake-proxy-pat"),
+    /Proxy CONNECT rejected \(HTTP 407\).*Proxy authentication rejected/u,
+  );
 });
 void it("rejects off-origin credential redirects, invalid metadata and stale in-flight results", async () => {
   const redirected = fixture(

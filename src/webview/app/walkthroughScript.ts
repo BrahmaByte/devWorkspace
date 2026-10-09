@@ -6,7 +6,7 @@ export const walkthroughStyles = String.raw`
 export const walkthroughScript = String.raw`
 const tourSteps=[
  {page:"home",title:"Keep frequently used tools here",text:"Add a sticky note with plus. Open a recent Jira issue, edit a URL group with the pencil, or launch an app from its tile."},
- {page:"settings",title:"Connect Jira and Confluence",text:"Enter your site URL, then your credentials in the VS Code prompts. If your network needs a proxy, configure it in Network proxy."},
+ {page:"settings",title:"Connect your services",text:"Connect Jira, Confluence or GitHub with credentials entered in VS Code prompts. Network proxy applies the same system or VS Code route to all three services."},
  {page:"jira",title:"Filter your board",text:"Load Saved filters with its refresh icon and choose one to apply. Board search and Filter narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
  {page:"calendar",title:"Plan your time",text:"Click a Planner date or time slot, or choose New entry. In the popup choose Plan, Holiday or Leave and save. Leave and holidays cannot share dates; plans can. Include weekends controls Saturdays and Sundays."},
  {page:"settings",title:"Connect a Team Calendar",text:"In Confluence Team Calendars, choose Events or Holidays and use the connect icon. Paste the calendar’s Subscribe → iCal URL in the VS Code prompt. On Calendar, select it and refresh for the displayed year; refresh again after restarting."},
