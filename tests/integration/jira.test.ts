@@ -262,6 +262,38 @@ void describe("Jira integration", () => {
     database.close();
   });
 
+  void it("opens issues beneath Cloud and Data Center base paths", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-jira-links-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new JiraRepository(database);
+    const service = new JiraService(
+      repository,
+      new MemorySecrets(),
+      new FakeFactory(),
+    );
+    await service.connect(
+      "Cloud",
+      "https://team.atlassian.net",
+      "fake",
+      "user@example.test",
+    );
+    assert.equal(
+      service.getIssueUrl("DEV-7"),
+      "https://team.atlassian.net/browse/DEV-7",
+    );
+    await service.connect(
+      "Data Center",
+      "https://jira.example.test/company/jira/",
+      "fake",
+    );
+    assert.equal(
+      service.getIssueUrl("DEV-7"),
+      "https://jira.example.test/company/jira/browse/DEV-7",
+    );
+    database.close();
+  });
+
   void it("handles expiry, validates URLs and disconnects cleanly", async () => {
     const directory = await mkdtemp(
       join(tmpdir(), "devworkspace-jira-expiry-"),

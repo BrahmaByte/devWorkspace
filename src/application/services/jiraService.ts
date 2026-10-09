@@ -289,7 +289,7 @@ export class JiraService {
       throw new Error("Issue key is invalid.");
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Jira is not connected.");
-    return new URL(`/browse/${issueKey}`, connection.baseUrl).toString();
+    return `${connection.baseUrl}/browse/${issueKey}`;
   }
 
   public async search(query: string): Promise<JiraState> {
