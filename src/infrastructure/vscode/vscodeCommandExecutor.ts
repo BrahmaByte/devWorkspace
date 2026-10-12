@@ -8,7 +8,7 @@ import type {
 export class VscodeCommandExecutor implements CommandExecutor {
   public execute(shell: string, command: string, cwd?: string): Promise<void> {
     const terminal = vscode.window.createTerminal({
-      name: "DevDashboardV1 command",
+      name: "DevHarbor command",
       cwd,
       shellPath: shell,
     });
@@ -18,7 +18,7 @@ export class VscodeCommandExecutor implements CommandExecutor {
   }
   public openTerminal(cwd: string, shell: string): Promise<void> {
     vscode.window
-      .createTerminal({ name: "DevDashboardV1", cwd, shellPath: shell })
+      .createTerminal({ name: "DevHarbor", cwd, shellPath: shell })
       .show();
     return Promise.resolve();
   }

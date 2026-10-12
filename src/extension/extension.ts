@@ -116,7 +116,7 @@ export async function activate(
     );
     if (!selected) return undefined;
     const confirmed = await vscode.window.showWarningMessage(
-      "Restore this snapshot and reload VS Code? Close other VS Code windows using DevDashboardV1 first. Current local data will be replaced after validation; a pre-restore copy will be saved. Credentials and VS Code settings are not restored.",
+      "Restore this snapshot and reload VS Code? Close other VS Code windows using DevHarbor first. Current local data will be replaced after validation; a pre-restore copy will be saved. Credentials and VS Code settings are not restored.",
       { modal: true },
       "Restore and reload",
     );
@@ -127,7 +127,7 @@ export async function activate(
     database = await LocalDatabase.open(databasePath);
   } catch (error) {
     const action = await vscode.window.showErrorMessage(
-      "DevDashboardV1 could not open its database. The existing file has not been replaced. You can select a validated local snapshot to recover your data.",
+      "DevHarbor could not open its database. The existing file has not been replaced. You can select a validated local snapshot to recover your data.",
       "Restore snapshot",
     );
     if (!action) throw error;
@@ -176,9 +176,7 @@ export async function activate(
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
   const extensionProxy = new VscodeExtensionProxy(context.secrets);
-  const networkOutput = vscode.window.createOutputChannel(
-    "DevDashboardV1 Network",
-  );
+  const networkOutput = vscode.window.createOutputChannel("DevHarbor Network");
   context.subscriptions.push(networkOutput);
   networkOutput.appendLine(
     "Network diagnostics: retry Jira connection/sync, Confluence connection/refresh or GitHub connection/refresh. URLs, headers, credentials, content and raw errors are never logged.",
@@ -269,7 +267,7 @@ export async function activate(
     const selectedProjectPaths = new SelectedPathAuthorizer();
     const panel = vscode.window.createWebviewPanel(
       "devdashboardv1.main",
-      "DevDashboardV1",
+      "DevHarbor",
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -431,7 +429,7 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "invalid_message",
-            message: "DevDashboardV1 rejected an invalid Webview message.",
+            message: "DevHarbor rejected an invalid Webview message.",
           } satisfies ExtensionResponse);
           return;
         }
@@ -1437,7 +1435,7 @@ export async function activate(
             await vscode.window.showErrorMessage(
               error instanceof Error
                 ? error.message
-                : "DevDashboardV1 could not open the selected IDE.",
+                : "DevHarbor could not open the selected IDE.",
             );
             return;
           }
@@ -1459,12 +1457,12 @@ export async function activate(
           if (request.type.startsWith("apps.")) {
             const message =
               request.type === "apps.browse"
-                ? "DevDashboardV1 could not add that application. Select a local executable application that you are allowed to run."
+                ? "DevHarbor could not add that application. Select a local executable application that you are allowed to run."
                 : request.type === "apps.launch"
-                  ? "DevDashboardV1 could not launch that application. Confirm it still exists and is executable."
+                  ? "DevHarbor could not launch that application. Confirm it still exists and is executable."
                   : request.type === "apps.close"
-                    ? "DevDashboardV1 could not close that application. Save your work and close it from the application."
-                    : "DevDashboardV1 could not remove that application. Close it first if it is running.";
+                    ? "DevHarbor could not close that application. Save your work and close it from the application."
+                    : "DevHarbor could not remove that application. Close it first if it is running.";
             await vscode.window.showErrorMessage(message);
             await panel.webview.postMessage({
               type: "protocol.error",
@@ -1505,8 +1503,7 @@ export async function activate(
           await panel.webview.postMessage({
             type: "protocol.error",
             code: "operation_failed",
-            message:
-              "DevDashboardV1 could not complete the requested operation.",
+            message: "DevHarbor could not complete the requested operation.",
           } satisfies ExtensionResponse);
         }
       },

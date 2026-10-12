@@ -129,7 +129,7 @@ export function connectionErrorMessage(
   )
     return `${name} could not pass through the configured proxy. Check the VS Code proxy settings, corporate sign-in, VPN, and firewall.`;
   if (code && /CERT|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_SSL/iu.test(code))
-    return `${name} TLS certificate could not be verified. Install the corporate CA in the operating-system trust store and enable VS Code system certificates; DevDashboardV1 will not bypass TLS verification.`;
+    return `${name} TLS certificate could not be verified. Install the corporate CA in the operating-system trust store and enable VS Code system certificates; DevHarbor will not bypass TLS verification.`;
   if (/outside its trusted origin|too many redirects/iu.test(detail))
     return `${name} redirected the API request unexpectedly. Use the canonical ${name} base URL and verify the corporate proxy or SSO configuration.`;
   return `${name} could not be reached. Check the base URL, VPN, firewall, and VS Code proxy settings.`;

@@ -1,15 +1,15 @@
-# DevDashboardV1
+# DevHarbor - Developer Dashboard
 
 <p align="center">
-  <img src="https://BrahmaByte.gallery.vsassets.io/_apis/public/gallery/publisher/BrahmaByte/extension/devdashboardv1/latest/assetbyname/Microsoft.VisualStudio.Services.Icons.Default" width="128" height="128" alt="DevDashboardV1 logo" />
+  <img src="https://BrahmaByte.gallery.vsassets.io/_apis/public/gallery/publisher/BrahmaByte/extension/devdashboardv1/latest/assetbyname/Microsoft.VisualStudio.Services.Icons.Default" width="128" height="128" alt="DevHarbor logo" />
 </p>
 
 A local-first developer dashboard for VS Code on Windows, macOS, and Linux.
 
 ## Install and open
 
-Install [DevDashboardV1 from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
-Click the Activity Bar icon, or run **DevDashboardV1: Open DevDashboardV1**
+Install [DevHarbor from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=BrahmaByte.devdashboardv1).
+Click the Activity Bar icon, or run **DevHarbor: Open DevHarbor**
 from the Command Palette. The dashboard opens in the editor area.
 
 A short tour appears on first use. Reopen it with the header's question-mark
@@ -62,7 +62,7 @@ shows it with a label without replacing your saved JQL. A failed refresh shows
 the last session's results with a warning.
 
 Application paths stay in the local database and are never sent to the dashboard
-Webview. DevDashboardV1 tracks and closes only instances that it launched; it does
+Webview. DevHarbor tracks and closes only instances that it launched; it does
 not scan for or terminate unrelated system processes.
 
 ## Jira
@@ -251,8 +251,8 @@ per hour; migrations and restores also save a copy first. The latest **10
 snapshots total** are retained alongside `workspace.sqlite` in the generic
 `brahmabyte.localdata/snapshots` folder under VS Code's global storage.
 
-- Run **DevDashboardV1: Create database snapshot** before important changes.
-- Run **DevDashboardV1: Restore database snapshot**, choose a copy and confirm.
+- Run **DevHarbor: Create database snapshot** before important changes.
+- Run **DevHarbor: Restore database snapshot**, choose a copy and confirm.
   **Close other VS Code windows using the extension first.** Restore checks the
   checksum, SQLite integrity, relationships and schema before replacing data,
   saves a pre-restore copy, then reloads VS Code. If startup fails, a recovery
@@ -340,12 +340,12 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
   Update to a release using the extension-host HTTPS route if the same connection
   works on one machine but fails where VS Code global fetch proxy support is disabled.
 - **Jira or Confluence is blocked by a corporate network:** connect the required
-  VPN, then use **Open Proxy Settings** from the error message. DevDashboardV1
+  VPN, then use **Open Proxy Settings** from the error message. DevHarbor
   uses VS Code's proxy, proxy authentication, and trusted system certificates;
   reload VS Code after changing managed proxy settings.
   Alternatively, configure **Settings → Network proxy** for this extension only.
 - **Proxy connection diagnostics:** open **View → Output**, select
-  **DevDashboardV1 Network**, then retry connecting, syncing Jira, refreshing
+  **DevHarbor Network**, then retry connecting, syncing Jira, refreshing
   Confluence, or connecting/refreshing GitHub. Logs show network mode, HTTP status,
   elapsed time and safe DNS/TLS/proxy/timeout hints. URLs, credentials, headers
   and page content are omitted. Cached pages do not trigger network logs.
@@ -361,4 +361,4 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
 - **A command does not run:** save it first and approve the VS Code confirmation
   prompt. Multiline commands are rejected.
 - **The dashboard stops responding:** run **Developer: Reload Window** and reopen
-  DevDashboardV1.
+  DevHarbor.

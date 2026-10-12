@@ -151,7 +151,7 @@ void describe("Webview shell", () => {
 
     assert.match(
       html,
-      /<img src="vscode-webview:\/\/test\/assets\/devdashboardv1-icon\.png" alt="DevDashboardV1"/u,
+      /<img src="vscode-webview:\/\/test\/assets\/devdashboardv1-icon\.png" alt="DevHarbor"/u,
     );
   });
 
@@ -165,7 +165,7 @@ void describe("Webview shell", () => {
     }
   });
 
-  void it("renders the DevDashboardV1 placeholder", () => {
+  void it("renders the DevHarbor placeholder", () => {
     const html = createWebviewHtml("vscode-webview://test");
 
     assert.match(html, /id="greeting" class="brand"><\/p>/);

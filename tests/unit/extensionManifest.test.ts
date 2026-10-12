@@ -5,6 +5,11 @@ import { describe, it } from "node:test";
 import { runInNewContext } from "node:vm";
 
 interface ExtensionManifest {
+  readonly name?: string;
+  readonly publisher?: string;
+  readonly displayName?: string;
+  readonly description?: string;
+  readonly keywords?: readonly string[];
   readonly activationEvents?: readonly string[];
   readonly icon?: string;
   readonly contributes?: {
@@ -36,6 +41,21 @@ function readManifest(): ExtensionManifest {
 }
 
 void describe("Extension manifest", () => {
+  void it("uses searchable DevHarbor branding without changing the extension ID", () => {
+    const manifest = readManifest();
+    assert.equal(manifest.name, "devdashboardv1");
+    assert.equal(manifest.publisher, "BrahmaByte");
+    assert.equal(manifest.displayName, "DevHarbor - Developer Dashboard");
+    assert.match(manifest.description ?? "", /Jira.*Confluence.*GitHub/u);
+    for (const keyword of [
+      "developer-dashboard",
+      "jira",
+      "confluence",
+      "github",
+      "calendar",
+    ])
+      assert.ok(manifest.keywords?.includes(keyword));
+  });
   void it("closes the empty launcher before opening the editor and reuses an open dashboard", async () => {
     const host = readFileSync(
       resolve(__dirname, "../../../src/extension/extension.ts"),
@@ -156,11 +176,11 @@ void describe("Extension manifest", () => {
       ),
     );
   });
-  void it("uses the packaged DevDashboardV1 Marketplace icon", () => {
+  void it("uses the packaged DevHarbor Marketplace icon", () => {
     assert.equal(readManifest().icon, "assets/devdashboardv1-icon.png");
   });
 
-  void it("registers the DevDashboardV1 open command", () => {
+  void it("registers the DevHarbor open command", () => {
     const manifest = readManifest();
 
     assert.equal(manifest.main, "./dist/src/extension/extension.js");
@@ -170,7 +190,7 @@ void describe("Extension manifest", () => {
     assert.ok(
       manifest.contributes?.commands?.some(
         ({ command, title }) =>
-          command === "devdashboardv1.open" && title === "Open DevDashboardV1",
+          command === "devdashboardv1.open" && title === "Open DevHarbor",
       ),
     );
   });

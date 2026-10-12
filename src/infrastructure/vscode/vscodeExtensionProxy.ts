@@ -32,7 +32,7 @@ export class VscodeExtensionProxy {
       ],
       {
         title:
-          "DevDashboardV1 proxy: " +
+          "DevHarbor proxy: " +
           (previous ? "extension-only" : "VS Code default"),
       },
     );
@@ -40,7 +40,7 @@ export class VscodeExtensionProxy {
     if (mode.label.startsWith("Use")) {
       await this.secrets.delete(KEY);
       const action = await vscode.window.showInformationMessage(
-        "DevDashboardV1 now delegates proxy discovery and authentication negotiation to VS Code. Available authentication depends on your VS Code version, OS and corporate policy. No global settings were changed.",
+        "DevHarbor now delegates proxy discovery and authentication negotiation to VS Code. Available authentication depends on your VS Code version, OS and corporate policy. No global settings were changed.",
         "Open VS Code proxy settings",
       );
       if (action)

@@ -1,7 +1,7 @@
 {
   "name": "devdashboardv1",
-  "displayName": "DevDashboardV1",
-  "description": "A local-first developer command center inside VS Code.",
+  "displayName": "DevHarbor - Developer Dashboard",
+  "description": "Developer dashboard for Jira, Confluence, GitHub, projects, notes, calendars, commands and local productivity in VS Code.",
   "icon": "assets/devdashboardv1-icon.png",
   "version": "0.1.23",
   "publisher": "BrahmaByte",
@@ -19,9 +19,21 @@
     "Other"
   ],
   "keywords": [
+    "developer-dashboard",
     "developer-tools",
+    "developer-productivity",
+    "project-manager",
     "local-first",
-    "workspace"
+    "workspace",
+    "jira",
+    "confluence",
+    "github",
+    "kanban",
+    "planner",
+    "calendar",
+    "notes",
+    "command-launcher",
+    "enterprise"
   ],
   "activationEvents": [
     "onStartupFinished",
@@ -40,7 +52,7 @@
       "activitybar": [
         {
           "id": "devdashboardv1",
-          "title": "DevDashboardV1",
+          "title": "DevHarbor",
           "icon": "assets/dashboard-view.svg"
         }
       ]
@@ -66,33 +78,33 @@
       {
         "command": "devdashboardv1.dock",
         "title": "Open dashboard from dock",
-        "category": "DevDashboardV1"
+        "category": "DevHarbor"
       },
       {
         "command": "devdashboardv1.database.snapshot",
         "title": "Create database snapshot",
-        "category": "DevDashboardV1"
+        "category": "DevHarbor"
       },
       {
         "command": "devdashboardv1.database.restore",
         "title": "Restore database snapshot",
-        "category": "DevDashboardV1"
+        "category": "DevHarbor"
       },
       {
         "command": "devdashboardv1.guide",
         "title": "Show starter guide",
-        "category": "DevDashboardV1"
+        "category": "DevHarbor"
       },
       {
         "command": "devdashboardv1.open",
         "icon": "$(open-preview)",
-        "title": "Open DevDashboardV1",
-        "category": "DevDashboardV1"
+        "title": "Open DevHarbor",
+        "category": "DevHarbor"
       },
       {
         "command": "devdashboardv1.search",
-        "title": "Search DevDashboardV1",
-        "category": "DevDashboardV1"
+        "title": "Search DevHarbor",
+        "category": "DevHarbor"
       }
     ],
     "keybindings": [

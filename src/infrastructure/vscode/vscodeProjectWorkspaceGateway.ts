@@ -82,7 +82,7 @@ export class VscodeProjectWorkspaceGateway {
         placeHolder:
           configured.length > 0
             ? "Choose an IDE"
-            : "Add other IDEs in DevDashboardV1 Settings",
+            : "Add other IDEs in DevHarbor Settings",
       },
     );
     if (!selected) return;
