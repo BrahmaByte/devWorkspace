@@ -17,7 +17,7 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a JSON file. Configured files refresh every five minutes while the dashboard is open."},
+ {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, select an Events or Holidays file. Home shows the next meeting and today's timeline; configured files refresh every five minutes."},
  {page:"calendar",title:"Filter the Planner",text:"Use All sources or select one imported file. The Plans, Meetings, Holidays and Leave toggles narrow the calendar view."},
  {page:"workspace",title:"Load GitHub organizations in batches",text:"Refresh GitHub to load the first organizations. If more are available, use the plus icon beside the repository filters."}
 ];

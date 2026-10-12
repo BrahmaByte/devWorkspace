@@ -91,7 +91,51 @@ Choose **Holiday** for an inclusive date range and pick its color (gold by defau
 
 Local plans, holidays and leave stay in your database and its snapshots. Nothing is sent to external calendars.
 
-To show meetings from a local JSON export, open **Settings → Local JSON Calendars**, choose **Events** and select the file with VS Code’s file picker. Use an array of Outlook-style events or `{ "value": [...] }`; each event needs `subject`, `start` and `end` as `{ "dateTime": "2026-10-12T10:00:00", "timeZone": "UTC" }` (or `startWithTimeZone` / `endWithTimeZone` with an ISO offset). Optional `bodyPreview` and HTTPS `webLink` or `onlineMeeting.joinUrl` are shown on the event. For holidays choose **Holidays** and use `{ "year": 2026, "holidays": [{ "date": "2026-12-25", "title": "Holiday" }] }`. The year must match every holiday date. JSON sources are read-only, limited to five files, 20 MB and 5,000 entries per file. File paths stay in extension-host storage; no file content is sent to a service. Refresh a source on Calendar after editing its file, or restart the extension. The last loaded entries remain visible if refresh fails.
+To show meetings from a local JSON export, open **Settings → Local JSON Calendars**, choose **Events** and select the file with VS Code’s file picker. The root may be the event array itself or an object with a `value` array:
+
+```json
+{
+  "value": [
+    {
+      "subject": "Architecture review",
+      "start": { "dateTime": "2026-10-12T10:00:00", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-10-12T10:30:00", "timeZone": "UTC" },
+      "bodyPreview": "Review the proposed service boundaries.",
+      "organizer": { "emailAddress": { "name": "Project lead" } },
+      "attendees": [
+        { "emailAddress": { "name": "Developer one" } },
+        { "emailAddress": { "address": "developer.two@example.test" } }
+      ],
+      "location": { "displayName": "Microsoft Teams" },
+      "webLink": "https://outlook.office.com/calendar/item/example",
+      "onlineMeeting": { "joinUrl": "https://teams.microsoft.com/l/meetup-join/example" }
+    }
+  ]
+}
+```
+
+`subject`, `start` and `end` are required. Use `timeZone: "UTC"` with a local-looking `dateTime`, as above, or supply `startWithTimeZone` and `endWithTimeZone` as ISO timestamps containing `Z` or an explicit offset. `bodyPreview`, organizer, attendees, location, `webLink` and `onlineMeeting.joinUrl` are optional. Only HTTPS meeting links are accepted.
+
+For a yearly holiday file, choose **Holidays** and use:
+
+```json
+{
+  "year": 2026,
+  "holidays": [
+    {
+      "date": "2026-01-01",
+      "title": "New Year's Day",
+      "description": "Public holiday"
+    },
+    {
+      "date": "2026-12-25",
+      "title": "Holiday"
+    }
+  ]
+}
+```
+
+`date` and `title` are required; `description` is optional. Every date must use `YYYY-MM-DD` and match the root `year`. The root may also be a holiday array when no year check is needed. JSON sources are read-only, limited to five files, 20 MB and 5,000 entries per file. File paths stay in extension-host storage; no file content is sent to a service. The last loaded entries remain visible if refresh fails.
 
 Use Calendar’s **Plans**, **Meetings**, **Holidays** and **Leave** toggles to filter the view. Home shows the next meeting with its organizer, attendees and join action, plus today’s schedule as a compact timeline. Configured JSON files are re-read when the dashboard opens and every five minutes while it remains open; the last valid data stays visible if a refresh fails.
 

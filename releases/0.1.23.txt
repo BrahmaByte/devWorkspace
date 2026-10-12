@@ -1,0 +1,7 @@
+DevDashboardV1 0.1.23
+
+Documentation
+- Add complete, copy-ready schemas for local meeting and yearly holiday JSON
+  imports, including required and optional fields.
+- Refresh the screenshot carousel so Home shows the detailed next meeting and
+  today's schedule timeline shipped in this release.
