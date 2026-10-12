@@ -1,0 +1,9 @@
+DevDashboardV1 0.1.20
+
+Calendar updates
+- Import local Outlook-style JSON events and yearly holidays from files up to
+  20 MB, with a 5,000-entry limit per file.
+- Filter the Planner by source and entry type. Home shows the next meeting and
+  today's schedule from loaded calendar data.
+- Remove Confluence Team Calendar controls and loading. Existing subscription
+  data is retained locally but no longer used.

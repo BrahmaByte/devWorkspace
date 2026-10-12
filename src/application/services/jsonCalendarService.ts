@@ -14,6 +14,7 @@ interface SavedSource extends Omit<JsonCalendarSource, "error"> {
   readonly uri: string;
 }
 const key = "calendar.jsonSources";
+export const maxJsonCalendarBytes = 20_000_000;
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -164,8 +165,8 @@ export class JsonCalendarService {
   }
   private async load(source: SavedSource): Promise<void> {
     const bytes = await this.read(source.uri);
-    if (bytes.byteLength > 2_000_000)
-      throw new Error("JSON calendar must be at most 2 MB.");
+    if (bytes.byteLength > maxJsonCalendarBytes)
+      throw new Error("JSON calendar must be at most 20 MB.");
     let data: unknown;
     try {
       data = JSON.parse(

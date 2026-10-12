@@ -149,6 +149,15 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
             color: "pink",
           },
         ],
+        sources: [
+          {
+            id: "00000000-0000-4000-8000-000000000003",
+            name: "Imported events",
+            format: "json",
+            color: "#3378e6",
+            holidays: false,
+          },
+        ],
         entries: [
           {
             id: "a",
@@ -172,6 +181,18 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
             leaveTypeId: hourly,
             quantity: 2,
           },
+          {
+            id: "meeting",
+            kind: "event",
+            sourceId: "00000000-0000-4000-8000-000000000003",
+            sourceName: "Imported events",
+            title: "Team meeting",
+            startDate: date,
+            endDate: date,
+            startTime: "10:00",
+            endTime: "11:00",
+            color: "#3378e6",
+          },
         ],
       },
     },
@@ -185,6 +206,17 @@ void it("navigates calendar views, retains failed drafts and keeps leave units s
       ["Appointment (hours)", "8", "2", "6"],
     ],
   );
+  assert.equal(
+    get("#calendar-source-select").children[0]?.textContent,
+    "All sources",
+  );
+  assert.equal(get("#calendar-agenda-list").children.length, 3);
+  get("#calendar-source-select").value = "00000000-0000-4000-8000-000000000003";
+  get("#calendar-source-select").fire("change");
+  assert.equal(get("#calendar-agenda-list").children.length, 1);
+  get("#calendar-source-select").value = "";
+  get("#calendar-source-select").fire("change");
+  assert.equal(get("#calendar-agenda-list").children.length, 3);
   get("#calendar-add").fire("click");
   assert.equal(get("#calendar-entry-dialog").open, true);
   assert.equal(field("startDate").value, date);

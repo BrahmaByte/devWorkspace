@@ -32,7 +32,7 @@ export interface CalendarState {
   readonly year: number;
   readonly entries: readonly CalendarEntry[];
   readonly leaveTypes: readonly LeaveType[];
-  readonly sources?: readonly (TeamCalendarSource | JsonCalendarSource)[];
+  readonly sources?: readonly JsonCalendarSource[];
 }
 export interface JsonCalendarSource {
   readonly id: string;
@@ -41,39 +41,6 @@ export interface JsonCalendarSource {
   readonly holidays: boolean;
   readonly format: "json";
   readonly error?: string;
-}
-export interface TeamCalendarSource {
-  readonly id: string;
-  readonly name: string;
-  readonly origin: string;
-  readonly color: `#${string}`;
-  readonly holidays: boolean;
-  readonly loadedYear?: number;
-}
-export class TeamCalendarError extends Error {}
-export function teamCalendarUrl(baseUrl: string, value: string): string {
-  if (value.length > 4000)
-    throw new TeamCalendarError("Calendar subscription URL is too long.");
-  let url: URL;
-  try {
-    url = new URL(value.replace(/^webcal:/iu, "https:"));
-  } catch {
-    throw new TeamCalendarError("Enter a valid iCal subscription URL.");
-  }
-  if (
-    url.protocol !== "https:" ||
-    url.origin !== new URL(baseUrl).origin ||
-    url.username ||
-    url.password ||
-    url.hash ||
-    !/^\/(?:[A-Za-z0-9_.~-]+\/)*rest\/calendar-services\/1\.0\/calendar\/export\/subcalendar\/(?:private\/)?[A-Za-z0-9_-]{1,200}\.ics$/u.test(
-      url.pathname,
-    )
-  )
-    throw new TeamCalendarError(
-      "Use the Team Calendar Subscribe → iCal URL from the connected Confluence site, not a page or CalDAV URL.",
-    );
-  return url.toString();
 }
 /** Date-only calculation: holiday overlaps count once; weekends use UTC weekdays. */
 export function calendarLeaveCount(

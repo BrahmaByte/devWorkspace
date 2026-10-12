@@ -384,7 +384,8 @@ void it("renders a local calendar with a valid script and no unsafe HTML inserti
   assert.doesNotMatch(html, /id="calendar-tools"/u);
   for (const icon of ["search", "folder"])
     assert.match(html, new RegExp('<symbol id="i-' + icon + '"', "u"));
-  assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 3);
+  assert.equal((html.match(/name="color" type="color"/gu) ?? []).length, 2);
+  assert.doesNotMatch(html, /Confluence Team Calendars|team-calendar-connect/u);
   assert.doesNotMatch(html, /select name="color"/u);
   for (const view of ["day", "week", "month", "year"])
     assert.match(html, new RegExp('data-calendar-view="' + view + '"', "u"));

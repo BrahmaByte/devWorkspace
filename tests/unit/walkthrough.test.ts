@@ -168,7 +168,6 @@ void describe("Dashboard walkthrough", () => {
       "jira",
       "calendar",
       "settings",
-      "settings",
       "workspace",
       "notes",
       "knowledge",
@@ -182,9 +181,11 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
     send("update");
-    assert.match(panel.children[0]!.textContent, /What's new.*1 of 1/u);
+    assert.match(panel.children[0]!.textContent, /What's new.*1 of 2/u);
     assert.equal(page, "settings");
-    assert.match(panel.children[2]!.textContent, /extension-host proxy route/u);
+    assert.match(panel.children[2]!.textContent, /Local JSON Calendars/u);
+    next!.click();
+    assert.equal(page, "calendar");
     assert.equal(next!.textContent, "Finish");
     next!.click();
     assert.equal(page, "notes");

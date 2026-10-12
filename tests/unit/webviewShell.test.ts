@@ -245,6 +245,14 @@ void describe("Webview shell", () => {
     assert.match(html, /class="notes-browser"/);
     assert.match(html, /class="note-editor"/);
   });
+  void it("omits Confluence Team Calendar controls while retaining local JSON calendars", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.doesNotMatch(
+      html,
+      /team-calendar-connect|Confluence Team Calendars|calendar\.source\.connect/u,
+    );
+    assert.match(html, /Local JSON calendars/u);
+  });
 
   void it("provides secure developer application lifecycle controls", () => {
     const html = createWebviewHtml("vscode-webview://test");

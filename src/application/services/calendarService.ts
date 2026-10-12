@@ -8,7 +8,6 @@ import {
   validLeaveType,
   type CalendarInput,
   type CalendarEntry,
-  type TeamCalendarSource,
   type JsonCalendarSource,
   type CalendarState,
   type LeaveType,
@@ -21,9 +20,7 @@ export class CalendarService {
     private readonly imported: (
       year: number,
     ) => readonly CalendarEntry[] = () => [],
-    private readonly sources: () => readonly (
-      TeamCalendarSource | JsonCalendarSource
-    )[] = () => [],
+    private readonly sources: () => readonly JsonCalendarSource[] = () => [],
   ) {}
   public getState(year: number): CalendarState {
     if (!calendarYear(year))

@@ -109,6 +109,11 @@ void it("persists only picked file metadata, refreshes atomically and keeps link
   );
   await reopened.loadSaved();
   assert.equal(reopened.entries(2026)[0]?.title, "Planning call");
+  file = JSON.stringify([meeting]) + " ".repeat(2_100_000);
+  await reopened.refresh(entry!.sourceId!);
+  assert.equal(reopened.entries(2026)[0]?.title, "Planning call");
+  file = " ".repeat(20_000_001);
+  await assert.rejects(reopened.refresh(entry!.sourceId!), /20 MB/u);
   file = "invalid";
   await assert.rejects(reopened.refresh(entry!.sourceId!), /valid UTF-8 JSON/u);
   assert.equal(reopened.entries(2026)[0]?.title, "Planning call");
@@ -154,4 +159,14 @@ void it("accepts only bounded JSON source actions without Webview paths or links
     }).ok,
     false,
   );
+  for (const type of [
+    "calendar.source.connect",
+    "calendar.source.refresh",
+    "calendar.source.remove",
+    "calendar.source.event",
+  ])
+    assert.equal(
+      parseWebviewRequest({ type, year: 2026, id: source.id }).ok,
+      false,
+    );
 });
