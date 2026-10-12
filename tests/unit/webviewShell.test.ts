@@ -140,6 +140,8 @@ void describe("Webview shell", () => {
       html,
       /GitHub response could not be displayed\. Retry when ready/u,
     );
+    assert.match(html, /type:'github\.discoverMore'/u);
+    assert.match(html, /discover\.hidden=!state\.hasMoreOrganizations/u);
   });
   void it("renders the extension logo from an authorized Webview URI", () => {
     const html = createWebviewHtml(
@@ -394,7 +396,7 @@ void describe("Webview shell", () => {
       html,
       /workspace-grid\{gap:[^}]*grid-template-columns:minmax\(0,1fr\)/,
     );
-    assert.match(html, /toolbar\.append\(owner,filter,refresh\)/u);
+    assert.match(html, /toolbar\.append\(owner,filter,discover,refresh\)/u);
     assert.doesNotMatch(html, /heading\.append\(refresh\)/u);
   });
 

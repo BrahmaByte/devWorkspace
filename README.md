@@ -16,12 +16,12 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.19
+## Version 0.1.20
 
-- Use VS Code's stable extension-host HTTPS transport for Jira, Confluence and
-  GitHub across managed Windows, macOS and Linux proxy configurations.
-- Distinguish provider-specific authentication failures from ambiguous HTTP
-  401/403 gateway responses in the network log.
+- Import local JSON meetings and yearly holidays, with source and type filters
+  in Calendar.
+- See the next meeting and today's schedule on Home.
+- Confluence Team Calendar integration has been removed; Confluence reading remains.
 
 ## Screenshots
 
@@ -108,7 +108,10 @@ Use Workspace to manage local development tools:
   select your account or an organization. Search loaded repositories or use
   **Load more**. The clone icon opens a folder picker and confirmation; successful
   clones are added to **Project launcher**. Personal and Enterprise Managed User
-  accounts are supported. Git and workspace trust are required.
+  accounts are supported. If a PAT cannot list organization membership,
+  discovery initially scans at most 500 accessible repositories. Use the
+  load-more-organizations icon to continue discovery. Git and workspace trust
+  are required.
   The PAT needs repository metadata access and Contents read permission for
   private clones; organization SSO/admin policies may restrict results. Credentials
   remain in VS Code SecretStorage. Native Git uses its own proxy/credential settings.

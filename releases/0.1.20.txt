@@ -7,3 +7,10 @@ Calendar updates
   today's schedule from loaded calendar data.
 - Remove Confluence Team Calendar controls and loading. Existing subscription
   data is retained locally but no longer used.
+
+Reliability
+- Preserve working Jira and Confluence credentials if a connection update cannot
+  be saved.
+- Reject imported holidays that overlap saved leave or another holiday.
+- Load GitHub organization discovery in batches of 500 repositories, with an
+  explicit control to continue.

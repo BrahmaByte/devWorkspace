@@ -196,18 +196,22 @@ export class JiraService {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
+    const previousCredential = await this.secrets.get(secretKey(connection.id));
     await this.secrets.store(
       secretKey(connection.id),
       serializeCredential(credential),
     );
     try {
       await this.repository.saveConnection(connection);
-      if (!issueWarning)
-        await this.repository.replaceIssues(connection.id, issues);
     } catch (error) {
-      await this.secrets.delete(secretKey(connection.id));
+      if (previousCredential === undefined)
+        await this.secrets.delete(secretKey(connection.id));
+      else
+        await this.secrets.store(secretKey(connection.id), previousCredential);
       throw error;
     }
+    if (!issueWarning)
+      await this.repository.replaceIssues(connection.id, issues);
     return {
       connection,
       currentUser,

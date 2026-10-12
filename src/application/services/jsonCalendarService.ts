@@ -116,6 +116,10 @@ export class JsonCalendarService {
   public constructor(
     private readonly store: Store,
     private readonly read: (uri: string) => Promise<Uint8Array>,
+    private readonly localOverlaps: (
+      startDate: string,
+      endDate: string,
+    ) => readonly CalendarEntry[] = () => [],
   ) {}
   private saved(): SavedSource[] {
     const value: unknown = this.store.get(key, []);
@@ -176,6 +180,32 @@ export class JsonCalendarService {
       throw new Error("Choose a valid UTF-8 JSON calendar file.");
     }
     const entries = parseJsonCalendar(data, source);
+    if (source.holidays) {
+      const otherHolidays = [...this.cache.entries()]
+        .filter(([id]) => id !== source.id)
+        .flatMap(([, loaded]) =>
+          loaded.filter((entry) => entry.kind === "holiday"),
+        );
+      const accepted: CalendarEntry[] = [];
+      for (const entry of entries) {
+        if (
+          [
+            ...this.localOverlaps(entry.startDate, entry.endDate),
+            ...otherHolidays,
+            ...accepted,
+          ].some(
+            (other) =>
+              (other.kind === "leave" || other.kind === "holiday") &&
+              other.startDate <= entry.endDate &&
+              other.endDate >= entry.startDate,
+          )
+        )
+          throw new Error(
+            `Holiday ${entry.startDate} overlaps saved leave or another holiday.`,
+          );
+        accepted.push(entry);
+      }
+    }
     const rows = Array.isArray(data) ? data : object(data).value;
     for (const entry of this.cache.get(source.id) ?? [])
       this.links.delete(entry.id);

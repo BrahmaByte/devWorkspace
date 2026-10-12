@@ -42,6 +42,7 @@ export type WebviewRequest =
         | "github.configure"
         | "github.disconnect"
         | "github.refresh"
+        | "github.discoverMore"
         | "github.status";
     }
   | {

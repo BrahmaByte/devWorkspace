@@ -13,6 +13,7 @@ export interface GitHubState {
   readonly owner: string;
   readonly repositories: readonly GitHubRepository[];
   readonly hasMore: boolean;
+  readonly hasMoreOrganizations: boolean;
   readonly message: string;
 }
 export const githubOwner = (value: unknown): value is string =>

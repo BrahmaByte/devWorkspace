@@ -123,6 +123,82 @@ void it("persists only picked file metadata, refreshes atomically and keeps link
   assert.equal(reopened.link(entry!.id), undefined);
 });
 
+void it("rejects imported holidays that overlap leave or another holiday without replacing loaded entries", async () => {
+  const saved = new Map<string, unknown>();
+  const store = {
+    get<T>(key: string, fallback: T): T {
+      return (saved.get(key) as T) ?? fallback;
+    },
+    update(key: string, value: unknown): Thenable<void> {
+      saved.set(key, value);
+      return Promise.resolve();
+    },
+  };
+  const files = new Map<string, string>([
+    [
+      "file:///one.json",
+      JSON.stringify({
+        year: 2026,
+        holidays: [{ date: "2026-12-25", title: "First" }],
+      }),
+    ],
+    [
+      "file:///two.json",
+      JSON.stringify({
+        year: 2026,
+        holidays: [{ date: "2026-12-26", title: "Second" }],
+      }),
+    ],
+  ]);
+  const leave = {
+    ...parseJsonCalendar(
+      { year: 2026, holidays: [{ date: "2026-12-27", title: "Leave" }] },
+      { ...source, holidays: true },
+    )[0]!,
+    kind: "leave" as const,
+  };
+  const service = new JsonCalendarService(
+    store,
+    (uri) => Promise.resolve(Buffer.from(files.get(uri)!)),
+    (start, end) =>
+      leave.startDate <= end && leave.endDate >= start ? [leave] : [],
+  );
+  await service.add("file:///one.json", "First", "#3278e6", true);
+  await service.add("file:///two.json", "Second", "#3278e6", true);
+  const firstId = service.sources()[0]!.id;
+  files.set(
+    "file:///one.json",
+    JSON.stringify({
+      year: 2026,
+      holidays: [{ date: "2026-12-26", title: "Conflict" }],
+    }),
+  );
+  await assert.rejects(service.refresh(firstId), /overlaps/u);
+  assert.equal(
+    service.entries(2026).find((entry) => entry.sourceId === firstId)?.title,
+    "First",
+  );
+  files.set(
+    "file:///one.json",
+    JSON.stringify({
+      year: 2026,
+      holidays: [{ date: "2026-12-27", title: "Conflict" }],
+    }),
+  );
+  await assert.rejects(service.refresh(firstId), /overlaps/u);
+  files.set(
+    "file:///one.json",
+    JSON.stringify({
+      year: 2026,
+      holidays: [
+        { date: "2026-12-28", title: "One" },
+        { date: "2026-12-28", title: "Duplicate" },
+      ],
+    }),
+  );
+  await assert.rejects(service.refresh(firstId), /overlaps/u);
+});
+
 void it("accepts only bounded JSON source actions without Webview paths or links", () => {
   assert.equal(
     parseWebviewRequest({

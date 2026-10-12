@@ -88,6 +88,7 @@ export class GitHubService {
   private owner = "";
   private repositories: GitHubRepository[] = [];
   private nextPage = 0;
+  private nextDiscoveryPage = 0;
   private notice = "";
   private loadedAt = 0;
   private credentialHash = "";
@@ -100,7 +101,7 @@ export class GitHubService {
     this.login = this.owner = this.notice = "";
     this.organizations = [];
     this.repositories = [];
-    this.nextPage = this.loadedAt = 0;
+    this.nextPage = this.nextDiscoveryPage = this.loadedAt = 0;
     this.credentialHash = "";
   }
   public async state(message = this.notice): Promise<GitHubState> {
@@ -119,6 +120,7 @@ export class GitHubService {
       owner: this.owner,
       repositories: this.repositories,
       hasMore: this.nextPage > 0,
+      hasMoreOrganizations: this.nextDiscoveryPage > 0,
       message,
     };
   }
@@ -243,29 +245,55 @@ export class GitHubService {
         "Organization membership is limited by this token; showing organizations found in accessible repositories.";
     }
     if (!orgs.size || notice.startsWith("Organization membership is limited")) {
-      for (let page = 1; page <= 50; page++) {
-        const list = await this.json(
-          "/user/repos?per_page=100&page=" + page,
-          token,
-        );
-        if (!Array.isArray(list) || list.length > 100)
-          throw new GitHubError("GitHub returned invalid repositories.");
-        list.forEach((raw: unknown) => {
-          const item = record(raw),
-            owner = record(item.owner);
-          if (owner.type === "Organization" && githubOwner(owner.login))
-            orgs.add(owner.login);
-        });
-        if (list.length < 100) break;
-        if (page === 50)
-          notice += " Discovery is limited to 5,000 accessible repositories.";
-      }
+      this.nextDiscoveryPage = await this.discoverOrganizations(1, token, orgs);
+      if (this.nextDiscoveryPage)
+        notice += " More organizations may be available.";
     }
     await this.checkConnection(generation, token);
     this.credentialHash = this.hash(token);
     this.login = profile.login;
     this.organizations = [...orgs].sort();
     this.notice = notice;
+    return this.state();
+  }
+  private async discoverOrganizations(
+    startPage: number,
+    token: string,
+    orgs: Set<string>,
+  ): Promise<number> {
+    for (let page = startPage; page < startPage + 5; page++) {
+      const list = await this.json(
+        "/user/repos?per_page=100&page=" + page,
+        token,
+      );
+      if (!Array.isArray(list) || list.length > 100)
+        throw new GitHubError("GitHub returned invalid repositories.");
+      list.forEach((raw: unknown) => {
+        const owner = record(record(raw).owner);
+        if (owner.type === "Organization" && githubOwner(owner.login))
+          orgs.add(owner.login);
+      });
+      if (list.length < 100 || page === 50) return 0;
+      if (page === startPage + 4) return page + 1;
+    }
+    return 0;
+  }
+  public async discoverMore(): Promise<GitHubState> {
+    await this.state();
+    if (!this.nextDiscoveryPage)
+      throw new GitHubError("Refresh GitHub organizations first.");
+    const generation = this.generation;
+    const token = await this.token();
+    const orgs = new Set(this.organizations);
+    const next = await this.discoverOrganizations(
+      this.nextDiscoveryPage,
+      token,
+      orgs,
+    );
+    await this.checkConnection(generation, token);
+    this.organizations = [...orgs].sort();
+    this.nextDiscoveryPage = next;
+    this.notice = next ? "More organizations may be available." : "";
     return this.state();
   }
   public async browse(owner: string, more = false): Promise<GitHubState> {

@@ -10,7 +10,7 @@ const tourSteps=[
  {page:"jira",title:"Filter your board",text:"Load Saved filters with its refresh icon and choose one to apply. Board search and Filter narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
  {page:"calendar",title:"Plan your time",text:"Click a Planner date or time slot, or choose New entry. In the popup choose Plan, Holiday or Leave and save. Use the type toggles to show only the entries you need."},
  {page:"settings",title:"Add a JSON calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a file. The file is read-only; refresh it from Calendar after external changes."},
- {page:"workspace",title:"Open a project or run a command",text:"Choose a project folder, then use its open icon to select VS Code or an IDE added in Settings. Run saved command shortcuts in a visible VS Code terminal."},
+ {page:"workspace",title:"Open projects and repositories",text:"Choose a project folder, or refresh GitHub and select an owner. If more organizations are available, use the plus icon to load the next group. Open projects in VS Code or an IDE added in Settings."},
  {page:"notes",title:"Write a note",text:"Use the new-note icon and start typing. Notes save automatically. Select an existing note to edit it."},
  {page:"knowledge",title:"Read a Confluence page",text:"Search for a page and select a result. Use Focus Reader for a full-screen view, or Bookmark to save a reference in Notes."},
  {page:"search",title:"Find saved work",text:"Search notes, projects, commands and cached Jira or Confluence entries. Use the theme button and bottom-right zoom controls to adjust the view."}
@@ -18,7 +18,8 @@ const tourSteps=[
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
  {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a JSON file. Refresh it after the file changes."},
- {page:"calendar",title:"Filter the Planner",text:"Use All sources or select one imported file. The Plans, Meetings, Holidays and Leave toggles narrow the calendar view."}
+ {page:"calendar",title:"Filter the Planner",text:"Use All sources or select one imported file. The Plans, Meetings, Holidays and Leave toggles narrow the calendar view."},
+ {page:"workspace",title:"Load GitHub organizations in batches",text:"Refresh GitHub to load the first organizations. If more are available, use the plus icon beside the repository filters."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

@@ -93,6 +93,25 @@ class FakeFactory implements JiraClientFactory {
   }
 }
 
+void it("keeps the previous Jira credential when a connection update cannot be saved", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "dashboard-jira-rollback-"));
+  directories.push(directory);
+  const database = await LocalDatabase.open(getDatabasePath(directory));
+  const repository = new JiraRepository(database);
+  const secrets = new MemorySecrets();
+  const service = new JiraService(repository, secrets, new FakeFactory());
+  await service.connect("Jira", "https://jira.example.test", "fake-old-token");
+  const [key, oldCredential] = [...secrets.values][0]!;
+  repository.saveConnection = () =>
+    Promise.reject(new Error("storage unavailable"));
+  await assert.rejects(
+    service.connect("Jira", "https://jira.example.test", "fake-new-token"),
+    /storage unavailable/u,
+  );
+  assert.equal(secrets.values.get(key), oldCredential);
+  database.close();
+});
+
 void afterEach(async () => {
   await Promise.all(
     directories

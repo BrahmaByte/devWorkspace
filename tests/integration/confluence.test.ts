@@ -70,6 +70,35 @@ class FakeFactory implements ConfluenceClientFactory {
     return new FakeClient(this.fail);
   }
 }
+
+void it("keeps the previous Confluence credential when a connection update cannot be saved", async () => {
+  const directory = await mkdtemp(
+    join(tmpdir(), "dashboard-confluence-rollback-"),
+  );
+  directories.push(directory);
+  const database = await LocalDatabase.open(getDatabasePath(directory));
+  const repository = new ConfluenceRepository(database);
+  const secrets = new MemorySecrets();
+  const service = new ConfluenceService(repository, secrets, new FakeFactory());
+  await service.connect(
+    "Docs",
+    "https://confluence.example.test",
+    "fake-old-token",
+  );
+  const [key, oldCredential] = [...secrets.values][0]!;
+  repository.saveConnection = () =>
+    Promise.reject(new Error("storage unavailable"));
+  await assert.rejects(
+    service.connect(
+      "Docs",
+      "https://confluence.example.test",
+      "fake-new-token",
+    ),
+    /storage unavailable/u,
+  );
+  assert.equal(secrets.values.get(key), oldCredential);
+  database.close();
+});
 void afterEach(async () => {
   await Promise.all(
     directories

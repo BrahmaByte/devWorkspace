@@ -93,6 +93,7 @@ export class ConfluenceService {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
+    const previousCredential = await this.secrets.get(secretKey(connection.id));
     await this.secrets.store(
       secretKey(connection.id),
       serializeCredential(credential),
@@ -100,7 +101,10 @@ export class ConfluenceService {
     try {
       await this.repository.saveConnection(connection);
     } catch (error) {
-      await this.secrets.delete(secretKey(connection.id));
+      if (previousCredential === undefined)
+        await this.secrets.delete(secretKey(connection.id));
+      else
+        await this.secrets.store(secretKey(connection.id), previousCredential);
       throw error;
     }
     this.clearReaderCache();

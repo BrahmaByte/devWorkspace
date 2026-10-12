@@ -136,6 +136,28 @@ void it("discovers organizations for limited fine-grained tokens and reports acc
   assert.equal(invalid.storage.size, 0);
   await assert.rejects(service.connect("fake token"), /without whitespace/u);
 });
+void it("bounds organization discovery when a token cannot list memberships", async () => {
+  const pages: number[] = [];
+  const { service } = fixture((url) => {
+    if (url.pathname === "/user") return json({ login: "user" });
+    if (url.pathname === "/user/orgs") return json({ message: "denied" }, 403);
+    const page = Number(url.searchParams.get("page"));
+    pages.push(page);
+    return json(
+      Array.from({ length: 100 }, (_, index) =>
+        repo((page - 1) * 100 + index + 1),
+      ),
+    );
+  });
+  await service.connect("fake-pat");
+  const state = await service.refresh();
+  assert.deepEqual(pages, [1, 2, 3, 4, 5]);
+  assert.equal(state.hasMoreOrganizations, true);
+  assert.match(state.message, /More organizations/u);
+  const more = await service.discoverMore();
+  assert.deepEqual(pages, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(more.hasMoreOrganizations, true);
+});
 void it("supports Enterprise Managed User logins and repository owners", async () => {
   const login = "managed-user_acme";
   const { service } = fixture((url) => {
@@ -155,6 +177,11 @@ void it("supports Enterprise Managed User logins and repository owners", async (
       more: false,
     }).ok,
     true,
+  );
+  assert.equal(parseWebviewRequest({ type: "github.discoverMore" }).ok, true);
+  assert.equal(
+    parseWebviewRequest({ type: "github.discoverMore", page: 6 }).ok,
+    false,
   );
 });
 void it("bounds managed-user names and maps GitHub failures without exposing response bodies", async () => {

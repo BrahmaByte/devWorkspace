@@ -227,6 +227,8 @@ export async function activate(
         throw new Error("Choose a JSON file up to 20 MB.");
       return vscode.workspace.fs.readFile(file);
     },
+    (startDate, endDate) =>
+      calendarRepository.listOverlapping(startDate, endDate),
   );
   await jsonCalendars.loadSaved();
   const calendarService = new CalendarService(
@@ -559,6 +561,7 @@ export async function activate(
             case "github.configure":
             case "github.disconnect":
             case "github.refresh":
+            case "github.discoverMore":
             case "github.repositories":
             case "github.clone": {
               if (githubOperationPending) {
@@ -599,6 +602,8 @@ export async function activate(
                     await githubService.disconnect();
                 } else if (request.type === "github.refresh") {
                   await githubService.refresh();
+                } else if (request.type === "github.discoverMore") {
+                  await githubService.discoverMore();
                 } else if (request.type === "github.repositories") {
                   await panel.webview.postMessage({
                     type: "github.state",
@@ -650,6 +655,7 @@ export async function activate(
                     owner: "",
                     repositories: [],
                     hasMore: false,
+                    hasMoreOrganizations: false,
                     message,
                   };
                 }
