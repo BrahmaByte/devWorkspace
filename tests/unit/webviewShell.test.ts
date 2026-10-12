@@ -221,6 +221,9 @@ void describe("Webview shell", () => {
 
     assert.match(homeMarkup, /class="dashboard-card sticky-widget"/);
     assert.match(homeMarkup, /Current Jira task/);
+    assert.match(homeMarkup, /Next meeting/);
+    assert.match(homeMarkup, /Today's schedule/);
+    assert.match(html, /calendar\.json\.open/);
     assert.match(html, /\.layout-card:has\(#home-jira\)\{overflow:hidden\}/u);
     assert.match(
       html,

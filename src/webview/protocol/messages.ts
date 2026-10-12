@@ -4,6 +4,7 @@ import type {
   CalendarState,
   LeaveType,
   TeamCalendarSource,
+  JsonCalendarSource,
 } from "../../domain/calendar";
 import type { HomeState } from "../../domain/home/models";
 import type {
@@ -51,6 +52,27 @@ export type WebviewRequest =
     }
   | { readonly type: "github.clone"; readonly id: string }
   | { readonly type: "calendar.refresh"; readonly year: number }
+  | {
+      readonly type: "calendar.json.add";
+      readonly holidays: boolean;
+      readonly color: `#${string}`;
+      readonly year: number;
+    }
+  | {
+      readonly type: "calendar.json.refresh" | "calendar.json.remove";
+      readonly id: string;
+      readonly year: number;
+    }
+  | {
+      readonly type: "calendar.json.event";
+      readonly id: string;
+      readonly year: number;
+    }
+  | {
+      readonly type: "calendar.json.open";
+      readonly id: string;
+      readonly year: number;
+    }
   | {
       readonly type: "calendar.source.connect";
       readonly year: number;
@@ -232,7 +254,7 @@ export type ExtensionResponse =
   | { readonly type: "calendar.invalidated" }
   | {
       readonly type: "calendar.sources";
-      readonly sources: readonly TeamCalendarSource[];
+      readonly sources: readonly (TeamCalendarSource | JsonCalendarSource)[];
       readonly message?: string;
       readonly error?: boolean;
     }

@@ -129,6 +129,50 @@ export function parseWebviewRequest(value: unknown): ParseResult {
         "Invalid GitHub action. Credentials, URLs and paths cannot be supplied by the Webview.",
     };
   }
+  if (value.type === "calendar.json.add") {
+    return hasOnlyKeys(value, ["type", "year", "holidays", "color"]) &&
+      calendarYear(value.year) &&
+      typeof value.holidays === "boolean" &&
+      typeof value.color === "string" &&
+      /^#[a-f0-9]{6}$/iu.test(value.color)
+      ? {
+          ok: true,
+          value: {
+            type: value.type,
+            year: value.year,
+            holidays: value.holidays,
+            color: value.color as `#${string}`,
+          },
+        }
+      : { ok: false, error: "Invalid JSON calendar request." };
+  }
+  if (
+    value.type === "calendar.json.refresh" ||
+    value.type === "calendar.json.remove"
+  ) {
+    return hasOnlyKeys(value, ["type", "year", "id"]) &&
+      calendarYear(value.year) &&
+      calendarId(value.id)
+      ? {
+          ok: true,
+          value: { type: value.type, year: value.year, id: value.id },
+        }
+      : { ok: false, error: "Invalid JSON calendar request." };
+  }
+  if (
+    value.type === "calendar.json.event" ||
+    value.type === "calendar.json.open"
+  ) {
+    return hasOnlyKeys(value, ["type", "year", "id"]) &&
+      calendarYear(value.year) &&
+      typeof value.id === "string" &&
+      /^[a-f0-9-]{36}:\d{1,4}$/iu.test(value.id)
+      ? {
+          ok: true,
+          value: { type: value.type, year: value.year, id: value.id },
+        }
+      : { ok: false, error: "Invalid JSON calendar event." };
+  }
   if (value.type === "calendar.source.connect") {
     return hasOnlyKeys(value, ["type", "year", "name", "color", "holidays"]) &&
       calendarYear(value.year) &&

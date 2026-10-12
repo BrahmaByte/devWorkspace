@@ -32,7 +32,15 @@ export interface CalendarState {
   readonly year: number;
   readonly entries: readonly CalendarEntry[];
   readonly leaveTypes: readonly LeaveType[];
-  readonly sources?: readonly TeamCalendarSource[];
+  readonly sources?: readonly (TeamCalendarSource | JsonCalendarSource)[];
+}
+export interface JsonCalendarSource {
+  readonly id: string;
+  readonly name: string;
+  readonly color: `#${string}`;
+  readonly holidays: boolean;
+  readonly format: "json";
+  readonly error?: string;
 }
 export interface TeamCalendarSource {
   readonly id: string;

@@ -9,6 +9,7 @@ import {
   type CalendarInput,
   type CalendarEntry,
   type TeamCalendarSource,
+  type JsonCalendarSource,
   type CalendarState,
   type LeaveType,
 } from "../../domain/calendar";
@@ -20,7 +21,9 @@ export class CalendarService {
     private readonly imported: (
       year: number,
     ) => readonly CalendarEntry[] = () => [],
-    private readonly sources: () => readonly TeamCalendarSource[] = () => [],
+    private readonly sources: () => readonly (
+      TeamCalendarSource | JsonCalendarSource
+    )[] = () => [],
   ) {}
   public getState(year: number): CalendarState {
     if (!calendarYear(year))

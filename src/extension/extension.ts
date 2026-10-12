@@ -4,6 +4,7 @@ import { basename } from "node:path";
 import { NoteService } from "../application/services/noteService";
 import { CalendarService } from "../application/services/calendarService";
 import { TeamCalendarService } from "../application/services/teamCalendarService";
+import { JsonCalendarService } from "../application/services/jsonCalendarService";
 import { TeamCalendarError, teamCalendarUrl } from "../domain/calendar";
 import {
   GitHubService,
@@ -217,10 +218,22 @@ export async function activate(
     context.secrets,
     confluenceService,
   );
+  const jsonCalendars = new JsonCalendarService(
+    context.globalState,
+    async (uri) => {
+      const file = vscode.Uri.parse(uri);
+      if (file.scheme !== "file") throw new Error("Choose a local JSON file.");
+      const details = await vscode.workspace.fs.stat(file);
+      if (details.size > 2_000_000 || !(details.type & vscode.FileType.File))
+        throw new Error("Choose a JSON file up to 2 MB.");
+      return vscode.workspace.fs.readFile(file);
+    },
+  );
+  await jsonCalendars.loadSaved();
   const calendarService = new CalendarService(
     calendarRepository,
-    (year) => teamCalendars.entries(year),
-    () => teamCalendars.sources(),
+    (year) => [...teamCalendars.entries(year), ...jsonCalendars.entries(year)],
+    () => [...teamCalendars.sources(), ...jsonCalendars.sources()],
   );
   let dashboardPanel: vscode.WebviewPanel | undefined;
   context.subscriptions.push(
@@ -325,15 +338,43 @@ export async function activate(
         ides: projectWorkspace.ides(),
       } satisfies ExtensionResponse);
     const sendHome = async (refreshRecent = false): Promise<boolean> => {
-      if (refreshRecent) await sendHome();
       const recent = await jiraService.getRecentIssues(refreshRecent);
       const state = homeService.getState();
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const entries = [
+        ...calendarService.getState(now.getFullYear()).entries,
+        ...calendarService.getState(now.getFullYear() + 1).entries,
+      ].filter(
+        (entry, index, all) =>
+          all.findIndex((item) => item.id === entry.id) === index,
+      );
+      const schedule = entries
+        .filter((entry) => entry.startDate <= today && entry.endDate >= today)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+        .slice(0, 50);
+      const nextMeeting = entries
+        .filter(
+          (entry) =>
+            entry.kind === "event" &&
+            !!entry.startTime &&
+            new Date(`${entry.endDate}T${entry.endTime}:00`).getTime() >=
+              now.getTime(),
+        )
+        .sort((a, b) =>
+          (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime),
+        )[0];
       return panel.webview.postMessage({
         type: "home.state",
         state: {
           ...state,
           recentJiraIssues: recent.issues,
           recentJiraMessage: recent.message,
+          todaySchedule: schedule,
+          nextMeeting,
+          nextMeetingLink: nextMeeting
+            ? !!jsonCalendars.link(nextMeeting.id)
+            : false,
           developerApplications: await Promise.all(
             state.developerApplications.map(async (application) => ({
               ...application,
@@ -497,7 +538,10 @@ export async function activate(
                 }
                 await panel.webview.postMessage({
                   type: "calendar.sources",
-                  sources: teamCalendars.sources(),
+                  sources: [
+                    ...teamCalendars.sources(),
+                    ...jsonCalendars.sources(),
+                  ],
                   message:
                     request.type === "calendar.source.remove"
                       ? "Calendar removed."
@@ -514,7 +558,10 @@ export async function activate(
                     : connectionErrorMessage("confluence", error);
                 await panel.webview.postMessage({
                   type: "calendar.sources",
-                  sources: teamCalendars.sources(),
+                  sources: [
+                    ...teamCalendars.sources(),
+                    ...jsonCalendars.sources(),
+                  ],
                   message,
                   error: true,
                 } satisfies ExtensionResponse);
@@ -523,6 +570,104 @@ export async function activate(
                   message,
                 } satisfies ExtensionResponse);
               }
+              return;
+            }
+            case "calendar.json.add":
+            case "calendar.json.refresh":
+            case "calendar.json.remove": {
+              try {
+                if (request.type === "calendar.json.add") {
+                  const picked = await vscode.window.showOpenDialog({
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: false,
+                    filters: { JSON: ["json"] },
+                    title: "Choose a local calendar JSON file",
+                  });
+                  if (!picked?.[0]) return;
+                  await jsonCalendars.add(
+                    picked[0].toString(),
+                    basename(picked[0].fsPath),
+                    request.color,
+                    request.holidays,
+                  );
+                } else if (request.type === "calendar.json.refresh") {
+                  await jsonCalendars.refresh(request.id);
+                } else {
+                  const choice = await vscode.window.showWarningMessage(
+                    "Remove this JSON calendar source? The source file will not be changed.",
+                    { modal: true },
+                    "Remove",
+                  );
+                  if (choice !== "Remove") return;
+                  await jsonCalendars.remove(request.id);
+                }
+                await panel.webview.postMessage({
+                  type: "calendar.sources",
+                  sources: [
+                    ...teamCalendars.sources(),
+                    ...jsonCalendars.sources(),
+                  ],
+                  message: "JSON calendar updated.",
+                } satisfies ExtensionResponse);
+                await panel.webview.postMessage({
+                  type: "calendar.saved",
+                  state: calendarService.getState(request.year),
+                } satisfies ExtensionResponse);
+                await sendHome();
+              } catch (error) {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : "JSON calendar could not be loaded.";
+                await panel.webview.postMessage({
+                  type: "calendar.sources",
+                  sources: [
+                    ...teamCalendars.sources(),
+                    ...jsonCalendars.sources(),
+                  ],
+                  message,
+                  error: true,
+                } satisfies ExtensionResponse);
+                await panel.webview.postMessage({
+                  type: "calendar.error",
+                  message,
+                } satisfies ExtensionResponse);
+              }
+              return;
+            }
+            case "calendar.json.event": {
+              const entry = jsonCalendars.event(request.id);
+              if (!entry) {
+                await panel.webview.postMessage({
+                  type: "calendar.error",
+                  message: "Refresh this JSON calendar to view the event.",
+                } satisfies ExtensionResponse);
+                return;
+              }
+              const choice = await vscode.window.showInformationMessage(
+                entry.title,
+                {
+                  modal: true,
+                  detail: `${entry.sourceName} · Read-only\n${entry.startDate} ${entry.startTime} – ${entry.endDate} ${entry.endTime}\n\n${entry.agenda}`,
+                },
+                ...(jsonCalendars.link(entry.id) ? ["Open meeting link"] : []),
+              );
+              if (choice === "Open meeting link")
+                await vscode.env.openExternal(
+                  vscode.Uri.parse(jsonCalendars.link(entry.id)!),
+                );
+              return;
+            }
+            case "calendar.json.open": {
+              const link = jsonCalendars.link(request.id);
+              if (!link) {
+                await vscode.window.showWarningMessage(
+                  "Meeting link is unavailable. Refresh the JSON calendar.",
+                );
+                return;
+              }
+              await vscode.env.openExternal(vscode.Uri.parse(link));
               return;
             }
             case "github.status":
@@ -659,7 +804,10 @@ export async function activate(
               await sendIdeState();
               await panel.webview.postMessage({
                 type: "calendar.sources",
-                sources: teamCalendars.sources(),
+                sources: [
+                  ...teamCalendars.sources(),
+                  ...jsonCalendars.sources(),
+                ],
               } satisfies ExtensionResponse);
               {
                 const mode = replayPending
@@ -1111,7 +1259,10 @@ export async function activate(
               if (activePage === "settings")
                 await panel.webview.postMessage({
                   type: "calendar.sources",
-                  sources: teamCalendars.sources(),
+                  sources: [
+                    ...teamCalendars.sources(),
+                    ...jsonCalendars.sources(),
+                  ],
                 } satisfies ExtensionResponse);
               if (activePage === "settings") await sendIdeState();
               if (activePage === "notes") await sendNotes();

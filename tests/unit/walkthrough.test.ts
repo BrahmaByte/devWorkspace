@@ -168,6 +168,7 @@ void describe("Dashboard walkthrough", () => {
       "jira",
       "calendar",
       "settings",
+      "settings",
       "workspace",
       "notes",
       "knowledge",
