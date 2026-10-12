@@ -93,7 +93,7 @@ Local plans, holidays and leave stay in your database and its snapshots. Nothing
 
 To show meetings from a local JSON export, open **Settings → Local JSON Calendars**, choose **Events** and select the file with VS Code’s file picker. Use an array of Outlook-style events or `{ "value": [...] }`; each event needs `subject`, `start` and `end` as `{ "dateTime": "2026-10-12T10:00:00", "timeZone": "UTC" }` (or `startWithTimeZone` / `endWithTimeZone` with an ISO offset). Optional `bodyPreview` and HTTPS `webLink` or `onlineMeeting.joinUrl` are shown on the event. For holidays choose **Holidays** and use `{ "year": 2026, "holidays": [{ "date": "2026-12-25", "title": "Holiday" }] }`. The year must match every holiday date. JSON sources are read-only, limited to five files, 20 MB and 5,000 entries per file. File paths stay in extension-host storage; no file content is sent to a service. Refresh a source on Calendar after editing its file, or restart the extension. The last loaded entries remain visible if refresh fails.
 
-Use Calendar’s **Plans**, **Meetings**, **Holidays** and **Leave** toggles to filter the view. Home shows the next meeting and today’s schedule from loaded calendars; the meeting link opens in the default browser when present.
+Use Calendar’s **Plans**, **Meetings**, **Holidays** and **Leave** toggles to filter the view. Home shows the next meeting with its organizer, attendees and join action, plus today’s schedule as a compact timeline. Configured JSON files are re-read when the dashboard opens and every five minutes while it remains open; the last valid data stays visible if a refresh fails.
 
 The source dropdown starts on **All sources**. Select one JSON calendar to show only its entries, or refresh that file after it changes.
 

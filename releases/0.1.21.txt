@@ -1,0 +1,7 @@
+DevDashboardV1 0.1.21
+
+Calendar updates
+- Show the next meeting with its organizer, attendees and join action, and show
+  today's schedule as a compact timeline on Home.
+- Re-read configured local JSON calendars when the dashboard opens and every
+  five minutes while it remains open. Keep the last valid data if a reload fails.

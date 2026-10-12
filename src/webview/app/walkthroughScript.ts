@@ -5,7 +5,7 @@ export const walkthroughStyles = String.raw`
 
 export const walkthroughScript = String.raw`
 const tourSteps=[
- {page:"home",title:"Keep frequently used tools here",text:"Add a sticky note with plus. Open a recent Jira issue, edit a URL group with the pencil, or launch an app from its tile."},
+ {page:"home",title:"Start with today's work",text:"Review the next meeting and today's timeline, open a recent Jira issue, or add a sticky note. Configured JSON calendars refresh periodically while the dashboard is open."},
  {page:"settings",title:"Connect your services",text:"Connect Jira, Confluence or GitHub with credentials entered in VS Code prompts. Network proxy applies the same system or VS Code route to all three services."},
  {page:"jira",title:"Filter your board",text:"Load Saved filters with its refresh icon and choose one to apply. Board search and Filter narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
  {page:"calendar",title:"Plan your time",text:"Click a Planner date or time slot, or choose New entry. In the popup choose Plan, Holiday or Leave and save. Use the type toggles to show only the entries you need."},
@@ -17,7 +17,7 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a JSON file. Refresh it after the file changes."},
+ {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a JSON file. Configured files refresh every five minutes while the dashboard is open."},
  {page:"calendar",title:"Filter the Planner",text:"Use All sources or select one imported file. The Plans, Meetings, Holidays and Leave toggles narrow the calendar view."},
  {page:"workspace",title:"Load GitHub organizations in batches",text:"Refresh GitHub to load the first organizations. If more are available, use the plus icon beside the repository filters."}
 ];

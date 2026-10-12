@@ -226,6 +226,11 @@ void describe("Webview shell", () => {
     assert.match(homeMarkup, /Next meeting/);
     assert.match(homeMarkup, /Today's schedule/);
     assert.match(html, /calendar\.json\.open/);
+    assert.match(html, /className='meeting-card-body'/u);
+    assert.match(html, /className='schedule-timeline'/u);
+    assert.match(html, /Organizer/u);
+    assert.match(html, /Attendees/u);
+    assert.match(html, /Platform: /u);
     assert.match(html, /\.layout-card:has\(#home-jira\)\{overflow:hidden\}/u);
     assert.match(
       html,

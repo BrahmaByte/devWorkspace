@@ -377,6 +377,31 @@ export async function activate(
         },
       } satisfies ExtensionResponse);
     };
+    let calendarRefreshPending = false;
+    const refreshConfiguredCalendars = async (): Promise<void> => {
+      if (calendarRefreshPending) return;
+      calendarRefreshPending = true;
+      try {
+        await jsonCalendars.loadSaved();
+        await panel.webview.postMessage({
+          type: "calendar.sources",
+          sources: jsonCalendars.sources(),
+        } satisfies ExtensionResponse);
+        if (activePage === "calendar") {
+          await panel.webview.postMessage({
+            type: "calendar.state",
+            state: calendarService.getState(new Date().getFullYear()),
+          } satisfies ExtensionResponse);
+        }
+        await sendHome();
+      } finally {
+        calendarRefreshPending = false;
+      }
+    };
+    const calendarRefreshTimer = setInterval(
+      () => void refreshConfiguredCalendars(),
+      5 * 60_000,
+    );
     const appChangeSubscription = developerApplicationService.onDidChange(
       () => {
         void sendHome();
@@ -682,6 +707,7 @@ export async function activate(
               } satisfies ExtensionResponse);
               return;
             case "shell.ready":
+              await jsonCalendars.loadSaved();
               await sendState();
               await sendIdeState();
               await panel.webview.postMessage({
@@ -1488,6 +1514,7 @@ export async function activate(
 
     panel.onDidDispose(() => {
       if (dashboardPanel === panel) dashboardPanel = undefined;
+      clearInterval(calendarRefreshTimer);
       messageSubscription.dispose();
       appChangeSubscription.dispose();
     });

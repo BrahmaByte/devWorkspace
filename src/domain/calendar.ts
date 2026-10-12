@@ -10,6 +10,9 @@ export interface CalendarEntry {
   readonly kind: "plan" | "holiday" | "leave" | "event";
   readonly sourceId?: string;
   readonly sourceName?: string;
+  readonly organizer?: string;
+  readonly attendees?: readonly string[];
+  readonly platform?: string;
   readonly includeWeekends?: boolean;
   readonly title: string;
   readonly startDate: string;

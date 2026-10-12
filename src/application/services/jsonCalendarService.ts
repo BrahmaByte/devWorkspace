@@ -88,11 +88,25 @@ export function parseJsonCalendar(
           `Event ${index + 1} is outside the supported calendar years.`,
         );
     }
+    const organizer = object(object(item.organizer).emailAddress);
+    const attendees = Array.isArray(item.attendees)
+      ? item.attendees
+          .slice(0, 50)
+          .map((attendee) => object(object(attendee).emailAddress))
+          .map((attendee) => clipped(attendee.name || attendee.address, 100))
+          .filter(Boolean)
+      : [];
+    const location = object(item.location);
     return {
       id: `${source.id}:${index}`,
       kind: source.holidays ? "holiday" : "event",
       sourceId: source.id,
       sourceName: source.name,
+      organizer: clipped(organizer.name || organizer.address, 100),
+      attendees,
+      platform:
+        clipped(location.displayName, 100) ||
+        clipped(item.onlineMeetingProvider, 100),
       title,
       startDate,
       endDate,
@@ -113,6 +127,7 @@ export class JsonCalendarService {
   private readonly cache = new Map<string, CalendarEntry[]>();
   private readonly links = new Map<string, string>();
   private readonly errors = new Map<string, string>();
+  private loadingSaved: Promise<void> | undefined;
   public constructor(
     private readonly store: Store,
     private readonly read: (uri: string) => Promise<Uint8Array>,
@@ -225,7 +240,7 @@ export class JsonCalendarService {
     this.cache.set(source.id, entries);
     this.errors.delete(source.id);
   }
-  public async loadSaved(): Promise<void> {
+  private async loadAllSaved(): Promise<void> {
     for (const source of this.saved()) {
       try {
         await this.load(source);
@@ -236,6 +251,12 @@ export class JsonCalendarService {
         );
       }
     }
+  }
+  public loadSaved(): Promise<void> {
+    this.loadingSaved ??= this.loadAllSaved().finally(() => {
+      this.loadingSaved = undefined;
+    });
+    return this.loadingSaved;
   }
   public async add(
     uri: string,

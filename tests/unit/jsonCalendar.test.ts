@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import {
   JsonCalendarService,
@@ -20,6 +21,12 @@ const meeting = {
   end: { dateTime: "2026-10-12T11:00:00", timeZone: "UTC" },
   bodyPreview: "Agenda",
   webLink: "https://outlook.office.com/calendar/item/fake",
+  organizer: { emailAddress: { name: "Meeting owner" } },
+  attendees: [
+    { emailAddress: { name: "First attendee" } },
+    { emailAddress: { address: "second@example.test" } },
+  ],
+  location: { displayName: "Microsoft Teams" },
 };
 
 void it("imports bounded Outlook JSON events and yearly holidays in local time", () => {
@@ -32,6 +39,9 @@ void it("imports bounded Outlook JSON events and yearly holidays in local time",
     `${String(expected.getHours()).padStart(2, "0")}:${String(expected.getMinutes()).padStart(2, "0")}`,
   );
   assert.equal(entry?.agenda, "Agenda");
+  assert.equal(entry?.organizer, "Meeting owner");
+  assert.deepEqual(entry?.attendees, ["First attendee", "second@example.test"]);
+  assert.equal(entry?.platform, "Microsoft Teams");
   assert.equal(
     parseJsonCalendar(
       {
@@ -82,6 +92,45 @@ void it("imports bounded Outlook JSON events and yearly holidays in local time",
     () => parseJsonCalendar({ value: Array(5001).fill(meeting) }, source),
     /5,000/u,
   );
+});
+
+void it("deduplicates periodic saved-calendar reloads and disposes the dashboard timer", async () => {
+  const saved = new Map<string, unknown>([
+    [
+      "calendar.jsonSources",
+      [
+        {
+          ...source,
+          uri: "file:///calendar.json",
+        },
+      ],
+    ],
+  ]);
+  let reads = 0;
+  let finish!: (value: Uint8Array) => void;
+  const service = new JsonCalendarService(
+    {
+      get<T>(key: string, fallback: T): T {
+        return (saved.get(key) as T) ?? fallback;
+      },
+      update: () => Promise.resolve(),
+    },
+    () => {
+      reads++;
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    },
+  );
+  const first = service.loadSaved();
+  const second = service.loadSaved();
+  assert.equal(first, second);
+  assert.equal(reads, 1);
+  finish(Buffer.from(JSON.stringify([meeting])));
+  await first;
+  const extension = readFileSync("src/extension/extension.ts", "utf8");
+  assert.match(extension, /5 \* 60_000/u);
+  assert.match(extension, /clearInterval\(calendarRefreshTimer\)/u);
 });
 
 void it("persists only picked file metadata, refreshes atomically and keeps links in the host", async () => {
