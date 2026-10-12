@@ -1,0 +1,17 @@
+DevDashboardV1 0.1.22
+
+Calendar updates
+- Import local Outlook-style JSON events and yearly holidays from files up to
+  20 MB, with a 5,000-entry limit per file.
+- Filter the Planner by source and entry type. Confluence Team Calendar loading
+  has been removed; existing subscription data remains untouched locally.
+- Show the next meeting with organizer, attendees and a join action, and show
+  today's schedule as a compact timeline on Home.
+- Re-read configured JSON calendars when the dashboard opens and every five
+  minutes while open, retaining the last valid data if a reload fails.
+
+Reliability
+- Preserve working Jira and Confluence credentials when an update cannot be
+  saved, and reject imported holidays that overlap leave or another holiday.
+- Load GitHub organization discovery in bounded batches with an explicit control
+  to continue loading additional organizations.
