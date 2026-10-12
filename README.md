@@ -286,6 +286,8 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
 - **GitHub PAT connection fails:** confirm the PAT is active and authorized for
   organization SSO. A gateway response without GitHub response headers is reported
   as a proxy/security-gateway failure rather than a PAT or GitHub rate-limit error.
+  If a managed proxy closes an API response early, refresh now fails with a bounded
+  diagnostic and unlocks the GitHub controls instead of remaining on Loading.
   Update to a release using the extension-host HTTPS route if the same connection
   works on one machine but fails where VS Code global fetch proxy support is disabled.
 - **Jira or Confluence is blocked by a corporate network:** connect the required

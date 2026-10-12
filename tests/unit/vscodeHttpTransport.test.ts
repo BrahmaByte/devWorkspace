@@ -56,6 +56,36 @@ void describe("VS Code HTTP transport", () => {
     assert.equal(sentBody, "fake-body");
   });
 
+  void it("rejects an incomplete managed-proxy response instead of hanging", async () => {
+    const request = ((
+      _url: string | URL,
+      _options: { method?: string; headers?: Record<string, string> },
+      callback: (response: IncomingMessage) => void,
+    ) => {
+      const outgoing = new Writable({
+        write(_chunk, _encoding, done) {
+          done();
+        },
+      });
+      outgoing.once("finish", () => {
+        const incoming = new Readable({ read() {} });
+        Object.assign(incoming, {
+          statusCode: 200,
+          statusMessage: "OK",
+          headers: { "x-github-request-id": "fake-request-id" },
+        });
+        callback(incoming as IncomingMessage);
+        incoming.emit("aborted");
+      });
+      return outgoing as ClientRequest;
+    }) as typeof httpsRequest;
+
+    await assert.rejects(
+      createVscodeHttpsFetch(request)("https://api.github.com/user"),
+      /response was aborted/u,
+    );
+  });
+
   void it("allows only approved public media redirects and strips provider credentials", async () => {
     const requests: Array<{ url: string; headers: Headers }> = [];
     const transport = new VscodeHttpTransport((input, init) => {

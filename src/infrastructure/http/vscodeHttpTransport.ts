@@ -1,5 +1,4 @@
 import { request as httpsRequest } from "node:https";
-import { Readable } from "node:stream";
 
 export type FetchImplementation = (
   input: string | URL | Request,
@@ -51,13 +50,13 @@ export function createVscodeHttpsFetch(
         headers["content-length"] = String(
           typeof body === "string" ? Buffer.byteLength(body) : body.byteLength,
         );
-      let responseReceived = false;
+      let responseReceived = false,
+        settled = false;
       const outgoing = request(
         url,
         { method: init.method ?? "GET", headers },
         (incoming) => {
           responseReceived = true;
-          incoming.once("close", cleanup);
           const responseHeaders = new Headers();
           for (const [name, value] of Object.entries(incoming.headers)) {
             if (Array.isArray(value))
@@ -65,18 +64,52 @@ export function createVscodeHttpsFetch(
             else if (value !== undefined) responseHeaders.set(name, value);
           }
           const status = incoming.statusCode ?? 500;
-          resolve(
-            new Response(
-              [204, 205, 304].includes(status)
-                ? null
-                : (Readable.toWeb(incoming) as ReadableStream<Uint8Array>),
-              {
-                status,
-                statusText: incoming.statusMessage,
-                headers: responseHeaders,
-              },
-            ),
+          const chunks: Buffer[] = [];
+          let size = 0,
+            ended = false;
+          const fail = (error: Error): void => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            reject(error);
+          };
+          incoming.on("data", (chunk: Buffer | Uint8Array | string) => {
+            const value = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            size += value.length;
+            if (size > 16_000_000) {
+              const error = new Error(
+                "Integration response exceeds the size limit.",
+              );
+              incoming.destroy(error);
+              fail(error);
+              return;
+            }
+            chunks.push(value);
+          });
+          incoming.once("end", () => {
+            ended = true;
+            if (settled) return;
+            settled = true;
+            cleanup();
+            resolve(
+              new Response(
+                [204, 205, 304].includes(status) ? null : Buffer.concat(chunks),
+                {
+                  status,
+                  statusText: incoming.statusMessage,
+                  headers: responseHeaders,
+                },
+              ),
+            );
+          });
+          incoming.once("aborted", () =>
+            fail(new Error("Integration response was aborted.")),
           );
+          incoming.once("error", fail);
+          incoming.once("close", () => {
+            if (!ended)
+              fail(new Error("Integration response closed before completion."));
+          });
         },
       );
       const abort = (): void => {
@@ -91,7 +124,12 @@ export function createVscodeHttpsFetch(
       outgoing.once("close", () => {
         if (!responseReceived) cleanup();
       });
-      outgoing.once("error", reject);
+      outgoing.once("error", (error) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      });
       if (body !== undefined && body !== null) outgoing.write(body);
       outgoing.end();
     });
