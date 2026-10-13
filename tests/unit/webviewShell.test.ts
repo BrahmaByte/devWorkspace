@@ -213,6 +213,11 @@ void describe("Webview shell", () => {
     assert.match(html, /grid-template-rows:3\.75rem/u);
     assert.match(html, /Toggle VS Code full screen/u);
     assert.match(html, /type:"shell\.fullscreen"/u);
+    assert.ok(
+      html.indexOf("const iconButton=") <
+        html.indexOf("const fullscreenToggle=iconButton"),
+      "header controls must initialize after the shared icon button helper",
+    );
     assert.match(html, /--saved-card-height/u);
     assert.match(
       html,

@@ -4,3 +4,4 @@ Layout
 - Color-code Connections, Development and Network settings for faster scanning.
 - Reduce shared header height and add a native VS Code full-screen control.
 - Let Home cards grow vertically while preserving saved minimum sizes and order.
+- Restore dashboard startup so navigation, the header clock, guide and full-screen control initialize reliably.
