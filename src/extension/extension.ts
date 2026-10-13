@@ -704,6 +704,11 @@ export async function activate(
                 version,
               } satisfies ExtensionResponse);
               return;
+            case "shell.fullscreen":
+              await vscode.commands.executeCommand(
+                "workbench.action.toggleFullScreen",
+              );
+              return;
             case "shell.ready":
               await jsonCalendars.loadSaved();
               await sendState();

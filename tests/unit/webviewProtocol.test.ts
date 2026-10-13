@@ -130,6 +130,14 @@ void describe("Webview protocol validation", () => {
       ok: true,
       value: { type: "shell.ready" },
     });
+    assert.deepEqual(parseWebviewRequest({ type: "shell.fullscreen" }), {
+      ok: true,
+      value: { type: "shell.fullscreen" },
+    });
+    assert.equal(
+      parseWebviewRequest({ type: "shell.fullscreen", command: "other" }).ok,
+      false,
+    );
     assert.deepEqual(parseWebviewRequest({ type: "home.refresh" }), {
       ok: true,
       value: { type: "home.refresh" },

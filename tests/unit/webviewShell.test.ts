@@ -207,6 +207,17 @@ void describe("Webview shell", () => {
     assert.match(html, /settingsCategory\("Connections"/u);
     assert.match(html, /settingsCategory\("Development"/u);
     assert.match(html, /settingsCategory\("Network"/u);
+    assert.match(html, /section\.dataset\.tone=tone/u);
+    assert.match(html, /--settings-tone:#22a284/u);
+    assert.match(html, /--settings-tone:#d8891f/u);
+    assert.match(html, /grid-template-rows:3\.75rem/u);
+    assert.match(html, /Toggle VS Code full screen/u);
+    assert.match(html, /type:"shell\.fullscreen"/u);
+    assert.match(html, /--saved-card-height/u);
+    assert.match(
+      html,
+      /height:auto;min-height:var\(--saved-card-height,20rem\)/u,
+    );
     assert.match(html, /vscode\.getState\(\)/);
     assert.match(html, /vscode\.setState/);
     assert.match(html, /setInterval\(updateClock,1000\)/);

@@ -216,6 +216,11 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       ? { ok: true, value: { type: "shell.ready" } }
       : { ok: false, error: "shell.ready contains unknown fields." };
   }
+  if (value.type === "shell.fullscreen") {
+    return hasOnlyKeys(value, ["type"])
+      ? { ok: true, value: { type: "shell.fullscreen" } }
+      : { ok: false, error: "shell.fullscreen contains unknown fields." };
+  }
   if (value.type === "walkthrough.open") {
     return hasOnlyKeys(value, ["type"])
       ? { ok: true, value: { type: "walkthrough.open" } }

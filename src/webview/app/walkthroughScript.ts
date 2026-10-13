@@ -17,9 +17,9 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Import a local calendar",text:"In Local JSON Calendars, select an Events or Holidays file. Home shows the next meeting and today's timeline; configured files refresh every five minutes."},
- {page:"calendar",title:"Filter the Planner",text:"Use All sources or select one imported file. The Plans, Meetings, Holidays and Leave toggles narrow the calendar view."},
- {page:"workspace",title:"Load GitHub organizations in batches",text:"Refresh GitHub to load the first organizations. If more are available, use the plus icon beside the repository filters."}
+ {page:"settings",title:"Find settings by category",text:"Connections, development tools and network options now use separate color-coded sections."},
+ {page:"home",title:"See every dashboard item",text:"Home cards grow vertically as their lists change. Saved card heights remain minimum sizes."},
+ {page:"home",title:"Use more screen space",text:"Use the full-screen icon in the header to toggle VS Code full screen."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

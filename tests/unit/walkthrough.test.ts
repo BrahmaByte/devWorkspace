@@ -38,7 +38,7 @@ void describe("Dashboard walkthrough", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /\.walkthrough\[hidden\]\{display:none\}/u);
     assert.doesNotMatch(walkthroughScript, /innerHTML|fetch\(|eval\(/u);
-    assert.match(walkthroughScript, /Load GitHub organizations in batches/u);
+    assert.match(walkthroughScript, /Find settings by category/u);
     const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/u.exec(
       html,
     )?.[1];
@@ -184,12 +184,12 @@ void describe("Dashboard walkthrough", () => {
     send("update");
     assert.match(panel.children[0]!.textContent, /What's new.*1 of 3/u);
     assert.equal(page, "settings");
-    assert.match(panel.children[2]!.textContent, /Local JSON Calendars/u);
+    assert.match(panel.children[2]!.textContent, /color-coded sections/u);
     next!.click();
-    assert.equal(page, "calendar");
+    assert.equal(page, "home");
     assert.equal(next!.textContent, "Next");
     next!.click();
-    assert.equal(page, "workspace");
+    assert.equal(page, "home");
     assert.equal(next!.textContent, "Finish");
     next!.click();
     assert.equal(page, "notes");

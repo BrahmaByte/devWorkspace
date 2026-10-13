@@ -320,8 +320,12 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
   to reset. `Ctrl/Cmd` with `+`, `-`, or `0` and `Ctrl/Cmd` + wheel also work when
   the dashboard has focus. VS Code may handle its own global zoom shortcuts.
 - Use the header theme icon to switch between light and dark mode.
+- Use the header full-screen icon to toggle VS Code full screen.
 - Resize cards from their lower-right edge.
-- Home and Settings cards start at consistent sizes unless you saved a manual resize.
+- Home cards grow vertically when their content needs more room. A manually saved
+  height remains the card's minimum height.
+- Settings groups connections, development tools and network options in distinct
+  color-coded sections.
 - Drag cards with the grip icon, or focus the grip and use the arrow keys, to
   rearrange them.
 - Theme, zoom, and card layout are restored when the dashboard is reopened.

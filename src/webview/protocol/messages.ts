@@ -89,6 +89,7 @@ export type WebviewRequest =
       readonly leaveType: Omit<LeaveType, "id"> & { readonly id?: string };
     }
   | { readonly type: "walkthrough.open" }
+  | { readonly type: "shell.fullscreen" }
   | { readonly type: "network.configure" }
   | { readonly type: "shell.ready" }
   | { readonly type: "home.refresh" }
