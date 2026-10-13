@@ -21,6 +21,64 @@ const object = (value: unknown): Record<string, unknown> =>
     : {};
 const clipped = (value: unknown, max: number): string =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
+const participant = (value: unknown): string => {
+  if (typeof value === "string") return clipped(value, 100);
+  const person = object(value);
+  const email = object(person.emailAddress);
+  return clipped(
+    email.name ||
+      email.address ||
+      person.name ||
+      person.address ||
+      person.email,
+    100,
+  );
+};
+const participants = (value: unknown): unknown[] =>
+  Array.isArray(value)
+    ? value.slice(0, 50)
+    : typeof value === "string"
+      ? value.slice(0, 5000).split(/[;,]/u)
+      : [];
+const httpsUrl = (value: unknown): URL | undefined => {
+  if (typeof value !== "string" || value.length > 2000) return;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password
+      ? url
+      : undefined;
+  } catch {
+    return;
+  }
+};
+const embeddedUrls = (value: unknown): string[] => {
+  const content =
+    typeof value === "string" ? value : clipped(object(value).content, 100_000);
+  return (content.slice(0, 100_000).match(/https:\/\/[^\s"'<>]+/giu) ?? [])
+    .slice(0, 100)
+    .map((url) => url.replaceAll("&amp;", "&"));
+};
+const meetingUrl = (item: Record<string, unknown>): URL | undefined => {
+  const candidates = [
+    object(item.onlineMeeting).joinUrl,
+    item.onlineMeetingUrl,
+    item.joinUrl,
+    ...embeddedUrls(item.body),
+    ...embeddedUrls(item.bodyWithTimeZone),
+  ];
+  return candidates.map(httpsUrl).find((url) => {
+    if (!url) return false;
+    const host = url.hostname.toLowerCase();
+    return [
+      "teams.microsoft.com",
+      "teams.live.com",
+      "teams.microsoft.us",
+      "zoom.us",
+      "zoom.com",
+      "zoomgov.com",
+    ].some((domain) => host === domain || host.endsWith(`.${domain}`));
+  });
+};
 const dateTime = (value: unknown): Date | undefined => {
   const text = clipped(value, 80);
   if (
@@ -88,24 +146,32 @@ export function parseJsonCalendar(
           `Event ${index + 1} is outside the supported calendar years.`,
         );
     }
-    const organizer = object(object(item.organizer).emailAddress);
-    const attendees = Array.isArray(item.attendees)
-      ? item.attendees
-          .slice(0, 50)
-          .map((attendee) => object(object(attendee).emailAddress))
-          .map((attendee) => clipped(attendee.name || attendee.address, 100))
-          .filter(Boolean)
-      : [];
+    const attendees = [
+      ...participants(item.attendees),
+      ...participants(item.requiredAttendees),
+      ...participants(item.optionalAttendees),
+    ]
+      .map(participant)
+      .filter(
+        (attendee, index, all) =>
+          !!attendee &&
+          index ===
+            all.findIndex(
+              (candidate) => candidate.toLowerCase() === attendee.toLowerCase(),
+            ),
+      )
+      .slice(0, 50);
     const location = object(item.location);
     return {
       id: `${source.id}:${index}`,
       kind: source.holidays ? "holiday" : "event",
       sourceId: source.id,
       sourceName: source.name,
-      organizer: clipped(organizer.name || organizer.address, 100),
+      organizer: participant(item.organizer),
       attendees,
       platform:
         clipped(location.displayName, 100) ||
+        clipped(item.location, 100) ||
         clipped(item.onlineMeetingProvider, 100),
       title,
       startDate,
@@ -126,6 +192,7 @@ export function parseJsonCalendar(
 export class JsonCalendarService {
   private readonly cache = new Map<string, CalendarEntry[]>();
   private readonly links = new Map<string, string>();
+  private readonly meetingLinks = new Map<string, string>();
   private readonly errors = new Map<string, string>();
   private loadingSaved: Promise<void> | undefined;
   public constructor(
@@ -182,6 +249,9 @@ export class JsonCalendarService {
   public link(id: string): string | undefined {
     return this.event(id) ? this.links.get(id) : undefined;
   }
+  public meetingLink(id: string): string | undefined {
+    return this.event(id) ? this.meetingLinks.get(id) : undefined;
+  }
   private async load(source: SavedSource): Promise<void> {
     const bytes = await this.read(source.uri);
     if (bytes.byteLength > maxJsonCalendarBytes)
@@ -222,20 +292,18 @@ export class JsonCalendarService {
       }
     }
     const rows = Array.isArray(data) ? data : object(data).value;
-    for (const entry of this.cache.get(source.id) ?? [])
+    for (const entry of this.cache.get(source.id) ?? []) {
       this.links.delete(entry.id);
+      this.meetingLinks.delete(entry.id);
+    }
     if (!source.holidays && Array.isArray(rows))
       rows.forEach((raw, index) => {
         const item = object(raw);
-        const value = object(item.onlineMeeting).joinUrl ?? item.webLink;
-        if (typeof value !== "string" || value.length > 2000) return;
-        try {
-          const url = new URL(value);
-          if (url.protocol === "https:" && !url.username && !url.password)
-            this.links.set(`${source.id}:${index}`, url.toString());
-        } catch {
-          // Ignore invalid external links while keeping the calendar event.
-        }
+        const id = `${source.id}:${index}`;
+        const meeting = meetingUrl(item);
+        const link = meeting ?? httpsUrl(item.webLink);
+        if (meeting) this.meetingLinks.set(id, meeting.toString());
+        if (link) this.links.set(id, link.toString());
       });
     this.cache.set(source.id, entries);
     this.errors.delete(source.id);
@@ -308,7 +376,10 @@ export class JsonCalendarService {
       key,
       sources.filter((source) => source.id !== id),
     );
-    for (const entry of this.cache.get(id) ?? []) this.links.delete(entry.id);
+    for (const entry of this.cache.get(id) ?? []) {
+      this.links.delete(entry.id);
+      this.meetingLinks.delete(entry.id);
+    }
     this.cache.delete(id);
     this.errors.delete(id);
   }

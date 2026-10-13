@@ -182,11 +182,15 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
     send("update");
-    assert.match(panel.children[0]!.textContent, /What's new.*1 of 3/u);
+    assert.match(panel.children[0]!.textContent, /What's new.*1 of 4/u);
     assert.equal(page, "settings");
     assert.match(panel.children[2]!.textContent, /color-coded sections/u);
     next!.click();
     assert.equal(page, "home");
+    assert.equal(next!.textContent, "Next");
+    next!.click();
+    assert.equal(page, "home");
+    assert.match(panel.children[2]!.textContent, /Teams or Zoom/u);
     assert.equal(next!.textContent, "Next");
     next!.click();
     assert.equal(page, "home");

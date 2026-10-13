@@ -180,6 +180,16 @@ void describe("Extension manifest", () => {
     assert.equal(readManifest().icon, "assets/devdashboardv1-icon.png");
   });
 
+  void it("uses native Zen Mode and full screen for distraction-free display", () => {
+    const host = readFileSync(
+      resolve(__dirname, "../../../src/extension/extension.ts"),
+      "utf8",
+    );
+    assert.match(host, /workbench\.action\.toggleZenMode/u);
+    assert.match(host, /get<boolean>\("fullScreen", true\)/u);
+    assert.match(host, /workbench\.action\.toggleFullScreen/u);
+  });
+
   void it("registers the DevHarbor open command", () => {
     const manifest = readManifest();
 

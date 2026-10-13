@@ -114,7 +114,9 @@ To show meetings from a local JSON export, open **Settings → Local JSON Calend
 }
 ```
 
-`subject`, `start` and `end` are required. Use `timeZone: "UTC"` with a local-looking `dateTime`, as above, or supply `startWithTimeZone` and `endWithTimeZone` as ISO timestamps containing `Z` or an explicit offset. `bodyPreview`, organizer, attendees, location, `webLink` and `onlineMeeting.joinUrl` are optional. Only HTTPS meeting links are accepted.
+`subject`, `start` and `end` are required. Use `timeZone: "UTC"` with a local-looking `dateTime`, as above, or supply `startWithTimeZone` and `endWithTimeZone` as ISO timestamps containing `Z` or an explicit offset. `bodyPreview`, organizer, attendees, location and `webLink` are optional. Outlook connector exports may instead use a string `organizer` plus semicolon- or comma-separated `requiredAttendees` and `optionalAttendees` strings.
+
+Home shows **Join meeting** when `onlineMeeting.joinUrl`, `onlineMeetingUrl`, `joinUrl`, `body` or `bodyWithTimeZone` contains a credential-free HTTPS Teams or Zoom URL. The link stays in the Extension Host and opens through VS Code; other hosts are not accepted as meeting join actions.
 
 For a yearly holiday file, choose **Holidays** and use:
 
@@ -320,7 +322,7 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
   to reset. `Ctrl/Cmd` with `+`, `-`, or `0` and `Ctrl/Cmd` + wheel also work when
   the dashboard has focus. VS Code may handle its own global zoom shortcuts.
 - Use the header theme icon to switch between light and dark mode.
-- Use the header full-screen icon to toggle VS Code full screen.
+- Use the header full-screen icon to toggle VS Code's distraction-free Zen Mode.
 - Resize cards from their lower-right edge.
 - Home cards grow vertically when their content needs more room. A manually saved
   height remains the card's minimum height.

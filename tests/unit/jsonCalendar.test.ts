@@ -42,6 +42,27 @@ void it("imports bounded Outlook JSON events and yearly holidays in local time",
   assert.equal(entry?.organizer, "Meeting owner");
   assert.deepEqual(entry?.attendees, ["First attendee", "second@example.test"]);
   assert.equal(entry?.platform, "Microsoft Teams");
+  const [connectorEntry] = parseJsonCalendar(
+    {
+      value: [
+        {
+          ...meeting,
+          organizer: "owner@example.test",
+          attendees: undefined,
+          requiredAttendees:
+            "first@example.test; second@example.test, THIRD@example.test",
+          optionalAttendees: "third@example.test",
+        },
+      ],
+    },
+    source,
+  );
+  assert.equal(connectorEntry?.organizer, "owner@example.test");
+  assert.deepEqual(connectorEntry?.attendees, [
+    "first@example.test",
+    "second@example.test",
+    "THIRD@example.test",
+  ]);
   assert.equal(
     parseJsonCalendar(
       {
@@ -153,6 +174,47 @@ void it("persists only picked file metadata, refreshes atomically and keeps link
   assert.equal(service.sources()[0]?.name, "Calendar");
   assert.equal("uri" in service.sources()[0]!, false);
   assert.equal(service.link(entry!.id), meeting.webLink);
+  assert.equal(service.meetingLink(entry!.id), undefined);
+  file = JSON.stringify([
+    {
+      ...meeting,
+      onlineMeetingUrl:
+        "https://teams.microsoft.com/l/meetup-join/encoded-meeting",
+    },
+  ]);
+  await service.refresh(entry!.sourceId!);
+  assert.equal(
+    service.meetingLink(entry!.id),
+    "https://teams.microsoft.com/l/meetup-join/encoded-meeting",
+  );
+  file = JSON.stringify([
+    {
+      ...meeting,
+      onlineMeeting: { joinUrl: "https://company.zoom.us/j/123456789" },
+    },
+  ]);
+  await service.refresh(entry!.sourceId!);
+  assert.equal(
+    service.meetingLink(entry!.id),
+    "https://company.zoom.us/j/123456789",
+  );
+  file = JSON.stringify([
+    {
+      ...meeting,
+      body: '<a href="https://teams.microsoft.com/l/meetup-join/body?id=1&amp;token=2">Join</a>',
+    },
+  ]);
+  await service.refresh(entry!.sourceId!);
+  assert.equal(
+    service.meetingLink(entry!.id),
+    "https://teams.microsoft.com/l/meetup-join/body?id=1&token=2",
+  );
+  file = JSON.stringify([
+    { ...meeting, onlineMeetingUrl: "https://teams.microsoft.com.evil.test/j" },
+  ]);
+  await service.refresh(entry!.sourceId!);
+  assert.equal(service.meetingLink(entry!.id), undefined);
+  assert.equal(service.link(entry!.id), meeting.webLink);
   const reopened = new JsonCalendarService(store, () =>
     Promise.resolve(Buffer.from(file)),
   );
@@ -170,6 +232,7 @@ void it("persists only picked file metadata, refreshes atomically and keeps link
   await reopened.remove(entry!.sourceId!);
   assert.equal(reopened.entries(2026).length, 0);
   assert.equal(reopened.link(entry!.id), undefined);
+  assert.equal(reopened.meetingLink(entry!.id), undefined);
 });
 
 void it("rejects imported holidays that overlap leave or another holiday without replacing loaded entries", async () => {

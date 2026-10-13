@@ -24,7 +24,7 @@ export const dashboardInteractionsStyles = String.raw`
 `;
 
 export const dashboardInteractionsScript = String.raw`
-const fullscreenToggle=iconButton("focus","Toggle VS Code full screen",()=>vscode.postMessage({type:"shell.fullscreen"}));fullscreenToggle.id="fullscreen-toggle";document.querySelector(".header-tools").append(fullscreenToggle);
+const fullscreenToggle=iconButton("focus","Toggle full-screen focus mode",()=>vscode.postMessage({type:"shell.fullscreen"}));fullscreenToggle.id="fullscreen-toggle";document.querySelector(".header-tools").append(fullscreenToggle);
 let urlGroupEditingId,highlightedJiraIssue,latestJiraState;
 const jiraFilterFields={parentKey:"Parent",assignee:"Assignee",status:"Status",issueType:"Work type",labels:"Labels"};
 let jiraBoardSearch="",jiraBoardSelections={},jiraActiveField;

@@ -211,8 +211,11 @@ void describe("Webview shell", () => {
     assert.match(html, /--settings-tone:#22a284/u);
     assert.match(html, /--settings-tone:#d8891f/u);
     assert.match(html, /grid-template-rows:3\.75rem/u);
-    assert.match(html, /Toggle VS Code full screen/u);
+    assert.match(html, /Toggle full-screen focus mode/u);
     assert.match(html, /type:"shell\.fullscreen"/u);
+    assert.match(html, /id="i-video"/u);
+    assert.match(html, /Join Teams or Zoom meeting/u);
+    assert.match(html, /Join meeting/u);
     assert.ok(
       html.indexOf("const iconButton=") <
         html.indexOf("const fullscreenToggle=iconButton"),

@@ -362,7 +362,7 @@ export async function activate(
           todaySchedule: schedule,
           nextMeeting,
           nextMeetingLink: nextMeeting
-            ? !!jsonCalendars.link(nextMeeting.id)
+            ? !!jsonCalendars.meetingLink(nextMeeting.id)
             : false,
           developerApplications: await Promise.all(
             state.developerApplications.map(async (application) => ({
@@ -565,10 +565,10 @@ export async function activate(
               return;
             }
             case "calendar.json.open": {
-              const link = jsonCalendars.link(request.id);
+              const link = jsonCalendars.meetingLink(request.id);
               if (!link) {
                 await vscode.window.showWarningMessage(
-                  "Meeting link is unavailable. Refresh the JSON calendar.",
+                  "A supported Teams or Zoom join link is unavailable. Refresh the JSON calendar.",
                 );
                 return;
               }
@@ -706,8 +706,16 @@ export async function activate(
               return;
             case "shell.fullscreen":
               await vscode.commands.executeCommand(
-                "workbench.action.toggleFullScreen",
+                "workbench.action.toggleZenMode",
               );
+              if (
+                !vscode.workspace
+                  .getConfiguration("zenMode")
+                  .get<boolean>("fullScreen", true)
+              )
+                await vscode.commands.executeCommand(
+                  "workbench.action.toggleFullScreen",
+                );
               return;
             case "shell.ready":
               await jsonCalendars.loadSaved();
