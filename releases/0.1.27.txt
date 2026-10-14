@@ -1,0 +1,12 @@
+DevHarbor 0.1.27
+
+Jira
+- Show the actual JQL when a saved filter is selected so it can be reviewed, modified and reapplied.
+- Keep Jira's remote saved filter unchanged when applying a local query variation.
+
+Home
+- Add persistent, local reminders for a title and future time today.
+- Raise due reminders through a native VS Code notification.
+
+Interface
+- Expand full-screen focus across the available editor width instead of retaining a narrow portrait layout.

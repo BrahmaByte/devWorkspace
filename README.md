@@ -16,10 +16,14 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.26
+## Version 0.1.27
 
-- Maintenance release of the current DevHarbor feature set with no workflow or
-  data-format changes.
+- Jira saved filters now place their actual JQL in the board filter field for
+  review, modification, and reapplication without overwriting the Jira filter.
+- Home reminders persist locally until their selected time, then appear as a
+  native VS Code notification.
+- Full-screen focus uses the available editor width instead of retaining a
+  narrow portrait layout.
 
 ## Screenshots
 

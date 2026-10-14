@@ -17,7 +17,9 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"home",title:"Maintenance update",text:"This release contains no workflow or data-format changes. Your existing dashboard data and settings remain unchanged."}
+ {page:"home",title:"Set a reminder",text:"Enter a title and a future time in Reminders. DevHarbor keeps it locally and shows a native VS Code notification when it is due."},
+ {page:"jira",title:"Edit saved-filter JQL",text:"Load Saved filters and select one to place its actual JQL in the filter field. Modify and apply that query without changing the saved filter in Jira."},
+ {page:"settings",title:"Use the full editor width",text:"Full-screen focus now expands the dashboard across the available editor area instead of retaining a narrow layout."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

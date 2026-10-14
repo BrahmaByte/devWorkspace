@@ -38,7 +38,9 @@ void describe("Dashboard walkthrough", () => {
     const html = createWebviewHtml("vscode-webview://test");
     assert.match(html, /\.walkthrough\[hidden\]\{display:none\}/u);
     assert.doesNotMatch(walkthroughScript, /innerHTML|fetch\(|eval\(/u);
-    assert.match(walkthroughScript, /Maintenance update/u);
+    assert.match(walkthroughScript, /Set a reminder/u);
+    assert.match(walkthroughScript, /Edit saved-filter JQL/u);
+    assert.match(walkthroughScript, /Use the full editor width/u);
     assert.doesNotMatch(walkthroughScript, /Find settings by category/u);
     const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/u.exec(
       html,
@@ -183,12 +185,17 @@ void describe("Dashboard walkthrough", () => {
     assert.equal(panel.hidden, true);
     assert.equal(page, "notes");
     send("update");
-    assert.match(panel.children[0]!.textContent, /What's new.*1 of 1/u);
+    assert.match(panel.children[0]!.textContent, /What's new.*1 of 3/u);
     assert.equal(page, "home");
     assert.match(
       panel.children[2]!.textContent,
-      /no workflow or data-format changes/u,
+      /native VS Code notification/u,
     );
+    next!.click();
+    assert.equal(page, "jira");
+    assert.match(panel.children[2]!.textContent, /actual JQL/u);
+    next!.click();
+    assert.equal(page, "settings");
     assert.equal(next!.textContent, "Finish");
     next!.click();
     assert.equal(page, "notes");
