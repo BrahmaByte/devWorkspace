@@ -16,6 +16,8 @@ import {
   type DeveloperApplicationProcessGateway,
 } from "../../src/application/services/developerApplicationService";
 import { DeveloperApplicationRepository } from "../../src/infrastructure/database/developerApplicationRepository";
+import { ReminderRepository } from "../../src/infrastructure/database/reminderRepository";
+import { ReminderService } from "../../src/application/services/reminderService";
 
 const inactiveApplications: DeveloperApplicationProcessGateway = {
   inspect: () => Promise.resolve({ name: "Application" }),
@@ -41,6 +43,36 @@ void afterEach(async () => {
 });
 
 void describe("home dashboard", () => {
+  void it("persists a future reminder and removes it before raising its alarm", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "dashboard-reminder-"));
+    directories.push(directory);
+    const database = await LocalDatabase.open(getDatabasePath(directory));
+    const repository = new ReminderRepository(database);
+    const alarms: string[] = [];
+    const scheduled: Array<() => void | Promise<void>> = [];
+    const service = new ReminderService(
+      repository,
+      (title) => {
+        alarms.push(title);
+        return Promise.resolve();
+      },
+      () => new Date(2026, 9, 14, 10, 0),
+      (action) => {
+        scheduled.push(action);
+        return {} as ReturnType<typeof setTimeout>;
+      },
+      () => undefined,
+    );
+    await service.create(" Team standup ", "10:30");
+    assert.equal(repository.list()[0]?.title, "Team standup");
+    assert.equal(new Date(repository.list()[0]!.scheduledAt).getHours(), 10);
+    await assert.rejects(service.create("Past", "09:30"), /future time/u);
+    await scheduled[0]!();
+    assert.deepEqual(alarms, ["Team standup"]);
+    assert.deepEqual(repository.list(), []);
+    service.dispose();
+    database.close();
+  });
   void it("edits URL groups safely and restores the same group after restart", async () => {
     const directory = await mkdtemp(join(tmpdir(), "dashboard-url-edit-"));
     directories.push(directory);
@@ -97,6 +129,7 @@ void describe("home dashboard", () => {
       new NoteRepository(reopened),
       new UrlGroupRepository(reopened),
       applicationService(reopened),
+      new ReminderRepository(reopened),
     ).getState();
     assert.equal(state.stickyNotes[0]?.content, "Review logs");
     assert.equal(state.urlGroups[0]?.name, "Daily tools");
@@ -111,15 +144,18 @@ void describe("home dashboard", () => {
       new NoteRepository(database),
       new UrlGroupRepository(database),
       applicationService(database),
+      new ReminderRepository(database),
     ).getState();
     assert.deepEqual(state.developerApplications, []);
     assert.deepEqual(Object.keys(state).sort(), [
       "developerApplications",
+      "reminders",
       "stickyNotes",
       "urlGroups",
     ]);
     assert.deepEqual(state.stickyNotes, []);
     assert.deepEqual(state.urlGroups, []);
+    assert.deepEqual(state.reminders, []);
     database.close();
   });
 });

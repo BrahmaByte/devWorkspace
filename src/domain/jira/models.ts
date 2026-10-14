@@ -90,4 +90,5 @@ export interface JiraState {
 export interface JiraSavedFilter {
   readonly id: string;
   readonly name: string;
+  readonly jql: string;
 }

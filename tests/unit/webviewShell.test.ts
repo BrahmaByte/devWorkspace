@@ -21,9 +21,9 @@ void describe("Webview shell", () => {
         source +
         String.raw`
       loadFilters.listeners.click();assert.equal(loadFilters.disabled,true);assert.equal(messages[0].type,"jira.filters");
-      handlers.message({data:{type:"jira.filters",filters:[{id:"42",name:"<img onerror=bad()>"}]}});
+      handlers.message({data:{type:"jira.filters",filters:[{id:"42",name:"<img onerror=bad()>",jql:"project = DEV ORDER BY updated DESC"}]}});
       assert.equal(loadFilters.disabled,false);assert.equal(savedFilters.children[1].textContent,"<img onerror=bad()>");
-      savedFilters.value="42";savedFilters.listeners.change();assert.equal(messages[1].query,"filter = 42");
+      savedFilters.value="42";savedFilters.listeners.change();assert.equal(messages[1].query,"project = DEV ORDER BY updated DESC");
       savedFilters.value="42 OR true";savedFilters.listeners.change();assert.equal(messages.length,2);
       handlers.message({data:{type:"jira.filters",filters:[],message:"Denied"}});assert.equal(document.querySelector("#jira-message").textContent,"Denied");
       handlers.message({data:{type:"jira.state",state:{connection:{id:"other",baseUrl:"https://other.test"}}}});assert.equal(savedFilters.children.length,1);
@@ -36,6 +36,15 @@ void describe("Webview shell", () => {
     assert.match(html, /option.textContent = filter.name/u);
     assert.match(html, /reader-macro-\(panel\|status\|code\)/u);
     assert.match(html, /"DETAILS","SUMMARY"/u);
+  });
+  void it("renders a local reminder card with semantic alarm and delete actions", () => {
+    const html = createWebviewHtml("vscode-webview://test");
+    assert.match(html, /reminderCard\.id="home-reminders-card"/u);
+    assert.match(html, /reminderTitle\.id="reminder-title"/u);
+    assert.match(html, /reminderTime\.type="time"/u);
+    assert.match(html, /type:"reminders\.create"/u);
+    assert.match(html, /type:"reminders\.delete"/u);
+    assert.match(html, /bellPath\.setAttribute\("d"/u);
   });
   void it("aligns board search and field filters without a preset dropdown or duplicate group heading", () => {
     const html = createWebviewHtml("vscode-webview://test");

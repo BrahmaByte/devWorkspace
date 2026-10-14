@@ -16,6 +16,33 @@ void it("accepts saved-filter discovery without webview-supplied endpoints or cr
 });
 
 void describe("Webview protocol validation", () => {
+  void it("accepts bounded reminder actions and rejects malformed times", () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    assert.equal(
+      parseWebviewRequest({
+        type: "reminders.create",
+        title: "Standup",
+        time: "09:30",
+      }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({
+        type: "reminders.create",
+        title: "Standup",
+        time: "25:00",
+      }).ok,
+      false,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "reminders.delete", id }).ok,
+      true,
+    );
+    assert.equal(
+      parseWebviewRequest({ type: "reminders.delete", id: "../bad" }).ok,
+      false,
+    );
+  });
   void it("validates saved group edits and whitelists Jira presets", () => {
     const request = {
       type: "urls.update",

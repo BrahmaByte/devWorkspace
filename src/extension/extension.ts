@@ -22,6 +22,7 @@ import { ConfluenceService } from "../application/services/confluenceService";
 import { CommandExecutionService } from "../application/services/commandExecutionService";
 import { GitBranchService } from "../application/services/gitBranchService";
 import { HomeService } from "../application/services/homeService";
+import { ReminderService } from "../application/services/reminderService";
 import {
   ConfluenceCacheSearchProvider,
   JiraCacheSearchProvider,
@@ -52,6 +53,7 @@ import { JiraRepository } from "../infrastructure/database/jiraRepository";
 import { WorkspaceRepository } from "../infrastructure/database/workspaceRepository";
 import { UrlGroupRepository } from "../infrastructure/database/urlGroupRepository";
 import { DeveloperApplicationRepository } from "../infrastructure/database/developerApplicationRepository";
+import { ReminderRepository } from "../infrastructure/database/reminderRepository";
 import { NodeGitRunner } from "../infrastructure/git/nodeGitRunner";
 import { FetchJiraClientFactory } from "../infrastructure/jira/fetchJiraClient";
 import { FetchConfluenceClientFactory } from "../infrastructure/confluence/fetchConfluenceClient";
@@ -168,10 +170,16 @@ export async function activate(
   const developerApplicationIcons = new DeveloperApplicationIconProvider(
     platform.operatingSystem,
   );
+  const reminderRepository = new ReminderRepository(database);
+  const reminderService = new ReminderService(reminderRepository, (title) =>
+    vscode.window.showWarningMessage(`Reminder · ${title}`, { modal: true }),
+  );
+  reminderService.start();
   const homeService = new HomeService(
     noteRepository,
     urlGroupRepository,
     developerApplicationService,
+    reminderRepository,
   );
   const jiraRepository = new JiraRepository(database);
   const confluenceRepository = new ConfluenceRepository(database);
@@ -250,6 +258,7 @@ export async function activate(
   context.subscriptions.push({
     dispose: () => {
       developerApplicationService.dispose();
+      reminderService.dispose();
       database.close();
     },
   });
@@ -836,6 +845,17 @@ export async function activate(
               return;
             case "home.refresh":
               await sendHome(true);
+              return;
+            case "reminders.create":
+              await reminderService.create(request.title, request.time);
+              await panel.webview.postMessage({
+                type: "reminders.saved",
+              } satisfies ExtensionResponse);
+              await sendHome();
+              return;
+            case "reminders.delete":
+              await reminderService.delete(request.id);
+              await sendHome();
               return;
             case "home.search":
               activePage = "notes";
@@ -1640,6 +1660,14 @@ export async function activate(
           else await sendWorkspace();
           await sendHome();
         } catch (error) {
+          if (request.type.startsWith("reminders.")) {
+            await vscode.window.showErrorMessage(
+              error instanceof Error
+                ? error.message
+                : "The reminder could not be saved.",
+            );
+            return;
+          }
           if (
             request.type.startsWith("ide.") ||
             request.type === "projects.open"

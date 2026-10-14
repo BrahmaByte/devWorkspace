@@ -5,9 +5,9 @@ export const walkthroughStyles = String.raw`
 
 export const walkthroughScript = String.raw`
 const tourSteps=[
- {page:"home",title:"Start with today's work",text:"Review the next meeting and today's timeline, join a Teams or Zoom meeting, open a recent Jira issue, or add a sticky note. Configured JSON calendars refresh periodically while the dashboard is open."},
+ {page:"home",title:"Start with today's work",text:"Review the next meeting and today's timeline, join a Teams or Zoom meeting, open a recent Jira issue, add a sticky note, or set a reminder for later today. Configured JSON calendars refresh periodically while the dashboard is open."},
  {page:"settings",title:"Connect your services",text:"Connect Jira, Confluence or GitHub with credentials entered in VS Code prompts. Network proxy applies the same system or VS Code route to all three services."},
- {page:"jira",title:"Filter and update work",text:"Load Saved filters, or use board search and Filter without changing JQL. Open an issue to update its assignee or status, read comments, or add a confirmed comment."},
+ {page:"jira",title:"Filter and update work",text:"Load Saved filters to view and edit their JQL, or use board search and Filter without changing JQL. Open an issue to update its assignee or status, read comments, or add a confirmed comment."},
  {page:"calendar",title:"Plan your time",text:"Click a Planner date or time slot, or choose New entry. In the popup choose Plan, Holiday or Leave and save. Use the type toggles to show only the entries you need."},
  {page:"settings",title:"Add a JSON calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a file. The file is read-only; refresh it from Calendar after external changes."},
  {page:"workspace",title:"Open projects and repositories",text:"Choose a project folder, or refresh GitHub and select an owner. If more organizations are available, use the plus icon to load the next group. Open projects in VS Code or an IDE added in Settings."},

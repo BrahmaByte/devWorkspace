@@ -96,6 +96,12 @@ export type WebviewRequest =
   | { readonly type: "home.refresh" }
   | { readonly type: "home.search"; readonly query: string }
   | {
+      readonly type: "reminders.create";
+      readonly title: string;
+      readonly time: string;
+    }
+  | { readonly type: "reminders.delete"; readonly id: string }
+  | {
       readonly type: "urls.create";
       readonly name: string;
       readonly urls: readonly string[];
@@ -244,6 +250,7 @@ export type WebviewRequest =
 
 export type ExtensionResponse =
   | { readonly type: "github.state"; readonly state: GitHubState }
+  | { readonly type: "reminders.saved" }
   | {
       readonly type: "calendar.state" | "calendar.saved";
       readonly state: CalendarState;

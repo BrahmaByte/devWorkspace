@@ -44,7 +44,9 @@ class MemorySecrets implements SecretStore {
 
 class FakeClient implements JiraClient {
   public getSavedFilters() {
-    return Promise.resolve([{ id: "42", name: "Team work" }]);
+    return Promise.resolve([
+      { id: "42", name: "Team work", jql: "project = DEV" },
+    ]);
   }
   public constructor(
     private readonly fail = false,
@@ -156,7 +158,7 @@ void describe("Jira integration", () => {
       factory,
     );
     await service.connect("Jira", "https://jira.example.test", "fake-token");
-    let finish!: (value: { id: string; name: string }[]) => void;
+    let finish!: (value: { id: string; name: string; jql: string }[]) => void;
     let started!: () => void;
     const ready = new Promise<void>((resolve) => {
       started = resolve;
@@ -172,10 +174,10 @@ void describe("Jira integration", () => {
     const pending = service.getSavedFilters();
     await ready;
     await service.disconnect();
-    finish([{ id: "42", name: "Old filter" }]);
+    finish([{ id: "42", name: "Old filter", jql: "project = OLD" }]);
     await assert.rejects(pending, /connection changed/u);
   });
-  void it("fetches saved filters without rewriting JQL and persists filter-ID queries", async () => {
+  void it("loads saved-filter JQL for editing and persists applied queries", async () => {
     const directory = await mkdtemp(join(tmpdir(), "dashboard-saved-filters-"));
     directories.push(directory);
     const database = await LocalDatabase.open(getDatabasePath(directory));
@@ -186,7 +188,7 @@ void describe("Jira integration", () => {
     await service.connect("Jira", "https://jira.example.test", "fake-token");
     await service.search("project = DEV");
     assert.deepEqual(await service.getSavedFilters(), [
-      { id: "42", name: "Team work" },
+      { id: "42", name: "Team work", jql: "project = DEV" },
     ]);
     assert.equal(repository.getFilter(), "project = DEV");
     await service.search("filter = 42");

@@ -20,6 +20,7 @@ import {
 } from "../../domain/jira/models";
 import { searchLimit } from "../../application/services/searchService";
 import { urlGroupLimits } from "../../application/services/urlGroupService";
+import { reminderLimits } from "../../application/services/reminderService";
 import {
   searchResultTypes,
   type SearchResultType,
@@ -236,6 +237,29 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       isString(value.query, noteLimits.search)
       ? { ok: true, value: { type: "home.search", query: value.query } }
       : { ok: false, error: "home.search is invalid." };
+  }
+  if (value.type === "reminders.create") {
+    return hasOnlyKeys(value, ["type", "title", "time"]) &&
+      typeof value.title === "string" &&
+      value.title.trim().length > 0 &&
+      value.title.length <= reminderLimits.title &&
+      !/[\0\r\n]/u.test(value.title) &&
+      typeof value.time === "string" &&
+      /^(?:[01]\d|2[0-3]):[0-5]\d$/u.test(value.time)
+      ? {
+          ok: true,
+          value: {
+            type: "reminders.create",
+            title: value.title,
+            time: value.time,
+          },
+        }
+      : { ok: false, error: "reminders.create is invalid." };
+  }
+  if (value.type === "reminders.delete") {
+    return hasOnlyKeys(value, ["type", "id"]) && isId(value.id)
+      ? { ok: true, value: { type: "reminders.delete", id: value.id } }
+      : { ok: false, error: "reminders.delete is invalid." };
   }
   if (value.type === "urls.create" || value.type === "urls.update") {
     const update = value.type === "urls.update";

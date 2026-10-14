@@ -27,11 +27,14 @@ void describe("Jira REST provider", () => {
         new Response(
           JSON.stringify(
             urls.length === 1
-              ? { values: [{ id: "12", name: "Zebra" }], total: 3 }
+              ? {
+                  values: [{ id: "12", name: "Zebra", jql: "project = Z" }],
+                  total: 3,
+                }
               : {
                   values: [
-                    { id: "12", name: "Zebra" },
-                    { id: "13", name: "<b>Alpha</b>" },
+                    { id: "12", name: "Zebra", jql: "project = Z" },
+                    { id: "13", name: "<b>Alpha</b>", jql: "project = A" },
                   ],
                   isLast: true,
                 },
@@ -45,14 +48,16 @@ void describe("Jira REST provider", () => {
       token: "fake-token",
     });
     assert.deepEqual(await client.getSavedFilters(), [
-      { id: "13", name: "<b>Alpha</b>" },
-      { id: "12", name: "Zebra" },
+      { id: "13", name: "<b>Alpha</b>", jql: "project = A" },
+      { id: "12", name: "Zebra", jql: "project = Z" },
     ]);
     assert.match(urls[1]!, /startAt=1/u);
     globalThis.fetch = () =>
       Promise.resolve(
         new Response(
-          JSON.stringify({ values: [{ id: "1 OR true", name: "Bad" }] }),
+          JSON.stringify({
+            values: [{ id: "1 OR true", name: "Bad", jql: "project = BAD" }],
+          }),
         ),
       );
     await assert.rejects(
@@ -74,7 +79,11 @@ void describe("Jira REST provider", () => {
             ? input.href
             : input.url;
       return Promise.resolve(
-        new Response(JSON.stringify([{ id: "7", name: "Favourite" }])),
+        new Response(
+          JSON.stringify([
+            { id: "7", name: "Favourite", jql: "project = FAV" },
+          ]),
+        ),
       );
     };
     const client = new FetchJiraClient("https://jira.example.test", {
@@ -82,9 +91,9 @@ void describe("Jira REST provider", () => {
       token: "fake-token",
     });
     assert.deepEqual(await client.getSavedFilters(), [
-      { id: "7", name: "Favourite" },
+      { id: "7", name: "Favourite", jql: "project = FAV" },
     ]);
-    assert.match(url, /\/rest\/api\/2\/filter\/favourite$/u);
+    assert.match(url, /\/rest\/api\/2\/filter\/favourite\?expand=jql$/u);
     globalThis.fetch = () =>
       Promise.resolve(new Response("denied", { status: 401 }));
     await assert.rejects(

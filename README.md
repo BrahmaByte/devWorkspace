@@ -42,6 +42,9 @@ Home contains:
 - **Developer apps:** add an application with the native picker, launch it, see
   whether a dashboard-started instance is running, and close that instance after
   confirmation. Apps appear in a grid with their installed icon when available.
+- **Reminders:** enter a title and a future time today. The reminder stays local
+  and appears as a native VS Code warning at that time; notification sound follows
+  your VS Code and operating-system notification settings.
 
 On macOS, apps open through the system application launcher. An app already
 running is brought forward; its close action stays disabled to protect sessions
@@ -69,8 +72,10 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
 
 - Enter JQL in the filter field and apply it with the check icon. The last
   successful filter is restored automatically.
-- Load **Saved filters** with its refresh icon, then select a filter to apply it.
-  Cloud lists up to 500 accessible filters; Data Center lists favourites.
+- Load **Saved filters** with its refresh icon, then select one to place its JQL
+  in the filter field and apply it. Edit that JQL before applying again when you
+  need a variation; this does not overwrite the saved filter in Jira. Cloud lists
+  up to 500 accessible filters; Data Center lists favourites.
 - Search the loaded board by issue key or summary. Open **Filter** to select
   Parent, Assignee, Status, Work type or Labels; **Clear all** resets these
   board filters without changing your saved JQL.

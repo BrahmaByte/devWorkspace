@@ -216,4 +216,9 @@ export const migrations: readonly Migration[] = [
     name: "team_calendar_sources",
     sql: `CREATE TABLE team_calendar_sources (id TEXT PRIMARY KEY, name TEXT NOT NULL, origin TEXT NOT NULL, color TEXT NOT NULL, holidays INTEGER NOT NULL CHECK(holidays IN (0,1)));`,
   },
+  {
+    version: 11,
+    name: "home_reminders",
+    sql: `CREATE TABLE reminders (id TEXT PRIMARY KEY, title TEXT NOT NULL, scheduled_at TEXT NOT NULL, created_at TEXT NOT NULL);`,
+  },
 ];

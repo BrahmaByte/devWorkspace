@@ -21,12 +21,17 @@ export const dashboardInteractionsStyles = String.raw`
 #home-jira .home-row{max-width:100%;min-width:0;overflow:hidden;padding:.5rem .6rem}
 #home-jira .home-row-copy{flex:1;max-width:100%}
 .jira-reader-content .jira-workflow{max-width:70rem;margin:0 auto 1rem}.jira-workflow{align-items:end;background:var(--panel2);border:1px solid var(--border);border-radius:.65rem;display:grid;gap:.75rem;grid-template-columns:minmax(12rem,1fr) auto minmax(12rem,1fr) auto;padding:1rem}.jira-workflow[hidden]{display:none}.jira-workflow label{color:var(--muted);display:grid;font-size:.72rem;gap:.35rem}.jira-workflow select{background:var(--panel);border:1px solid var(--border);border-radius:.45rem;color:var(--text);min-width:0;padding:.6rem}.jira-workflow-message{color:var(--muted);font-size:.75rem;grid-column:1/-1;margin:0}
+.reminder-form{display:grid;gap:.55rem;grid-template-columns:minmax(0,1fr) 7.5rem auto;padding:0 1rem .8rem}.reminder-form input{background:var(--panel2);border:1px solid var(--border);border-radius:.45rem;color:var(--text);min-width:0;padding:.6rem}.reminder-list{display:grid;gap:.45rem;padding:0 1rem 1rem}.reminder-row{align-items:center;background:var(--panel2);border:1px solid var(--border);border-radius:.5rem;display:grid;gap:.65rem;grid-template-columns:auto minmax(0,1fr) auto;padding:.6rem}.reminder-row>.ui-icon{color:#d8891f}.reminder-row strong,.reminder-row time{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.reminder-row time{color:var(--muted);font-size:.7rem}.reminder-row .icon-button{height:2rem;padding:.35rem;width:2rem}
 @media(max-width:800px){.jira-workflow{grid-template-columns:1fr auto}}
+@media(max-width:650px){.reminder-form{grid-template-columns:1fr auto}.reminder-form input:first-child{grid-column:1/-1}}
 @media(max-width:720px){.app{display:grid;grid-template-columns:3.5rem minmax(0,1fr)}.app>aside{height:calc(100vh / var(--dashboard-zoom,1));top:0}.app>aside nav{grid-template-columns:1fr}.nav-label{display:none}aside button{padding:.65rem}.app-header{flex-wrap:wrap;height:auto;gap:.4rem;padding:.6rem}.header-tools{max-width:6rem}main{padding:.6rem}.dashboard-grid,.workspace-grid,.settings-grid{grid-template-columns:minmax(0,1fr)}.jira-board{grid-template-columns:minmax(0,1fr)}.notes-app{grid-template-columns:minmax(7rem,1fr) minmax(0,2fr)}.sidebar-brand img{max-width:2rem}.layout-card{min-width:0}}
 `;
 
 export const dashboardInteractionsScript = String.raw`
 const fullscreenToggle=iconButton("focus","Toggle full-screen focus mode",()=>vscode.postMessage({type:"shell.fullscreen"}));fullscreenToggle.id="fullscreen-toggle";document.querySelector(".header-tools").append(fullscreenToggle);
+let reminderForm,reminderList;
+const ensureReminderCard=()=>{if(reminderForm)return;const bellSymbol=document.createElementNS("http://www.w3.org/2000/svg","symbol"),bellPath=document.createElementNS("http://www.w3.org/2000/svg","path"),reminderCard=document.createElement("article"),reminderHeader=document.createElement("div"),reminderHeading=document.createElement("h2"),reminderTitle=document.createElement("input"),reminderTime=document.createElement("input"),reminderSave=iconButton("bell","Set reminder",()=>{});bellSymbol.id="i-bell";bellSymbol.setAttribute("viewBox","0 0 24 24");bellPath.setAttribute("d","M6 17h12l-1.5-2.5V10a4.5 4.5 0 0 0-9 0v4.5zM10 20h4");bellSymbol.append(bellPath);document.querySelector(".svg-sprite").append(bellSymbol);reminderForm=document.createElement("form");reminderList=document.createElement("div");reminderCard.id="home-reminders-card";reminderCard.className="dashboard-card";reminderHeader.className="dashboard-card-header";reminderHeading.textContent="Reminders";reminderHeader.append(reminderHeading);reminderForm.id="reminder-form";reminderForm.className="reminder-form";reminderTitle.id="reminder-title";reminderTitle.maxLength=120;reminderTitle.required=true;reminderTitle.placeholder="Reminder title";reminderTitle.setAttribute("aria-label","Reminder title");reminderTime.id="reminder-time";reminderTime.type="time";reminderTime.required=true;reminderTime.setAttribute("aria-label","Reminder time today");reminderSave.type="submit";reminderSave.classList.add("primary-icon-button");reminderList.id="home-reminders";reminderList.className="reminder-list";reminderList.setAttribute("aria-live","polite");reminderForm.append(reminderTitle,reminderTime,reminderSave);reminderCard.append(reminderHeader,reminderForm,reminderList);document.querySelector("[data-view=home] .dashboard-grid").append(reminderCard);reminderForm.addEventListener("submit",event=>{event.preventDefault();vscode.postMessage({type:"reminders.create",title:reminderTitle.value,time:reminderTime.value})});initializeCardLayouts()};
+const renderReminders=reminders=>{ensureReminderCard();reminderList.replaceChildren();if(!reminders.length){homeEmpty(reminderList,"No reminders set for today.");return}reminders.forEach(reminder=>{const row=document.createElement("div"),bell=document.createElementNS("http://www.w3.org/2000/svg","svg"),use=document.createElementNS("http://www.w3.org/2000/svg","use"),copy=document.createElement("div"),title=document.createElement("strong"),time=document.createElement("time"),remove=iconButton("trash","Delete "+reminder.title,()=>vscode.postMessage({type:"reminders.delete",id:reminder.id}));row.className="reminder-row";bell.setAttribute("class","ui-icon");use.setAttribute("href","#i-bell");bell.append(use);title.textContent=reminder.title;time.dateTime=reminder.scheduledAt;time.textContent=new Date(reminder.scheduledAt).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});copy.append(title,time);row.append(bell,copy,remove);reminderList.append(row)})};
 let urlGroupEditingId,highlightedJiraIssue,latestJiraState;
 const jiraFilterFields={parentKey:"Parent",assignee:"Assignee",status:"Status",issueType:"Work type",labels:"Labels"};
 let jiraBoardSearch="",jiraBoardSelections={},jiraActiveField;
@@ -44,10 +49,11 @@ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&jiraFilterM
 function editUrlGroup(group){const form=document.querySelector("#url-group-form");urlGroupEditingId=group.id;document.querySelector("#url-group-name").value=group.name;document.querySelector("#url-group-urls").value=group.urls.join(String.fromCharCode(10));form.hidden=false;form.scrollIntoView({block:"nearest"});document.querySelector("#url-group-name").focus()}
 function highlightJiraRow(){document.querySelectorAll("#jira-issues [data-issue-key]").forEach(row=>{const selected=row.dataset.issueKey===highlightedJiraIssue?.key;row.classList.toggle("jira-highlighted",selected);row.setAttribute("aria-pressed",String(selected))});if(highlightedJiraIssue&&!document.querySelector('[data-view="jira"]').hidden){const row=[...document.querySelectorAll("#jira-issues [data-issue-key]")].find(item=>item.dataset.issueKey===highlightedJiraIssue.key);row?.scrollIntoView({block:"nearest"});row?.focus({preventScroll:true})}}
 function renderRecentJira(issues,message){const home=document.querySelector("#home-jira");home.replaceChildren();if(message)homeEmpty(home,message);if(!issues.length){if(!message)homeEmpty(home,"No recent assigned Jira issues. Connect or sync Jira from Settings.");return}issues.slice(0,5).forEach(issue=>home.append(homeRow("task",issue.key,issue.summary+" · "+issue.status+" · Updated "+new Date(issue.updatedAt).toLocaleString(),()=>{highlightedJiraIssue=issue;selectPage("jira");if(latestJiraState)renderJira(latestJiraState);vscode.postMessage({type:"navigation.select",page:"jira"})},"Show and highlight "+issue.key+" on the Jira board")))}
-window.addEventListener("message",event=>{const message=event.data;if(message?.type==="urls.saved"){const form=document.querySelector("#url-group-form");form?.reset();if(form)form.hidden=true;urlGroupEditingId=undefined}else if(message?.type==="jira.state"&&!message.state.connection){highlightedJiraIssue=undefined;jiraBoardSearch="";jiraBoardSelections={};document.querySelector("#jira-board-search").value="";document.querySelector("#jira-filter-count").textContent="";latestJiraState=message.state;document.querySelector("#home-jira").replaceChildren();homeEmpty(document.querySelector("#home-jira"),"Connect Jira from Settings to load recent work.")}});
+window.addEventListener("message",event=>{const message=event.data;if(message?.type==="home.state"&&Array.isArray(message.state?.reminders))renderReminders(message.state.reminders);else if(message?.type==="reminders.saved")reminderForm?.reset();else if(message?.type==="urls.saved"){const form=document.querySelector("#url-group-form");form?.reset();if(form)form.hidden=true;urlGroupEditingId=undefined}else if(message?.type==="jira.state"&&!message.state.connection){highlightedJiraIssue=undefined;jiraBoardSearch="";jiraBoardSelections={};document.querySelector("#jira-board-search").value="";document.querySelector("#jira-filter-count").textContent="";latestJiraState=message.state;document.querySelector("#home-jira").replaceChildren();homeEmpty(document.querySelector("#home-jira"),"Connect Jira from Settings to load recent work.")}});
 const savedFilters = document.querySelector("#jira-saved-filters"),
   loadFilters = document.querySelector("#jira-load-filters");
 let savedFiltersConnection;
+let loadedSavedFilters = [];
 loadFilters.addEventListener("click", () => {
   loadFilters.disabled = true;
   document.querySelector("#jira-message").textContent =
@@ -55,8 +61,9 @@ loadFilters.addEventListener("click", () => {
   vscode.postMessage({ type: "jira.filters" });
 });
 savedFilters.addEventListener("change", () => {
-  if (/^[1-9][0-9]{0,19}$/.test(savedFilters.value)) {
-    const query = "filter = " + savedFilters.value;
+  const filter = loadedSavedFilters.find(item => item.id === savedFilters.value);
+  if (filter && typeof filter.jql === "string") {
+    const query = filter.jql;
     document.querySelector("#jira-search-query").value = query;
     vscode.postMessage({ type: "jira.search", query });
   }
@@ -64,6 +71,7 @@ savedFilters.addEventListener("change", () => {
 window.addEventListener("message", (event) => {
   const message = event.data;
   if (message?.type === "jira.filters") {
+    loadedSavedFilters = Array.isArray(message.filters) ? message.filters : [];
     loadFilters.disabled = false;
     savedFilters.replaceChildren();
     const placeholder = document.createElement("option");
@@ -84,6 +92,7 @@ window.addEventListener("message", (event) => {
   } else if (message?.type === "jira.state" && savedFiltersConnection !== JSON.stringify([message.state.connection?.id,message.state.connection?.baseUrl,message.state.currentUser?.accountId])) {
     savedFiltersConnection = JSON.stringify([message.state.connection?.id,message.state.connection?.baseUrl,message.state.currentUser?.accountId]);
     savedFilters.replaceChildren();
+    loadedSavedFilters = [];
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Saved filters";

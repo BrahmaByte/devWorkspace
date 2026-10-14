@@ -67,8 +67,8 @@ export class FetchJiraClient implements JiraClient {
         hostname === "api.atlassian.com";
       const result = await this.request(
         cloud
-          ? `/rest/api/${this.apiVersion}/filter/search?startAt=${startAt}&maxResults=50&orderBy=name`
-          : "/rest/api/2/filter/favourite",
+          ? `/rest/api/${this.apiVersion}/filter/search?startAt=${startAt}&maxResults=50&orderBy=name&expand=jql`
+          : "/rest/api/2/filter/favourite?expand=jql",
         {},
         !cloud,
       );
@@ -81,10 +81,18 @@ export class FetchJiraClient implements JiraClient {
           !/^[1-9][0-9]{0,19}$/u.test(value.id) ||
           typeof value.name !== "string" ||
           !value.name.trim() ||
-          value.name.length > 200
+          value.name.length > 200 ||
+          typeof value.jql !== "string" ||
+          !value.jql.trim() ||
+          value.jql.length > 500 ||
+          /[\0\r\n]/u.test(value.jql)
         )
           throw new Error("Invalid saved filter.");
-        filters.set(value.id, { id: value.id, name: value.name });
+        filters.set(value.id, {
+          id: value.id,
+          name: value.name,
+          jql: value.jql,
+        });
       }
       startAt += result.values.length;
       if (
