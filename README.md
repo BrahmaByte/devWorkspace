@@ -16,16 +16,10 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.25
+## Version 0.1.26
 
-- Read organizer and attendee details from Microsoft Graph and Outlook connector
-  JSON calendar exports.
-- Join validated Microsoft Teams and Zoom meeting links from Home, including
-  links embedded in Outlook event bodies.
-- Assign Jira issues and run the currently available workflow transitions from
-  the issue reader after native confirmation.
-- Use the header focus control for full-screen VS Code Zen Mode without editor
-  tabs, the title bar, or centered portrait layout.
+- Maintenance release of the current DevHarbor feature set with no workflow or
+  data-format changes.
 
 ## Screenshots
 

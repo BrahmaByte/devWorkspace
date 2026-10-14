@@ -1,0 +1,5 @@
+DevHarbor 0.1.26
+
+Maintenance
+- Publish the current validated DevHarbor feature set without workflow or data-format changes.
+- Preserve existing local data, settings and credentials during the update.

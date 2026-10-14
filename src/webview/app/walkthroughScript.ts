@@ -17,9 +17,7 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"home",title:"Join imported meetings",text:"The next meeting shows Outlook organizer and attendee details. Use Join meeting for a Teams or Zoom link."},
- {page:"jira",title:"Update Jira issues",text:"Open an issue to choose an available assignee or valid workflow transition. Confirm each change in VS Code."},
- {page:"home",title:"Use more screen space",text:"Use the full-screen icon to hide VS Code chrome and open DevHarbor across the full display."}
+ {page:"home",title:"Maintenance update",text:"This release contains no workflow or data-format changes. Your existing dashboard data and settings remain unchanged."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

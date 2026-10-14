@@ -3,7 +3,7 @@
   "displayName": "DevHarbor - Developer Dashboard",
   "description": "Developer dashboard for Jira, Confluence, GitHub, projects, notes, calendars, commands and local productivity in VS Code.",
   "icon": "assets/devdashboardv1-icon.png",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "publisher": "BrahmaByte",
   "private": true,
   "license": "Apache-2.0",
