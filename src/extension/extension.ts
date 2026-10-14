@@ -263,7 +263,13 @@ export async function activate(
     let activePage: ShellPage = initialPage;
     let dashboardFocusMode = false;
     let focusPreferences:
-      { readonly showTabs?: string; readonly titleBar?: string } | undefined;
+      | {
+          readonly showTabs?: string;
+          readonly centerLayout?: boolean;
+          readonly fullScreen?: boolean;
+          readonly titleBar?: string;
+        }
+      | undefined;
     let confluenceSearchSequence = 0;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
@@ -295,6 +301,20 @@ export async function activate(
             vscode.ConfigurationTarget.Global,
           ),
         vscode.workspace
+          .getConfiguration("zenMode")
+          .update(
+            "centerLayout",
+            previous.centerLayout,
+            vscode.ConfigurationTarget.Global,
+          ),
+        vscode.workspace
+          .getConfiguration("zenMode")
+          .update(
+            "fullScreen",
+            previous.fullScreen,
+            vscode.ConfigurationTarget.Global,
+          ),
+        vscode.workspace
           .getConfiguration("window")
           .update(
             "customTitleBarVisibility",
@@ -310,6 +330,8 @@ export async function activate(
         const windowConfiguration = vscode.workspace.getConfiguration("window");
         focusPreferences = {
           showTabs: zen.inspect<string>("showTabs")?.globalValue,
+          centerLayout: zen.inspect<boolean>("centerLayout")?.globalValue,
+          fullScreen: zen.inspect<boolean>("fullScreen")?.globalValue,
           titleBar: windowConfiguration.inspect<string>(
             "customTitleBarVisibility",
           )?.globalValue,
@@ -317,6 +339,12 @@ export async function activate(
         try {
           await Promise.all([
             zen.update("showTabs", "none", vscode.ConfigurationTarget.Global),
+            zen.update(
+              "centerLayout",
+              false,
+              vscode.ConfigurationTarget.Global,
+            ),
+            zen.update("fullScreen", true, vscode.ConfigurationTarget.Global),
             windowConfiguration.update(
               "customTitleBarVisibility",
               "never",
@@ -330,14 +358,6 @@ export async function activate(
       }
       try {
         await vscode.commands.executeCommand("workbench.action.toggleZenMode");
-        if (entering && zen.get<boolean>("centerLayout", true))
-          await vscode.commands.executeCommand(
-            "workbench.action.toggleCenteredLayout",
-          );
-        if (!zen.get<boolean>("fullScreen", true))
-          await vscode.commands.executeCommand(
-            "workbench.action.toggleFullScreen",
-          );
         dashboardFocusMode = entering;
       } catch (error) {
         if (entering) await restoreFocusPreferences();

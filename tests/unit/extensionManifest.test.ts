@@ -186,13 +186,12 @@ void describe("Extension manifest", () => {
       "utf8",
     );
     assert.match(host, /workbench\.action\.toggleZenMode/u);
-    assert.match(host, /get<boolean>\("centerLayout", true\)/u);
-    assert.match(host, /workbench\.action\.toggleCenteredLayout/u);
     assert.match(host, /update\(\s*"showTabs",\s*"none"/u);
+    assert.match(host, /update\(\s*"centerLayout",\s*false/u);
+    assert.match(host, /update\("fullScreen", true/u);
     assert.match(host, /"customTitleBarVisibility",\s*"never"/u);
     assert.match(host, /restoreFocusPreferences/u);
-    assert.match(host, /get<boolean>\("fullScreen", true\)/u);
-    assert.match(host, /workbench\.action\.toggleFullScreen/u);
+    assert.doesNotMatch(host, /workbench\.action\.toggleCenteredLayout/u);
   });
 
   void it("registers the DevHarbor open command", () => {

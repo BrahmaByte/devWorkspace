@@ -13,7 +13,7 @@ const tourSteps=[
  {page:"workspace",title:"Open projects and repositories",text:"Choose a project folder, or refresh GitHub and select an owner. If more organizations are available, use the plus icon to load the next group. Open projects in VS Code or an IDE added in Settings."},
  {page:"notes",title:"Write a note",text:"Use the new-note icon and start typing. Notes save automatically. Select an existing note to edit it."},
  {page:"knowledge",title:"Read a Confluence page",text:"Search for a page and select a result. Use Focus Reader for a full-screen view, or Bookmark to save a reference in Notes."},
- {page:"search",title:"Find saved work",text:"Search notes, projects, commands and cached Jira or Confluence entries. Use the theme button and bottom-right zoom controls to adjust the view."}
+ {page:"search",title:"Find saved work",text:"Search notes, projects, commands and cached Jira or Confluence entries. Use the theme, full-screen focus and bottom-right zoom controls to adjust the view."}
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
