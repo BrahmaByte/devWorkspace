@@ -7,7 +7,7 @@ export const walkthroughScript = String.raw`
 const tourSteps=[
  {page:"home",title:"Start with today's work",text:"Review the next meeting and today's timeline, join a Teams or Zoom meeting, open a recent Jira issue, or add a sticky note. Configured JSON calendars refresh periodically while the dashboard is open."},
  {page:"settings",title:"Connect your services",text:"Connect Jira, Confluence or GitHub with credentials entered in VS Code prompts. Network proxy applies the same system or VS Code route to all three services."},
- {page:"jira",title:"Filter your board",text:"Load Saved filters with its refresh icon and choose one to apply. Board search and Filter narrow loaded issues without changing JQL. Sync refreshes Jira; select an issue for details and comments."},
+ {page:"jira",title:"Filter and update work",text:"Load Saved filters, or use board search and Filter without changing JQL. Open an issue to update its assignee or status, read comments, or add a confirmed comment."},
  {page:"calendar",title:"Plan your time",text:"Click a Planner date or time slot, or choose New entry. In the popup choose Plan, Holiday or Leave and save. Use the type toggles to show only the entries you need."},
  {page:"settings",title:"Add a JSON calendar",text:"In Local JSON Calendars, choose Events or Holidays and select a file. The file is read-only; refresh it from Calendar after external changes."},
  {page:"workspace",title:"Open projects and repositories",text:"Choose a project folder, or refresh GitHub and select an owner. If more organizations are available, use the plus icon to load the next group. Open projects in VS Code or an IDE added in Settings."},
@@ -17,10 +17,9 @@ const tourSteps=[
 ];
 // Update these highlights alongside release notes when shipping new features.
 const updateSteps=[
- {page:"settings",title:"Find settings by category",text:"Connections, development tools and network options now use separate color-coded sections."},
- {page:"home",title:"See every dashboard item",text:"Home cards grow vertically as their lists change. Saved card heights remain minimum sizes."},
  {page:"home",title:"Join imported meetings",text:"The next meeting shows Outlook organizer and attendee details. Use Join meeting for a Teams or Zoom link."},
- {page:"home",title:"Use more screen space",text:"Use the full-screen icon in the header to toggle distraction-free VS Code Zen Mode."}
+ {page:"jira",title:"Update Jira issues",text:"Open an issue to choose an available assignee or valid workflow transition. Confirm each change in VS Code."},
+ {page:"home",title:"Use more screen space",text:"Use the full-screen icon to hide VS Code chrome and open DevHarbor across the full display."}
 ];
 const walkthroughPanel=document.createElement("section"),walkthroughProgress=document.createElement("div"),walkthroughTitle=document.createElement("h2"),walkthroughText=document.createElement("p"),walkthroughActions=document.createElement("div");
 walkthroughPanel.className="walkthrough";walkthroughPanel.hidden=true;walkthroughPanel.tabIndex=-1;walkthroughPanel.setAttribute("role","region");walkthroughPanel.setAttribute("aria-labelledby","walkthrough-title");walkthroughTitle.id="walkthrough-title";walkthroughProgress.className="walkthrough-progress";walkthroughProgress.setAttribute("aria-live","polite");walkthroughActions.className="walkthrough-actions";

@@ -261,6 +261,9 @@ export async function activate(
     panelOpened = true;
     let replayPending = replayGuide;
     let activePage: ShellPage = initialPage;
+    let dashboardFocusMode = false;
+    let focusPreferences:
+      { readonly showTabs?: string; readonly titleBar?: string } | undefined;
     let confluenceSearchSequence = 0;
     let noteQuery = "";
     let selectedCommandPath: string | undefined;
@@ -278,6 +281,71 @@ export async function activate(
       },
     );
     dashboardPanel = panel;
+
+    const restoreFocusPreferences = async (): Promise<void> => {
+      if (!focusPreferences) return;
+      const previous = focusPreferences;
+      focusPreferences = undefined;
+      await Promise.all([
+        vscode.workspace
+          .getConfiguration("zenMode")
+          .update(
+            "showTabs",
+            previous.showTabs,
+            vscode.ConfigurationTarget.Global,
+          ),
+        vscode.workspace
+          .getConfiguration("window")
+          .update(
+            "customTitleBarVisibility",
+            previous.titleBar,
+            vscode.ConfigurationTarget.Global,
+          ),
+      ]);
+    };
+    const toggleDashboardFocusMode = async (): Promise<void> => {
+      const entering = !dashboardFocusMode;
+      const zen = vscode.workspace.getConfiguration("zenMode");
+      if (entering) {
+        const windowConfiguration = vscode.workspace.getConfiguration("window");
+        focusPreferences = {
+          showTabs: zen.inspect<string>("showTabs")?.globalValue,
+          titleBar: windowConfiguration.inspect<string>(
+            "customTitleBarVisibility",
+          )?.globalValue,
+        };
+        try {
+          await Promise.all([
+            zen.update("showTabs", "none", vscode.ConfigurationTarget.Global),
+            windowConfiguration.update(
+              "customTitleBarVisibility",
+              "never",
+              vscode.ConfigurationTarget.Global,
+            ),
+          ]);
+        } catch (error) {
+          await restoreFocusPreferences();
+          throw error;
+        }
+      }
+      try {
+        await vscode.commands.executeCommand("workbench.action.toggleZenMode");
+        if (entering && zen.get<boolean>("centerLayout", true))
+          await vscode.commands.executeCommand(
+            "workbench.action.toggleCenteredLayout",
+          );
+        if (!zen.get<boolean>("fullScreen", true))
+          await vscode.commands.executeCommand(
+            "workbench.action.toggleFullScreen",
+          );
+        dashboardFocusMode = entering;
+      } catch (error) {
+        if (entering) await restoreFocusPreferences();
+        throw error;
+      } finally {
+        if (!entering) await restoreFocusPreferences();
+      }
+    };
 
     const logoUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -422,6 +490,7 @@ export async function activate(
       } satisfies ExtensionResponse);
 
     const pendingCommentConfirmations = new Set<string>();
+    const pendingJiraActions = new Set<string>();
     const messageSubscription = panel.webview.onDidReceiveMessage(
       async (message: unknown) => {
         const parsed = parseWebviewRequest(message);
@@ -705,17 +774,7 @@ export async function activate(
               } satisfies ExtensionResponse);
               return;
             case "shell.fullscreen":
-              await vscode.commands.executeCommand(
-                "workbench.action.toggleZenMode",
-              );
-              if (
-                !vscode.workspace
-                  .getConfiguration("zenMode")
-                  .get<boolean>("fullScreen", true)
-              )
-                await vscode.commands.executeCommand(
-                  "workbench.action.toggleFullScreen",
-                );
+              await toggleDashboardFocusMode();
               return;
             case "shell.ready":
               await jsonCalendars.loadSaved();
@@ -1050,6 +1109,126 @@ export async function activate(
                 } satisfies ExtensionResponse);
               }
               return;
+            case "jira.actions":
+              try {
+                await panel.webview.postMessage({
+                  type: "jira.actions",
+                  issueKey: request.issueKey,
+                  actions: await jiraService.getIssueActions(request.issueKey),
+                } satisfies ExtensionResponse);
+              } catch {
+                await panel.webview.postMessage({
+                  type: "jira.viewer.error",
+                  issueKey: request.issueKey,
+                  target: "actions",
+                  message:
+                    "Could not load assignees or workflow actions. Check Jira permissions.",
+                } satisfies ExtensionResponse);
+              }
+              return;
+            case "jira.assign":
+            case "jira.transition": {
+              if (pendingJiraActions.has(request.issueKey)) return;
+              pendingJiraActions.add(request.issueKey);
+              try {
+                const actions = await jiraService.getIssueActions(
+                  request.issueKey,
+                );
+                const assignee =
+                  request.type === "jira.assign" && request.assigneeId !== null
+                    ? actions.users.find(
+                        (user) => user.id === request.assigneeId,
+                      )
+                    : undefined;
+                const transition =
+                  request.type === "jira.transition"
+                    ? actions.transitions.find(
+                        (item) => item.id === request.transitionId,
+                      )
+                    : undefined;
+                if (
+                  (request.type === "jira.assign" &&
+                    request.assigneeId !== null &&
+                    !assignee) ||
+                  (request.type === "jira.transition" && !transition)
+                )
+                  throw new Error("Jira action is no longer available.");
+                const label =
+                  request.type === "jira.assign"
+                    ? `Assign ${request.issueKey} to ${assignee?.displayName ?? "Unassigned"}?`
+                    : `Move ${request.issueKey} to ${transition!.toStatus}?`;
+                const action =
+                  request.type === "jira.assign"
+                    ? "Update assignee"
+                    : "Change status";
+                const confirmed = await vscode.window.showWarningMessage(
+                  label,
+                  { modal: true },
+                  action,
+                );
+                if (confirmed !== action) {
+                  await panel.webview.postMessage({
+                    type: "jira.action.result",
+                    issueKey: request.issueKey,
+                    message: "Jira update cancelled.",
+                  } satisfies ExtensionResponse);
+                  return;
+                }
+                let issue;
+                try {
+                  issue =
+                    request.type === "jira.assign"
+                      ? await jiraService.assignIssue(
+                          request.issueKey,
+                          request.assigneeId,
+                        )
+                      : await jiraService.transitionIssue(
+                          request.issueKey,
+                          request.transitionId,
+                        );
+                } catch {
+                  await panel.webview.postMessage({
+                    type: "jira.action.result",
+                    issueKey: request.issueKey,
+                    message:
+                      "Jira rejected the update. Check issue permissions and current workflow state before retrying.",
+                  } satisfies ExtensionResponse);
+                  return;
+                }
+                try {
+                  await panel.webview.postMessage({
+                    type: "jira.actions",
+                    issueKey: request.issueKey,
+                    actions: await jiraService.getIssueActions(
+                      request.issueKey,
+                    ),
+                  } satisfies ExtensionResponse);
+                  await sendJira();
+                  await sendHome(true);
+                } catch {
+                  // The confirmed mutation succeeded; the reader refresh remains manual.
+                }
+                await panel.webview.postMessage({
+                  type: "jira.action.result",
+                  issueKey: request.issueKey,
+                  issue,
+                  message:
+                    request.type === "jira.assign"
+                      ? "Assignee updated."
+                      : "Status updated.",
+                } satisfies ExtensionResponse);
+              } catch {
+                await panel.webview.postMessage({
+                  type: "jira.action.result",
+                  issueKey: request.issueKey,
+                  message:
+                    "This Jira action is unavailable. Refresh the issue and check permissions.",
+                } satisfies ExtensionResponse);
+              } finally {
+                pendingJiraActions.delete(request.issueKey);
+              }
+              return;
+            }
             case "jira.comments":
               try {
                 await panel.webview.postMessage({
@@ -1527,6 +1706,8 @@ export async function activate(
       clearInterval(calendarRefreshTimer);
       messageSubscription.dispose();
       appChangeSubscription.dispose();
+      if (dashboardFocusMode) void toggleDashboardFocusMode();
+      else void restoreFocusPreferences();
     });
   };
 

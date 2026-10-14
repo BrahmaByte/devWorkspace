@@ -33,10 +33,27 @@ export interface JiraIssue {
   readonly issueType?: string;
   readonly priority?: string;
   readonly assignee?: string;
+  readonly assigneeId?: string;
   readonly reporter?: string;
   readonly parentKey?: string;
   readonly labels?: readonly string[];
   readonly createdAt?: string;
+}
+
+export interface JiraAssignableUser {
+  readonly id: string;
+  readonly displayName: string;
+}
+
+export interface JiraTransition {
+  readonly id: string;
+  readonly name: string;
+  readonly toStatus: string;
+}
+
+export interface JiraIssueActions {
+  readonly users: readonly JiraAssignableUser[];
+  readonly transitions: readonly JiraTransition[];
 }
 
 export interface JiraComment {

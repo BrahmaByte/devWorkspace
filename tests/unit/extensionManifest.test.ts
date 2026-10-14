@@ -180,12 +180,17 @@ void describe("Extension manifest", () => {
     assert.equal(readManifest().icon, "assets/devdashboardv1-icon.png");
   });
 
-  void it("uses native Zen Mode and full screen for distraction-free display", () => {
+  void it("uses full-width native Zen Mode and full screen", () => {
     const host = readFileSync(
       resolve(__dirname, "../../../src/extension/extension.ts"),
       "utf8",
     );
     assert.match(host, /workbench\.action\.toggleZenMode/u);
+    assert.match(host, /get<boolean>\("centerLayout", true\)/u);
+    assert.match(host, /workbench\.action\.toggleCenteredLayout/u);
+    assert.match(host, /update\(\s*"showTabs",\s*"none"/u);
+    assert.match(host, /"customTitleBarVisibility",\s*"never"/u);
+    assert.match(host, /restoreFocusPreferences/u);
     assert.match(host, /get<boolean>\("fullScreen", true\)/u);
     assert.match(host, /workbench\.action\.toggleFullScreen/u);
   });

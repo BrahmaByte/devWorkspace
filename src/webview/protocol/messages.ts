@@ -16,6 +16,7 @@ import type {
   JiraComment,
   JiraCommentPage,
   JiraIssue,
+  JiraIssueActions,
   JiraSavedFilter,
   JiraState,
   JiraQuickFilter,
@@ -141,6 +142,17 @@ export type WebviewRequest =
     }
   | { readonly type: "jira.refresh" | "jira.disconnect" }
   | { readonly type: "jira.issue"; readonly issueKey: string }
+  | { readonly type: "jira.actions"; readonly issueKey: string }
+  | {
+      readonly type: "jira.assign";
+      readonly issueKey: string;
+      readonly assigneeId: string | null;
+    }
+  | {
+      readonly type: "jira.transition";
+      readonly issueKey: string;
+      readonly transitionId: string;
+    }
   | {
       readonly type: "jira.comments";
       readonly issueKey: string;
@@ -286,6 +298,17 @@ export type ExtensionResponse =
     }
   | { readonly type: "jira.issue"; readonly issue: JiraIssue }
   | {
+      readonly type: "jira.actions";
+      readonly issueKey: string;
+      readonly actions: JiraIssueActions;
+    }
+  | {
+      readonly type: "jira.action.result";
+      readonly issueKey: string;
+      readonly issue?: JiraIssue;
+      readonly message: string;
+    }
+  | {
       readonly type: "jira.comments";
       readonly issueKey: string;
       readonly startAt: number;
@@ -300,7 +323,7 @@ export type ExtensionResponse =
   | {
       readonly type: "jira.viewer.error";
       readonly issueKey: string;
-      readonly target: "issue" | "comments";
+      readonly target: "issue" | "comments" | "actions";
       readonly message: string;
     }
   | {

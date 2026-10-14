@@ -178,6 +178,67 @@ void describe("Jira REST provider", () => {
     assert.match(detail.descriptionHtml ?? "", /<strong>Formatted<\/strong>/u);
     assert.doesNotMatch(detail.descriptionHtml ?? "", /script|steal/u);
   });
+  void it("loads bounded workflow actions and updates Cloud or Data Center issues", async () => {
+    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = (input, init) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      requests.push({ url, init });
+      if (url.includes("user/assignable"))
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([
+              {
+                accountId: "cloud-user",
+                name: "dc-user",
+                displayName: "Developer",
+              },
+            ]),
+          ),
+        );
+      if (url.endsWith("/transitions") && !init?.method)
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              transitions: [
+                { id: "31", name: "Complete", to: { name: "Done" } },
+              ],
+            }),
+          ),
+        );
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+    const cloud = new FetchJiraClient("https://team.atlassian.net", {
+      type: "basic",
+      email: "test@example.test",
+      token: "fake-token",
+    });
+    assert.deepEqual(await cloud.getIssueActions("DEV-1"), {
+      users: [{ id: "cloud-user", displayName: "Developer" }],
+      transitions: [{ id: "31", name: "Complete", toStatus: "Done" }],
+    });
+    await cloud.assignIssue("DEV-1", "cloud-user");
+    await cloud.transitionIssue("DEV-1", "31");
+    assert.deepEqual(JSON.parse(requests[2]!.init!.body as string), {
+      accountId: "cloud-user",
+    });
+    assert.deepEqual(JSON.parse(requests[3]!.init!.body as string), {
+      transition: { id: "31" },
+    });
+
+    const dataCenter = new FetchJiraClient("https://jira.example.test", {
+      type: "bearer",
+      token: "fake-token",
+    });
+    await dataCenter.assignIssue("DEV-1", "dc-user");
+    assert.deepEqual(JSON.parse(requests[4]!.init!.body as string), {
+      name: "dc-user",
+    });
+  });
   void it("uses bearer authentication and maps supported responses", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {

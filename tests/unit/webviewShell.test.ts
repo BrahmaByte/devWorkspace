@@ -506,6 +506,10 @@ void describe("Webview shell", () => {
     assert.match(html, /id="jira-reader" class="reader-dialog/u);
     assert.match(html, /id="jira-comment-form"/u);
     assert.match(html, /type:"jira.comment.add"/u);
+    assert.match(html, /jira-assignee/u);
+    assert.match(html, /type:"jira.assign"/u);
+    assert.match(html, /type:"jira.transition"/u);
+    assert.match(html, /Confirm the status change in VS Code/u);
     assert.doesNotMatch(html, /new ResizeObserver/u);
     assert.match(html, /window.addEventListener\("pointerup",finish/u);
     assert.match(html, /max-width:100%;min-width:0!important/u);

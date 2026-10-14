@@ -6,6 +6,7 @@ import type {
   JiraCommentPage,
   JiraBoardStatus,
   JiraIssue,
+  JiraIssueActions,
   JiraState,
   JiraUser,
   JiraSavedFilter,
@@ -26,6 +27,9 @@ export interface JiraClient {
   getIssue(issueKey: string): Promise<JiraIssue>;
   getComments(issueKey: string, startAt: number): Promise<JiraCommentPage>;
   addComment(issueKey: string, body: string): Promise<JiraComment>;
+  getIssueActions(issueKey: string): Promise<JiraIssueActions>;
+  assignIssue(issueKey: string, assigneeId: string | null): Promise<void>;
+  transitionIssue(issueKey: string, transitionId: string): Promise<void>;
 }
 
 export interface JiraClientFactory {
@@ -115,7 +119,7 @@ export class JiraService {
     }
   }
   private readonly posting = new Set<string>();
-  private async commentClient(issueKey: string): Promise<JiraClient> {
+  private async issueClient(issueKey: string): Promise<JiraClient> {
     this.getIssueUrl(issueKey);
     const connection = this.repository.getConnection();
     if (!connection) throw new Error("Jira is not connected.");
@@ -132,7 +136,7 @@ export class JiraService {
   ): Promise<JiraCommentPage> {
     if (!Number.isInteger(startAt) || startAt < 0 || startAt > 1_000_000)
       throw new Error("Comment offset is invalid.");
-    return (await this.commentClient(issueKey)).getComments(issueKey, startAt);
+    return (await this.issueClient(issueKey)).getComments(issueKey, startAt);
   }
   public async addComment(
     issueKey: string,
@@ -145,7 +149,7 @@ export class JiraService {
     this.posting.add(issueKey);
     try {
       return await (
-        await this.commentClient(issueKey)
+        await this.issueClient(issueKey)
       ).addComment(issueKey, body);
     } finally {
       this.posting.delete(issueKey);
@@ -286,6 +290,35 @@ export class JiraService {
     return this.clients
       .create(connection.baseUrl, deserializeCredential(storedCredential))
       .getIssue(issueKey);
+  }
+
+  public async getIssueActions(issueKey: string): Promise<JiraIssueActions> {
+    return (await this.issueClient(issueKey)).getIssueActions(issueKey);
+  }
+
+  public async assignIssue(
+    issueKey: string,
+    assigneeId: string | null,
+  ): Promise<JiraIssue> {
+    if (
+      assigneeId !== null &&
+      (!assigneeId || assigneeId.length > 255 || /[\0\r\n]/u.test(assigneeId))
+    )
+      throw new Error("Jira assignee is invalid.");
+    const client = await this.issueClient(issueKey);
+    await client.assignIssue(issueKey, assigneeId);
+    return client.getIssue(issueKey);
+  }
+
+  public async transitionIssue(
+    issueKey: string,
+    transitionId: string,
+  ): Promise<JiraIssue> {
+    if (!/^[1-9][0-9]{0,19}$/u.test(transitionId))
+      throw new Error("Jira transition is invalid.");
+    const client = await this.issueClient(issueKey);
+    await client.transitionIssue(issueKey, transitionId);
+    return client.getIssue(issueKey);
   }
 
   public getIssueUrl(issueKey: string): string {

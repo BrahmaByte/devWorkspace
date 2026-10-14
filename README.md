@@ -16,12 +16,16 @@ A short tour appears on first use. Reopen it with the header's question-mark
 button. After an update, **What's new** highlights the changes once; use Skip
 or Escape to dismiss it.
 
-## Version 0.1.20
+## Version 0.1.25
 
-- Import local JSON meetings and yearly holidays, with source and type filters
-  in Calendar.
-- See the next meeting and today's schedule on Home.
-- Confluence Team Calendar integration has been removed; Confluence reading remains.
+- Read organizer and attendee details from Microsoft Graph and Outlook connector
+  JSON calendar exports.
+- Join validated Microsoft Teams and Zoom meeting links from Home, including
+  links embedded in Outlook event bodies.
+- Assign Jira issues and run the currently available workflow transitions from
+  the issue reader after native confirmation.
+- Use the header focus control for full-screen VS Code Zen Mode without editor
+  tabs, the title bar, or centered portrait layout.
 
 ## Screenshots
 
@@ -78,8 +82,9 @@ The Jira page presents work in **To Do**, **In Progress**, and **Done** columns.
   board filters without changing your saved JQL.
 - Use the sync icon to refresh Jira on demand while retaining the saved filter.
 - Select an issue for a full-screen viewer with formatted details and comments.
-  Load more comments, refresh the thread, or open it in your default browser.
-  New comments require confirmation in VS Code and Jira Add Comments permission.
+  Assign it to an available user, choose a valid workflow transition, load more
+  comments, refresh the thread, or open it in your default browser. Mutations
+  require native VS Code confirmation and the corresponding Jira permission.
 - Add local-only cards at the bottom of the board. These cards stay on your
   computer and are never sent to Jira.
 
@@ -322,7 +327,9 @@ request, and never falls back to a direct connection. Select **Use VS Code proxy
   to reset. `Ctrl/Cmd` with `+`, `-`, or `0` and `Ctrl/Cmd` + wheel also work when
   the dashboard has focus. VS Code may handle its own global zoom shortcuts.
 - Use the header theme icon to switch between light and dark mode.
-- Use the header full-screen icon to toggle VS Code's distraction-free Zen Mode.
+- Use the header full-screen icon to toggle distraction-free VS Code Zen Mode.
+  DevHarbor hides editor tabs and the title bar, uses the full display width,
+  and restores your previous settings when focus mode closes.
 - Resize cards from their lower-right edge.
 - Home cards grow vertically when their content needs more room. A manually saved
   height remains the card's minimum height.

@@ -107,6 +107,28 @@ void describe("Webview protocol validation", () => {
       true,
     );
   });
+  void it("validates Jira assignment and workflow actions", () => {
+    for (const request of [
+      { type: "jira.actions", issueKey: "DEV-1" },
+      { type: "jira.assign", issueKey: "DEV-1", assigneeId: "user:123" },
+      { type: "jira.assign", issueKey: "DEV-1", assigneeId: null },
+      { type: "jira.transition", issueKey: "DEV-1", transitionId: "31" },
+    ])
+      assert.equal(parseWebviewRequest(request).ok, true);
+    for (const request of [
+      { type: "jira.actions", issueKey: "../bad" },
+      { type: "jira.assign", issueKey: "DEV-1", assigneeId: "bad\nuser" },
+      { type: "jira.assign", issueKey: "DEV-1", assigneeId: "" },
+      { type: "jira.transition", issueKey: "DEV-1", transitionId: "done" },
+      {
+        type: "jira.transition",
+        issueKey: "DEV-1",
+        transitionId: "31",
+        url: "https://evil.test",
+      },
+    ])
+      assert.equal(parseWebviewRequest(request).ok, false);
+  });
   void it("validates Confluence preview identifiers and rejects additional fields", () => {
     assert.equal(
       parseWebviewRequest({ type: "confluence.preview", id: "42" }).ok,

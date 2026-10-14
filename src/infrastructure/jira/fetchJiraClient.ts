@@ -4,6 +4,9 @@ import type {
 } from "../../application/services/jiraService";
 import type {
   JiraIssue,
+  JiraIssueActions,
+  JiraAssignableUser,
+  JiraTransition,
   JiraUser,
   JiraComment,
   JiraCommentPage,
@@ -142,6 +145,65 @@ export class FetchJiraClient implements JiraClient {
     );
   }
 
+  public async getIssueActions(issueKey: string): Promise<JiraIssueActions> {
+    const encodedKey = encodeURIComponent(issueKey);
+    const [users, transitions] = await Promise.all([
+      this.request(
+        `/rest/api/${this.apiVersion}/user/assignable/search?issueKey=${encodedKey}&startAt=0&maxResults=100`,
+        {},
+        true,
+      ),
+      this.request(
+        `/rest/api/${this.apiVersion}/issue/${encodedKey}/transitions`,
+      ),
+    ]);
+    if (!Array.isArray(users.values) || users.values.length > 100)
+      throw new Error("Invalid Jira assignee response.");
+    if (
+      !Array.isArray(transitions.transitions) ||
+      transitions.transitions.length > 100
+    )
+      throw new Error("Invalid Jira transition response.");
+    return {
+      users: users.values.map(toAssignableUser),
+      transitions: transitions.transitions.map(toTransition),
+    };
+  }
+
+  public async assignIssue(
+    issueKey: string,
+    assigneeId: string | null,
+  ): Promise<void> {
+    await this.request(
+      `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}/assignee`,
+      {
+        method: "PUT",
+        body: JSON.stringify(
+          this.apiVersion === 3
+            ? { accountId: assigneeId }
+            : { name: assigneeId },
+        ),
+      },
+      false,
+      true,
+    );
+  }
+
+  public async transitionIssue(
+    issueKey: string,
+    transitionId: string,
+  ): Promise<void> {
+    await this.request(
+      `/rest/api/${this.apiVersion}/issue/${encodeURIComponent(issueKey)}/transitions`,
+      {
+        method: "POST",
+        body: JSON.stringify({ transition: { id: transitionId } }),
+      },
+      false,
+      true,
+    );
+  }
+
   private get apiVersion(): 2 | 3 {
     return this.credential.type === "basic" ? 3 : 2;
   }
@@ -190,6 +252,7 @@ export class FetchJiraClient implements JiraClient {
     path: string,
     init: RequestInit = {},
     arrayResponse = false,
+    emptyResponse = false,
   ): Promise<JsonRecord> {
     const response = await this.transport.fetch(`${this.baseUrl}${path}`, {
       ...init,
@@ -205,11 +268,38 @@ export class FetchJiraClient implements JiraClient {
       throw new Error("Jira response is too large.");
     const body = await response.text();
     if (body.length > 2_000_000) throw new Error("Jira response is too large.");
+    if (emptyResponse && !body) return {};
     const parsed: unknown = JSON.parse(body);
     if (arrayResponse && Array.isArray(parsed)) return { values: parsed };
     if (!isRecord(parsed)) throw new Error("Invalid Jira response.");
     return parsed;
   }
+}
+
+function toAssignableUser(value: unknown): JiraAssignableUser {
+  if (!isRecord(value)) throw new Error("Invalid Jira assignee.");
+  const id = value.accountId ?? value.name ?? value.key;
+  return {
+    id: boundedString(id, 255, "Invalid Jira assignee."),
+    displayName: boundedString(
+      value.displayName,
+      200,
+      "Invalid Jira assignee.",
+    ),
+  };
+}
+
+function toTransition(value: unknown): JiraTransition {
+  if (!isRecord(value) || !isRecord(value.to))
+    throw new Error("Invalid Jira transition.");
+  const id = boundedString(value.id, 20, "Invalid Jira transition.");
+  if (!/^[1-9][0-9]{0,19}$/u.test(id))
+    throw new Error("Invalid Jira transition.");
+  return {
+    id,
+    name: boundedString(value.name, 200, "Invalid Jira transition."),
+    toStatus: boundedString(value.to.name, 200, "Invalid Jira transition."),
+  };
 }
 
 function toComment(value: unknown): JiraComment {
@@ -236,6 +326,9 @@ function toIssue(value: unknown): JiraIssue {
   const issueType = value.fields.issuetype;
   const priority = value.fields.priority;
   const assignee = value.fields.assignee;
+  const assigneeId = isRecord(assignee)
+    ? (assignee.accountId ?? assignee.name ?? assignee.key)
+    : undefined;
   const reporter = value.fields.reporter;
   const parent = value.fields.parent;
   const labels = value.fields.labels;
@@ -266,6 +359,7 @@ function toIssue(value: unknown): JiraIssue {
     ...(isRecord(assignee) && typeof assignee.displayName === "string"
       ? { assignee: assignee.displayName }
       : {}),
+    ...(typeof assigneeId === "string" ? { assigneeId } : {}),
     ...(isRecord(reporter) && typeof reporter.displayName === "string"
       ? { reporter: reporter.displayName }
       : {}),
@@ -306,5 +400,16 @@ function isRecord(value: unknown): value is JsonRecord {
 function requiredString(value: unknown): string {
   if (typeof value !== "string" || value.length === 0 || value.length > 100_000)
     throw new Error("Invalid Jira response.");
+  return value;
+}
+
+function boundedString(value: unknown, limit: number, message: string): string {
+  if (
+    typeof value !== "string" ||
+    !value.trim() ||
+    value.length > limit ||
+    /[\0\r\n]/u.test(value)
+  )
+    throw new Error(message);
   return value;
 }

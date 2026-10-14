@@ -20,6 +20,8 @@ export const dashboardInteractionsStyles = String.raw`
 #home-jira{gap:.35rem;max-width:100%;min-width:0;overflow:hidden;padding:0 .85rem .85rem}
 #home-jira .home-row{max-width:100%;min-width:0;overflow:hidden;padding:.5rem .6rem}
 #home-jira .home-row-copy{flex:1;max-width:100%}
+.jira-reader-content .jira-workflow{max-width:70rem;margin:0 auto 1rem}.jira-workflow{align-items:end;background:var(--panel2);border:1px solid var(--border);border-radius:.65rem;display:grid;gap:.75rem;grid-template-columns:minmax(12rem,1fr) auto minmax(12rem,1fr) auto;padding:1rem}.jira-workflow[hidden]{display:none}.jira-workflow label{color:var(--muted);display:grid;font-size:.72rem;gap:.35rem}.jira-workflow select{background:var(--panel);border:1px solid var(--border);border-radius:.45rem;color:var(--text);min-width:0;padding:.6rem}.jira-workflow-message{color:var(--muted);font-size:.75rem;grid-column:1/-1;margin:0}
+@media(max-width:800px){.jira-workflow{grid-template-columns:1fr auto}}
 @media(max-width:720px){.app{display:grid;grid-template-columns:3.5rem minmax(0,1fr)}.app>aside{height:calc(100vh / var(--dashboard-zoom,1));top:0}.app>aside nav{grid-template-columns:1fr}.nav-label{display:none}aside button{padding:.65rem}.app-header{flex-wrap:wrap;height:auto;gap:.4rem;padding:.6rem}.header-tools{max-width:6rem}main{padding:.6rem}.dashboard-grid,.workspace-grid,.settings-grid{grid-template-columns:minmax(0,1fr)}.jira-board{grid-template-columns:minmax(0,1fr)}.notes-app{grid-template-columns:minmax(7rem,1fr) minmax(0,2fr)}.sidebar-brand img{max-width:2rem}.layout-card{min-width:0}}
 `;
 

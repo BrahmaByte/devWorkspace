@@ -50,6 +50,8 @@ class FakeClient implements JiraClient {
     private readonly fail = false,
     private readonly issueFailure?: Error,
     private readonly queries: string[] = [],
+    private readonly assignments: Array<string | null> = [],
+    private readonly transitions: string[] = [],
   ) {}
   public getCurrentUser() {
     return this.fail
@@ -80,6 +82,20 @@ class FakeClient implements JiraClient {
       html: "<p>Test</p>",
     });
   }
+  public getIssueActions() {
+    return Promise.resolve({
+      users: [{ id: "user-1", displayName: "Test User" }],
+      transitions: [{ id: "31", name: "Complete", toStatus: "Done" }],
+    });
+  }
+  public assignIssue(_issueKey: string, assigneeId: string | null) {
+    this.assignments.push(assigneeId);
+    return Promise.resolve();
+  }
+  public transitionIssue(_issueKey: string, transitionId: string) {
+    this.transitions.push(transitionId);
+    return Promise.resolve();
+  }
 }
 
 class FakeFactory implements JiraClientFactory {
@@ -87,9 +103,17 @@ class FakeFactory implements JiraClientFactory {
   public issueFailure: Error | undefined;
   public credentials: AtlassianCredential[] = [];
   public queries: string[] = [];
+  public assignments: Array<string | null> = [];
+  public transitions: string[] = [];
   public create(_baseUrl: string, credential: AtlassianCredential) {
     this.credentials.push(credential);
-    return new FakeClient(this.fail, this.issueFailure, this.queries);
+    return new FakeClient(
+      this.fail,
+      this.issueFailure,
+      this.queries,
+      this.assignments,
+      this.transitions,
+    );
   }
 }
 
@@ -266,7 +290,21 @@ void describe("Jira integration", () => {
     assert.equal(secrets.values.size, 1);
     assert.deepEqual(await service.getComments("DEV-7"), { comments: [] });
     assert.equal((await service.addComment("DEV-7", "Hello")).id, "1");
+    assert.equal(
+      (await service.getIssueActions("DEV-7")).users[0]?.id,
+      "user-1",
+    );
+    await service.assignIssue("DEV-7", "user-1");
+    await service.assignIssue("DEV-7", null);
+    await service.transitionIssue("DEV-7", "31");
+    assert.deepEqual(factory.assignments, ["user-1", null]);
+    assert.deepEqual(factory.transitions, ["31"]);
     await assert.rejects(service.addComment("DEV-7", " "), /invalid/u);
+    await assert.rejects(service.assignIssue("DEV-7", "bad\nuser"), /invalid/u);
+    await assert.rejects(
+      service.transitionIssue("DEV-7", "not-an-id"),
+      /invalid/u,
+    );
     await assert.rejects(service.getComments("DEV-7", -1), /invalid/u);
     await assert.rejects(service.getComments("../bad"), /invalid/u);
     assert.equal(

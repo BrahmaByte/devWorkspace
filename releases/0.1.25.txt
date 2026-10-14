@@ -1,0 +1,14 @@
+DevHarbor 0.1.25
+
+Meetings
+- Read organizer and attendee details from Microsoft Graph and Outlook connector JSON exports.
+- Join validated Microsoft Teams and Zoom links from Home, including links embedded in Outlook event bodies.
+- Keep imported event links in the Extension Host and reject unsupported or lookalike meeting hosts.
+
+Jira
+- Assign an issue to an available user from the full-screen reader after native confirmation.
+- Load only valid workflow transitions for the issue and confirm status changes in VS Code.
+
+Display
+- Open the dashboard across the display in VS Code Zen Mode without editor tabs, the title bar or centered portrait layout.
+- Restore the user's prior Zen Mode tabs and title-bar preferences when focus mode closes.

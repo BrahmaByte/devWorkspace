@@ -435,12 +435,51 @@ export function parseWebviewRequest(value: unknown): ParseResult {
       };
     return { ok: false, error: "Invalid Jira comment request." };
   }
-  if (value.type === "jira.issue" || value.type === "jira.open") {
+  if (
+    value.type === "jira.issue" ||
+    value.type === "jira.open" ||
+    value.type === "jira.actions"
+  ) {
     return hasOnlyKeys(value, ["type", "issueKey"]) &&
       typeof value.issueKey === "string" &&
       /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey)
       ? { ok: true, value: { type: value.type, issueKey: value.issueKey } }
       : { ok: false, error: `${value.type} is invalid.` };
+  }
+  if (value.type === "jira.assign") {
+    return hasOnlyKeys(value, ["type", "issueKey", "assigneeId"]) &&
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
+      (value.assigneeId === null ||
+        (typeof value.assigneeId === "string" &&
+          value.assigneeId.length > 0 &&
+          value.assigneeId.length <= 255 &&
+          !/[\0\r\n]/u.test(value.assigneeId)))
+      ? {
+          ok: true,
+          value: {
+            type: "jira.assign",
+            issueKey: value.issueKey,
+            assigneeId: value.assigneeId,
+          },
+        }
+      : { ok: false, error: "jira.assign is invalid." };
+  }
+  if (value.type === "jira.transition") {
+    return hasOnlyKeys(value, ["type", "issueKey", "transitionId"]) &&
+      typeof value.issueKey === "string" &&
+      /^[A-Z][A-Z0-9_]{0,19}-[1-9][0-9]{0,9}$/u.test(value.issueKey) &&
+      typeof value.transitionId === "string" &&
+      /^[1-9][0-9]{0,19}$/u.test(value.transitionId)
+      ? {
+          ok: true,
+          value: {
+            type: "jira.transition",
+            issueKey: value.issueKey,
+            transitionId: value.transitionId,
+          },
+        }
+      : { ok: false, error: "jira.transition is invalid." };
   }
   if (value.type === "jira.filters") {
     return hasOnlyKeys(value, ["type"])
